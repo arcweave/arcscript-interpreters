@@ -1,0 +1,1 @@
+rm ./antlr4.jar src/Generated/ArcscriptLexer.js src/Generated/ArcscriptParser.js src/Generated/ArcscriptParserVisitor.js

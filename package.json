@@ -1,0 +1,136 @@
+{
+  "name": "@arcweave/arcscript",
+  "version": "1.0.0",
+  "description": "An interpreter for arcscript using antlr4",
+  "main": "src/antlr4.interpreter.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest",
+    "grammar": "sh generate.sh",
+    "grammar:clean": "sh clean.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dermitzos/arcscript-js.git"
+  },
+  "keywords": [
+    "arcweave",
+    "arcscript",
+    "antlr4"
+  ],
+  "author": "Arcweave",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dermitzos/arcscript-js/issues"
+  },
+  "homepage": "https://github.com/dermitzos/arcscript-js#readme",
+  "devDependencies": {
+    "eslint": "^8.51.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.0.3"
+  },
+  "dependencies": {
+    "antlr4": "^4.13.1",
+    "bignumber.js": "^9.1.2",
+    "lodash": "^4.17.21"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "node": true,
+      "es6": true
+    },
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "rules": {
+      "import/extensions": [
+        "error",
+        "ignorePackages"
+      ],
+      "prettier/prettier": 1,
+      "no-console": "off",
+      "no-unused-vars": "off",
+      "no-alert": "off",
+      "no-use-before-define": [
+        "error",
+        {
+          "functions": false
+        }
+      ],
+      "class-methods-use-this": "off",
+      "no-shadow": [
+        "error",
+        {
+          "allow": [
+            "state",
+            "getters"
+          ]
+        }
+      ],
+      "no-undef": "warn",
+      "no-param-reassign": "off"
+    },
+    "parserOptions": {
+      "ecmaVersion": 2022
+    },
+    "settings": {
+      "import/resolver": {
+        "alias": {
+          "map": [
+            [
+              "@",
+              "./src"
+            ]
+          ],
+          "extensions": [
+            ".js",
+            ".json"
+          ]
+        }
+      }
+    },
+    "ignorePatterns": [
+      "src/Generated/*.js",
+      "!src/Generated/*Base.js"
+    ]
+  },
+  "prettier": {
+    "printWidth": 80,
+    "tabWidth": 2,
+    "overrides": [
+      {
+        "files": "*.json",
+        "options": {
+          "tabWidth": 4
+        }
+      }
+    ],
+    "useTabs": false,
+    "singleQuote": true,
+    "semi": true,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "arrowParens": "avoid"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json"
+    ],
+    "transformIgnorePatterns": [
+      "<rootDir>/node_modules/(?!antlr4)"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testEnvironment": "jsdom"
+  }
+}
