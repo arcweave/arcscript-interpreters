@@ -29,6 +29,9 @@ jobs:
       - name: Download Antlr4 tool
         run: sh generate.sh
 
+      - name: Install dependencies
+        run: npm install
+
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: npm test
