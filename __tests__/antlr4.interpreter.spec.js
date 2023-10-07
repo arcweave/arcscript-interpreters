@@ -136,7 +136,7 @@ const cases = [
        <pre><code>x = 1</code></pre>
        <p></p><p>I am fine, thank you.</p>`,
     {},
-    `<p>How are you? </p><p>I am fine, thank you.</p>`,
+    `<p>How are you?  I am fine, thank you.</p>`,
   ],
   [`<pre><code>x = ((_a)) + 1</code></pre>`, { var1: 1 }],
   [
