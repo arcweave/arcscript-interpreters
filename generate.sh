@@ -8,11 +8,16 @@ mkdir -p ../JavaScript/src/Generated
 cp JavaScript/*.js ../JavaScript/src/Generated/.
 rm -rf ./JavaScript
 
-java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=Cpp ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./Cpp
-mkdir -p ../Cpp/src/Generated
-cp Cpp/*.cpp ../Cpp/src/Generated
-cp Cpp/*.h ../Cpp/src/Generated
-rm -rf ./Cpp
+cp Arcscript*.g4 ./Cpp/.
+cd Cpp
+python3 transformGrammar.py
+java -Xmx500M -cp ../../antlr4.jar org.antlr.v4.Tool -Dlanguage=Cpp ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./Generated
+mkdir -p ../../Cpp/src/Generated
+cp Generated/*.cpp ../../Cpp/src/Generated
+cp Generated/*.h ../../Cpp/src/Generated
+rm -rf ./Generated
+rm -rf *.g4 *.g4.bak
+cd ..
 
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=CSharp ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./CSharp
 mkdir -p ../CSharp/src/Generated
