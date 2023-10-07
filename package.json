@@ -5,7 +5,7 @@
   "main": "src/antlr4.interpreter.js",
   "type": "module",
   "scripts": {
-    "test": "jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "grammar": "sh generate.sh",
     "grammar:clean": "sh clean.sh"
   },
