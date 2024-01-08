@@ -18,7 +18,7 @@ def fix(file_path):
         if '// Insert here @header for C++ lexer.' in x:
             x = x.replace('// Insert here @header for C++ lexer.', '@header {#include "ArcscriptLexerBase.h"}')
         if '// Insert here @header for C++ parser.' in x:
-            x = x.replace('// Insert here @header for C++ parser.', '@header {#include "ArcscriptParserBase.h"}')
+            x = x.replace('// Insert here @header for C++ parser.', '@parser::postinclude {#include "ArcscriptParserBase.h"}')
         if 'this.' in x:
             x = x.replace('this.', 'this->')
         output_file.write(x)

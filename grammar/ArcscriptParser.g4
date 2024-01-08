@@ -1,5 +1,7 @@
 parser grammar ArcscriptParser;
 
+// Insert here @header for C++ parser.
+
 options {
   tokenVocab = ArcscriptLexer;
   superClass = ArcscriptParserBase;
