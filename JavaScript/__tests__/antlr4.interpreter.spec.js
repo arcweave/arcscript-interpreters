@@ -1,7 +1,5 @@
 /* eslint-env jest */
-import _ from 'lodash';
-import { ParseError, RuntimeError } from '@/errors/ArcscriptErrors.js';
-import Interpreter from '@/antlr4.interpreter.js';
+import { Interpreter, ParseError, RuntimeError } from '../dist/arcscript.mjs';
 import validTests from './valid.json';
 import parseErrorTests from './parseErrors.json';
 import runtimeErrorTests from './runtimeErrors.json';

@@ -3,7 +3,7 @@ import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
 import ArcscriptFunctions from './ArcscriptFunctions.js';
 import ArcscriptState from './AcrscriptState.js';
-import { RuntimeError } from './errors/ArcscriptErrors.js';
+import { RuntimeError } from './errors/index.js';
 
 export default class ArcscriptVisitor extends ArcscriptParserVisitor {
   constructor(varValues, varObjects, elementVisits, currentElement) {

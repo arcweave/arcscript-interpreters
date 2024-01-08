@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import cloneDeep from 'lodash.clonedeep';
 
 export default class ArcscriptState {
   constructor(varValues, varObjects, elementVisits, currentElement) {
@@ -34,7 +34,7 @@ export default class ArcscriptState {
   }
 
   resetVarValues(ids) {
-    const initial = _.cloneDeep(this.getInitialVarValues());
+    const initial = cloneDeep(this.getInitialVarValues());
     const values = ids.map(id => initial[id]);
     this.setVarValues(ids, values);
   }

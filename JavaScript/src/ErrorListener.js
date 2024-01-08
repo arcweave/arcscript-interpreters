@@ -1,5 +1,5 @@
 import antlr4 from 'antlr4';
-import { ParseError } from './errors/ArcscriptErrors.js';
+import { ParseError } from './errors/index.js';
 
 export default class ErrorListener extends antlr4.error.ErrorListener {
   syntaxError(recognizer, offendingSymbol, line, column, msg, e) {

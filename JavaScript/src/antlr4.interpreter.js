@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import antlr4 from 'antlr4';
 import { clearBlockStyle, joinParagraphs } from './utils.js';
 import ArcscriptLexer from './Generated/ArcscriptLexer.js';

@@ -1,4 +1,4 @@
-import { ParseError, RuntimeError } from './errors/ArcscriptErrors.js';
+import { ParseError, RuntimeError } from './errors/index.js';
 import ArcscriptState from './AcrscriptState.js';
 
 export default class ArcscriptFunctions {
