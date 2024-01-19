@@ -10,7 +10,7 @@ export declare class Interpreter {
     elementVisits: object,
     currentElement: string
   );
-  runScript(code: string): object;
+  runScript(code: string, varValues?: object): object;
   parse(code: string): object;
   replaceVariables(code: string, variables: object): string;
 }

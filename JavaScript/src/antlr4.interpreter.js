@@ -21,7 +21,7 @@ export default class Interpreter {
     this.variableOffsets = [];
   }
 
-  runScript(code) {
+  runScript(code, varValues = {}) {
     this.outputs = [];
     this.variableOffsets = [];
     const { chars, lexer, tokens, parser, tree } = this.parse(code);
@@ -32,6 +32,9 @@ export default class Interpreter {
       this.elementVisits,
       this.currentElement
     );
+    Object.entries(varValues).forEach(([key, value]) => {
+      visitor.state.changes[key] = value;
+    });
     const result = tree.accept(visitor);
 
     let output = '';
