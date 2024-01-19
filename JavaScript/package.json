@@ -1,6 +1,6 @@
 {
   "name": "@arcweave/arcscript",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An interpreter for arcscript using antlr4",
   "browser": "dist/arcscript.js",
   "main": "dist/arcscript.mjs",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dermitzos/arcscript-js.git"
+    "url": "git+https://github.com/arcweave/arcscript-interpreters.git"
   },
   "keywords": [
     "arcweave",
@@ -32,9 +32,9 @@
   "author": "Arcweave",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/dermitzos/arcscript-js/issues"
+    "url": "https://github.com/arcweave/arcscript-interpreters/issues"
   },
-  "homepage": "https://github.com/dermitzos/arcscript-js#readme",
+  "homepage": "https://github.com/arcweave/arcscript-interpreters#readme",
   "devDependencies": {
     "@babel/core": "^7.23.7",
     "@babel/eslint-parser": "^7.23.3",
