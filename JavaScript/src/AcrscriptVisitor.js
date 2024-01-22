@@ -15,6 +15,9 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
       elementVisits,
       currentElement
     );
+
+    this.outputPos = 0;
+
     this.functions = new ArcscriptFunctions(this.state);
   }
 
@@ -33,10 +36,10 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
       return null;
     }
     if (ctx.normal_text() && ctx.normal_text().length > 0) {
-      this.state.outputs.push(ctx.getText());
+      this.state.pushOutput(ctx.getText(), this.outputPos);
       return ctx.getText();
     }
-
+    this.outputPos += 1;
     return this.visitChildren(ctx);
   }
 

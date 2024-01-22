@@ -38,4 +38,20 @@ export default class ArcscriptState {
     const values = ids.map(id => initial[id]);
     this.setVarValues(ids, values);
   }
+
+  pushOutput(output, index = null) {
+    if (index === null) {
+      this.outputs.push(output);
+      return;
+    }
+    if (
+      typeof this.outputs[index] === 'undefined' &&
+      index >= this.outputs.length
+    ) {
+      this.outputs.push(output);
+      return;
+    }
+
+    this.outputs[index] += output;
+  }
 }

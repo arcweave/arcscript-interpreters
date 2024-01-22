@@ -1,6 +1,6 @@
 {
   "name": "@arcweave/arcscript",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "An interpreter for arcscript using antlr4",
   "browser": "dist/arcscript.js",
   "main": "dist/arcscript.mjs",
@@ -9,6 +9,7 @@
   "scripts": {
     "build": "webpack",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "grammar": "sh generate.sh",
     "grammar:clean": "sh clean.sh"
   },

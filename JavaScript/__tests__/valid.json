@@ -335,7 +335,7 @@
 		{
 			"code": "<p>How are you?</p><pre><code>x = 1</code></pre><p></p><p>I am fine, thank you.</p>",
 			"changes": {},
-			"output": "<p>How are you?  I am fine, thank you.</p>"
+			"output": "<p>How are you? </p><p>I am fine, thank you.</p>"
 		},
 		{
 			"code": "<pre><code>show(\"Hello friends:\", x)</code></pre>",
@@ -367,6 +367,10 @@
 			},
 			"elementId": "b",
 			"result": false
+		},
+		{
+			"code": "<p>this</p><p>text</p><p>must</p><p>not</p><p>be</p><p>in</p><p>one</p><p>paragraph</p>",
+			"output": "<p>this</p><p>text</p><p>must</p><p>not</p><p>be</p><p>in</p><p>one</p><p>paragraph</p>"
 		}
 	]
 }
