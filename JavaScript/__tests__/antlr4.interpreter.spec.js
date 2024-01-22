@@ -1,5 +1,5 @@
 /* eslint-env jest */
-import { Interpreter, ParseError, RuntimeError } from '../dist/arcscript.mjs';
+import { Interpreter, ParseError, RuntimeError } from '../src/index.js';
 import validTests from './valid.json';
 import parseErrorTests from './parseErrors.json';
 import runtimeErrorTests from './runtimeErrors.json';
