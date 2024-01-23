@@ -54,4 +54,12 @@ export default class ArcscriptState {
 
     this.outputs[index] += output;
   }
+
+  /**
+   *
+   * @param {string} output
+   * @param {Number} blockIndex
+   * @param {boolean} fromScript
+   */
+  pushNewOutput(output, blockIndex, fromScript) {}
 }
