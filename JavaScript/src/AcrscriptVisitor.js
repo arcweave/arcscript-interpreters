@@ -40,7 +40,13 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
         this.outputPos += 1;
         this.wasInScript = false;
       }
-      this.state.pushOutput(ctx.getText(), this.outputPos);
+      // Inform state if in blockquote or not
+      if (ctx.normal_text()[0].BLOCKQUOTESTART()) {
+        this.state.inBlockQuote = true;
+      } else {
+        this.state.inBlockQuote = false;
+      }
+      this.state.pushOutput(ctx.getText(), false);
       return ctx.getText();
     }
     this.outputPos += 1;
@@ -49,16 +55,20 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
   }
 
   visitAssignment_segment(ctx) {
+    this.state.addScript();
     return this.visitStatement_assignment(ctx.statement_assignment());
   }
 
   visitFunction_call_segment(ctx) {
+    this.state.addScript();
     return this.visitStatement_function_call(ctx.statement_function_call());
   }
 
   visitConditional_section(ctx) {
+    this.state.conditionDepth += 1;
     const if_section = this.visitIf_section(ctx.if_section());
     if (if_section) {
+      this.state.conditionDepth -= 1;
       return if_section;
     }
     const result = ctx.else_if_section().find(else_if_section => {
@@ -70,13 +80,16 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
     });
 
     if (result) {
+      this.state.conditionDepth -= 1;
       return result;
     }
 
     if (ctx.else_section()) {
-      return this.visitElse_section(ctx.else_section());
+      const elseResult = this.visitElse_section(ctx.else_section());
+      this.state.conditionDepth -= 1;
+      return elseResult;
     }
-
+    this.state.conditionDepth -= 1;
     return null;
   }
 

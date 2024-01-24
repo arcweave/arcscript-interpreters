@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash.clonedeep';
+import { joinParagraphs, joinSameTypes } from './utils.js';
 
 export default class ArcscriptState {
   constructor(varValues, varObjects, elementVisits, currentElement) {
@@ -7,6 +8,8 @@ export default class ArcscriptState {
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
     this.outputs = [];
+    this.conditionDepth = 0;
+    this.inBlockQuote = false;
     this.changes = {};
   }
 
@@ -39,27 +42,64 @@ export default class ArcscriptState {
     this.setVarValues(ids, values);
   }
 
-  pushOutput(output, index = null) {
-    if (index === null) {
-      this.outputs.push(output);
-      return;
-    }
-    if (
-      typeof this.outputs[index] === 'undefined' &&
-      index >= this.outputs.length
-    ) {
-      this.outputs.push(output);
-      return;
-    }
-
-    this.outputs[index] += output;
+  /**
+   * Adds an output to the array. The array has info on the current condition depth,
+   * the type of the output pushed (blockquote or paragraph), and if comes from a script
+   * (i.e. using 'show' function)
+   * @param {string} output The output
+   * @param {boolean} fromScript If the output comes from a script
+   */
+  pushOutput(output, fromScript) {
+    this.outputs.push({
+      output,
+      index: this.conditionDepth,
+      type: this.inBlockQuote ? 'blockquote' : 'p',
+      fromScript,
+      isScript: false,
+    });
   }
 
   /**
-   *
-   * @param {string} output
-   * @param {Number} blockIndex
-   * @param {boolean} fromScript
+   * Adds to the outputs the existanse of a script "generateOutput" will be able
+   * to recognize when to concatenate paragraphs
    */
-  pushNewOutput(output, blockIndex, fromScript) {}
+  addScript() {
+    this.outputs.push({
+      isScript: true,
+    });
+  }
+
+  /**
+   * Concatenates the outputs and transforms them to a single string
+   * @returns {String} The output to be shown
+   */
+  generateOutput() {
+    let output = '';
+    this.outputs.forEach((obj, index) => {
+      if (obj.isScript) return; // Doesn't have an output
+      if (index === 0) {
+        // The first output
+        output = obj.output ?? '';
+        return;
+      }
+      if (obj.fromScript) {
+        // If output comes from a script, concatenate it with the previous block
+        output = joinParagraphs(output, obj.output);
+        return;
+      }
+      if (
+        this.outputs[index - 1].fromScript ||
+        this.outputs[index - 1].isScript ||
+        obj.index !== this.outputs[index - 1].index
+      ) {
+        // If the previous block was a script or comes from a script,
+        // or the conditionDepth is different, concatenate
+        // the outputs only if they are of the same type
+        output = joinSameTypes(output, obj.output);
+        return;
+      }
+      output += obj.output;
+    });
+    return output;
+  }
 }

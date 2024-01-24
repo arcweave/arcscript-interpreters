@@ -54,7 +54,7 @@ export default class ArcscriptFunctions {
 
   show(...args) {
     const result = args.join('');
-    this.state.pushOutput(`<p>${result}</p>`);
+    this.state.pushOutput(`<p>${result}</p>`, true);
   }
 
   reset(...args) {

@@ -37,14 +37,8 @@ export default class Interpreter {
     });
     const result = tree.accept(visitor);
 
-    let output = '';
-    let { outputs } = visitor.state;
-    if (outputs && outputs.length > 0) {
-      outputs = outputs.map(out => out.trim());
-      output = outputs.reduce((acc, out) => joinParagraphs(acc, out));
-      output = clearBlockStyle(output);
-    }
-
+    let output = visitor.state.generateOutput();
+    output = clearBlockStyle(output);
     return {
       changes: visitor.state.changes,
       output,

@@ -335,7 +335,7 @@
 		{
 			"code": "<p>How are you?</p><pre><code>x = 1</code></pre><p></p><p>I am fine, thank you.</p>",
 			"changes": {},
-			"output": "<p>How are you? </p><p>I am fine, thank you.</p>"
+			"output": "<p>How are you?</p><p>I am fine, thank you.</p>"
 		},
 		{
 			"code": "<pre><code>show(\"Hello friends:\", x)</code></pre>",
@@ -378,7 +378,43 @@
 		},
 		{
 			"code": "<blockquote><p>This is a blockquote</p></blockquote><pre><code>if x</code></pre><p></p><p>This is a separate line</p><pre><code>endif</code></pre><p></p><blockquote><p>This is another blockquote</p></blockquote>",
-			"output": "<blockquote><p>This is a blockquote </p></blockquote><p>This is a separate line </p><blockquote><p>This is another blockquote</p></blockquote>"
+			"output": "<blockquote><p>This is a blockquote</p></blockquote><p></p><p>This is a separate line</p><blockquote><p>This is another blockquote</p></blockquote>"
+		},
+		{
+			"code": "<blockquote><p>This is a blockquote</p></blockquote><pre><code>show(x)</code></pre><p>test</p>",
+			"output": "<blockquote><p>This is a blockquote 14</p></blockquote><p>test</p>"
+		},
+		{
+			"code": "<blockquote><p>This is a blockquote</p></blockquote><pre><code>show(x)</code></pre><blockquote><p>test</p></blockquote>",
+			"output": "<blockquote><p>This is a blockquote 14 test</p></blockquote>"
+		},
+		{
+			"code": "<p>one</p><pre><code>if true</code></pre><blockquote><p>two</p></blockquote><pre><code>endif</code></pre><p>three</p>",
+			"output": "<p>one</p><blockquote><p>two</p></blockquote><p>three</p>"
+		},
+		{
+			"code": "<blockquote><p>one</p></blockquote><pre><code>if true</code></pre><blockquote><p>two</p></blockquote><pre><code>endif</code></pre><p>three</p>",
+			"output": "<blockquote><p>one two</p></blockquote><p>three</p>"
+		},
+		{
+			"code": "<p>one</p><pre><code>if true</code></pre><p>two</p><pre><code>endif</code></pre><blockquote><p>three</p></blockquote>",
+			"output": "<p>one two</p><blockquote><p>three</p></blockquote>"
+		},
+		{
+			"code": "<blockquote><p>one</p></blockquote><pre><code>if true</code></pre><pre><code>show(x)</code></pre><pre><code>endif</code></pre><p>three</p>",
+			"output": "<blockquote><p>one 14</p></blockquote><p>three</p>"
+		},
+		{
+			"code": "<p>one</p><pre><code>if true</code></pre><p>two</p><blockquote><p>test</p></blockquote><p>four</p><pre><code>endif</code></pre><blockquote><p>three</p></blockquote>",
+			"output": "<p>one two</p><blockquote><p>test</p></blockquote><p>four</p><blockquote><p>three</p></blockquote>"
+		},
+		{
+			"code": "<p>one</p><pre><code>if true</code></pre><p>two</p><p>test</p><pre><code>show(\"four\")</code></pre><pre><code>endif</code></pre><blockquote><p>three</p></blockquote>",
+			"output": "<p>one two</p><p>test four</p><blockquote><p>three</p></blockquote>"
+		},
+		{
+			"code": "<p>one</p><pre><code>if false</code></pre><p>two</p><pre><code>endif</code></pre><blockquote><p>three</p></blockquote>",
+			"output": "<p>one</p><blockquote><p>three</p></blockquote>"
 		}
 	]
 }

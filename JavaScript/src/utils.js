@@ -22,6 +22,44 @@ function joinParagraphs(str1, str2) {
 }
 
 /**
+ * Joins the last paragraph of str1 with the first paragraph of str2 only if they
+ * are of the same type ('BLOCKQUOTE' or 'P'). If they are not, it concatenates the
+ * two strings
+ * @param {*} str1
+ * @param {*} str2
+ * @returns {string}
+ */
+function joinSameTypes(str1, str2) {
+  if (!str1) return str2;
+  if (!str2) return str1;
+  const doc1 = new DOMParser().parseFromString(str1, 'text/html');
+  const doc2 = new DOMParser().parseFromString(str2, 'text/html');
+  const { nodeName } = doc1.body.lastChild;
+  if (nodeName === doc2.body.firstChild.nodeName) {
+    let node1;
+    let node2;
+    if (nodeName === 'BLOCKQUOTE') {
+      node1 = doc1.querySelector('body > blockquote:last-child > p:last-child');
+      node2 = doc2.querySelector('body > blockquote > p');
+    } else {
+      node1 = doc1.querySelector('body > p:last-child');
+      node2 = doc2.querySelector('body > p');
+    }
+    if (node2.innerHTML) {
+      node1.innerHTML += ' ';
+    }
+    node1.innerHTML += node2.innerHTML;
+    if (nodeName === 'BLOCKQUOTE') {
+      node2.parentNode.remove();
+    } else {
+      node2.remove();
+    }
+    return doc1.body.innerHTML + doc2.body.innerHTML;
+  }
+  return str1 + str2;
+}
+
+/**
  * Clears the style attribute for all blocks (paragraphs, blockquotes) in the given string
  * @param {string} str
  * @returns {string}
@@ -34,4 +72,4 @@ function clearBlockStyle(str) {
   return doc.body.innerHTML;
 }
 
-export { joinParagraphs, clearBlockStyle };
+export { joinParagraphs, clearBlockStyle, joinSameTypes };
