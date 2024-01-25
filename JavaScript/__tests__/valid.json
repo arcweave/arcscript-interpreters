@@ -415,6 +415,10 @@
 		{
 			"code": "<p>one</p><pre><code>if false</code></pre><p>two</p><pre><code>endif</code></pre><blockquote><p>three</p></blockquote>",
 			"output": "<p>one</p><blockquote><p>three</p></blockquote>"
+		},
+		{
+			"code": "<blockquote><p>This is a blockquote</p></blockquote><pre><code>if true</code></pre><blockquote><p></p><p>Second blockquote</p></blockquote><p>Separate Line</p><pre><code>endif</code></pre><blockquote><p>Outside blockquote</p></blockquote>",
+			"output": "<blockquote><p>This is a blockquote</p><p>Second blockquote</p></blockquote><p>Separate Line</p><blockquote><p>Outside blockquote</p></blockquote>"
 		}
 	]
 }

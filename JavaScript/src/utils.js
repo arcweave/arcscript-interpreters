@@ -48,9 +48,15 @@ function joinSameTypes(str1, str2) {
     if (node2.innerHTML) {
       node1.innerHTML += ' ';
     }
+    // Insert the node2 contents into node1
     node1.innerHTML += node2.innerHTML;
     if (nodeName === 'BLOCKQUOTE') {
-      node2.parentNode.remove();
+      // Remove paragraph node2 from it's blockquote parent
+      const parent = node2.parentNode;
+      parent.removeChild(node2);
+      // Insert the rest of the paragraphs of node2 parent after node1
+      node1.parentNode.innerHTML += parent.innerHTML;
+      parent.remove();
     } else {
       node2.remove();
     }
