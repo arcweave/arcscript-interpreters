@@ -9,8 +9,11 @@ export default class ArcscriptState {
     this.currentElement = currentElement;
     this.outputs = [];
     this.conditionDepth = 0;
-    this.inBlockQuote = false;
     this.changes = {};
+
+    this.outputDoc = document.implementation.createHTMLDocument();
+    this.inBlockquote = false;
+    this.insertBlockquote = false;
   }
 
   getVar(name) {
@@ -50,13 +53,81 @@ export default class ArcscriptState {
    * @param {boolean} fromScript If the output comes from a script
    */
   pushOutput(output, fromScript) {
+    let previousOutput = null;
+    if (this.outputs.length > 0) {
+      previousOutput = this.outputs[this.outputs.length - 1];
+    }
+
     this.outputs.push({
       output,
       index: this.conditionDepth,
-      type: this.inBlockQuote ? 'blockquote' : 'p',
       fromScript,
+      inBlockquote: this.inBlockquote,
       isScript: false,
     });
+
+    let outputNode = new DOMParser().parseFromString(output, 'text/html').body
+      .firstChild;
+
+    // If this is the first output to be inserted
+    if (!this.outputDoc.body.innerHTML) {
+      if (this.insertBlockquote) {
+        const newNode = this.outputDoc.createElement('blockquote');
+        newNode.appendChild(outputNode);
+        outputNode = newNode;
+        this.insertBlockquote = false;
+      }
+      this.outputDoc.body.appendChild(outputNode);
+    }
+    // If current output is coming from a script, we are merging it with the previous output
+    else if (fromScript) {
+      if (outputNode.innerHTML) {
+        this.outputDoc.body.querySelector(
+          'p:last-child'
+        ).innerHTML += ` ${outputNode.innerHTML}`;
+      }
+    }
+    // If the previous output was from a script, the node was a script or
+    // the condition depth is different, merge if the nodes are of the same type
+    else if (
+      previousOutput.fromScript ||
+      previousOutput.isScript ||
+      previousOutput.index !== this.conditionDepth
+    ) {
+      const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
+      const previousNode = this.outputDoc.body.lastChild;
+      if (previousNode.nodeName === nodeName) {
+        if (outputNode.innerHTML) {
+          this.outputDoc.body.querySelector(
+            'p:last-child'
+          ).innerHTML += ` ${outputNode.innerHTML}`;
+        }
+      } else {
+        if (this.insertBlockquote) {
+          const newNode = this.outputDoc.createElement('blockquote');
+          newNode.appendChild(outputNode);
+          outputNode = newNode;
+          this.insertBlockquote = false;
+        }
+        this.outputDoc.body.appendChild(outputNode);
+      }
+    } else if (this.inBlockquote) {
+      if (this.insertBlockquote) {
+        const newNode = this.outputDoc.createElement('blockquote');
+        newNode.appendChild(outputNode);
+        this.outputDoc.body.appendChild(newNode);
+
+        this.insertBlockquote = false;
+      } else {
+        this.outputDoc
+          .querySelector('blockquote:last-child')
+          .appendChild(outputNode);
+      }
+    } else {
+      this.outputDoc.body.appendChild(outputNode);
+    }
+
+    this.insertBlockquote = false;
   }
 
   /**
@@ -69,37 +140,28 @@ export default class ArcscriptState {
     });
   }
 
+  addBlockquoteStart() {
+    this.insertBlockquote = true;
+    this.inBlockquote = true;
+  }
+
+  addBlockquoteEnd() {
+    this.inBlockquote = false;
+  }
+
+  incrConditionDepth() {
+    this.conditionDepth += 1;
+  }
+
+  decrConditionDepth() {
+    this.conditionDepth -= 1;
+  }
+
   /**
    * Concatenates the outputs and transforms them to a single string
    * @returns {String} The output to be shown
    */
   generateOutput() {
-    let output = '';
-    this.outputs.forEach((obj, index) => {
-      if (obj.isScript) return; // Doesn't have an output
-      if (index === 0) {
-        // The first output
-        output = obj.output ?? '';
-        return;
-      }
-      if (obj.fromScript) {
-        // If output comes from a script, concatenate it with the previous block
-        output = joinParagraphs(output, obj.output);
-        return;
-      }
-      if (
-        this.outputs[index - 1].fromScript ||
-        this.outputs[index - 1].isScript ||
-        obj.index !== this.outputs[index - 1].index
-      ) {
-        // If the previous block was a script or comes from a script,
-        // or the conditionDepth is different, concatenate
-        // the outputs only if they are of the same type
-        output = joinSameTypes(output, obj.output);
-        return;
-      }
-      output += obj.output;
-    });
-    return output;
+    return this.outputDoc.body.innerHTML;
   }
 }
