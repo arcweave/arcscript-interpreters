@@ -87,6 +87,10 @@
     {
       "code": "<pre><code>visits(<span class=\"mention mention-component\" data-type=\"element\" data-id=\"xyz\">Untitled Comp</span>) == 9</code></pre>",
       "error": "parse"
+    },
+    {
+      "code": "<blockquote><p>Test</p><pre><code>if true</code></pre><p>inside</p><pre><code>endif</code></pre><p>this</p></blockquote>",
+      "error": "parse"
     }
   ]
 }
