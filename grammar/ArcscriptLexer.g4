@@ -12,7 +12,7 @@ mode PARAGRAPH;
 PARAGRAPHEND: .*? '</p>' -> popMode;
 
 mode BLOCKQUOTE;
-
+BQ_CODESTART: '<pre' (~('>'))* '><code' (~('>'))* '>' -> pushMode(CODESEGMENT);
 BQ_PARAGRAPHSTART: (('<p>')|('<p ' (~('>'))* '>')) -> pushMode(PARAGRAPH);
 BLOCKQUOTEEND: '</blockquote>' -> popMode;
 BQ_WHITESPACE: [ \t\r\n]+ -> skip;

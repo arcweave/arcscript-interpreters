@@ -17,15 +17,15 @@ script
   ;
 
 script_section
-  : normal_text+?
+  : blockquote+?
+  | paragraph+?
   | assignment_segment
   | function_call_segment
   | conditional_section
   ;
 
-normal_text
-  : paragraph
-  | BLOCKQUOTESTART paragraph* BLOCKQUOTEEND
+blockquote
+  : BLOCKQUOTESTART (paragraph | assignment_segment | function_call_segment)* BLOCKQUOTEEND
   ;
 
 paragraph
@@ -39,6 +39,7 @@ paragraph_start
 
 codestart
   : CODESTART { this.currentLine++; this.setLineStart($CODESTART);}
+  | BQ_CODESTART { this.currentLine++; this.setLineStart($BQ_CODESTART);}
   ;
 
 codeend
