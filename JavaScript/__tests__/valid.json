@@ -419,6 +419,17 @@
 		{
 			"code": "<blockquote><p>This is a blockquote</p></blockquote><pre><code>if true</code></pre><blockquote><p></p><p>Second blockquote</p></blockquote><p>Separate Line</p><pre><code>endif</code></pre><blockquote><p>Outside blockquote</p></blockquote>",
 			"output": "<blockquote><p>This is a blockquote</p><p>Second blockquote</p></blockquote><p>Separate Line</p><blockquote><p>Outside blockquote</p></blockquote>"
+		},
+		{
+			"code": "<blockquote><p>Test</p><pre><code>_a = true</code></pre><p>this</p></blockquote>",
+			"output": "<blockquote><p>Test this</p></blockquote>",
+			"changes": {
+				"var6": true
+			}
+		},
+		{
+			"code": "<blockquote><p>Test</p><pre><code>show(x)</code></pre><p>this</p></blockquote>",
+			"output": "<blockquote><p>Test 14 this</p></blockquote>"
 		}
 	]
 }
