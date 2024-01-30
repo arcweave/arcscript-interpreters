@@ -430,6 +430,10 @@
 		{
 			"code": "<blockquote><p>Test</p><pre><code>show(x)</code></pre><p>this</p></blockquote>",
 			"output": "<blockquote><p>Test 14 this</p></blockquote>"
+		},
+		{
+			"code": "<p>this is a test</p><blockquote><pre><code>show(x)</code></pre><p>continue</p><p>testing</p></blockquote>",
+			"output": "<p>this is a test</p><blockquote><p>14 continue</p><p>testing</p></blockquote>"
 		}
 	]
 }

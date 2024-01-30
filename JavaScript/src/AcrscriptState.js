@@ -81,7 +81,13 @@ export default class ArcscriptState {
     }
     // If current output is coming from a script, we are merging it with the previous output
     else if (fromScript) {
-      if (outputNode.innerHTML) {
+      if (this.insertBlockquote) {
+        const newNode = this.outputDoc.createElement('blockquote');
+        newNode.appendChild(outputNode);
+        outputNode = newNode;
+        this.insertBlockquote = false;
+        this.outputDoc.body.appendChild(outputNode);
+      } else if (outputNode.innerHTML) {
         this.outputDoc.body.querySelector(
           'p:last-child'
         ).innerHTML += ` ${outputNode.innerHTML}`;
