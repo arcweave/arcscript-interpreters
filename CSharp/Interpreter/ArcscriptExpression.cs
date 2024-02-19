@@ -96,7 +96,7 @@ namespace Arcweave.Interpreter
             return false;
         }
 
-        public int CompareTo(object? other)
+        public int CompareTo(object other)
         {
             Expression o = (Expression)other;
             DoubleValues fValues = GetDoubleValues(this.Value, o.Value);

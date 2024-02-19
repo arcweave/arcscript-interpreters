@@ -1,4 +1,8 @@
-﻿namespace Arcweave.Interpreter;
+﻿#nullable enable
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Arcweave.Interpreter;
 
 public interface IOutputNode
 {
