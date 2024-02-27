@@ -88,9 +88,12 @@ export default class ArcscriptState {
         this.insertBlockquote = false;
         this.outputDoc.body.appendChild(outputNode);
       } else if (outputNode.innerHTML) {
-        this.outputDoc.body.querySelector(
-          'p:last-child'
-        ).innerHTML += ` ${outputNode.innerHTML}`;
+        const children = this.outputDoc.body.querySelectorAll('p:last-child');
+        if (children[children.length - 1].innerHTML === '') {
+          children[children.length - 1].innerHTML = outputNode.innerHTML;
+        } else {
+          children[children.length - 1].innerHTML += ` ${outputNode.innerHTML}`;
+        }
       }
     }
     // If the previous output was from a script, the node was a script or
@@ -104,9 +107,14 @@ export default class ArcscriptState {
       const previousNode = this.outputDoc.body.lastChild;
       if (previousNode.nodeName === nodeName) {
         if (outputNode.innerHTML) {
-          this.outputDoc.body.querySelector(
-            'p:last-child'
-          ).innerHTML += ` ${outputNode.innerHTML}`;
+          const children = this.outputDoc.body.querySelectorAll('p:last-child');
+          if (children[children.length - 1].innerHTML === '') {
+            children[children.length - 1].innerHTML = outputNode.innerHTML;
+          } else {
+            children[
+              children.length - 1
+            ].innerHTML += ` ${outputNode.innerHTML}`;
+          }
         }
       } else {
         if (this.insertBlockquote) {

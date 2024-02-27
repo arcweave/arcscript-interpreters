@@ -288,7 +288,13 @@
 			"code": "<pre><code>x = 16</code></pre><pre><code>y = 33</code></pre><pre><code>resetAll(y)</code></pre>",
 			"changes": {
 				"var1": 14,
-				"var2": 33
+				"var2": 33,
+				"var3": 0,
+				"var4": "Dummy text",
+				"var5": 0,
+				"var6": false,
+				"var7": -1,
+				"var8": "Different Text"
 			}
 		},
 		{
@@ -345,7 +351,8 @@
 		{
 			"code": " <pre><code>_a = true</code></pre><pre><code>if (((_a)))</code></pre><pre><code>x = 1</code></pre><pre><code>endif</code></pre>",
 			"changes": {
-				"var1": 1
+				"var1": 1,
+				"var6": true
 			}
 		},
 		{
@@ -434,6 +441,10 @@
 		{
 			"code": "<p>this is a test</p><blockquote><pre><code>show(x)</code></pre><p>continue</p><p>testing</p></blockquote>",
 			"output": "<p>this is a test</p><blockquote><p>14 continue</p><p>testing</p></blockquote>"
+		},
+		{
+			"code": "<blockquote><p>This is a test</p></blockquote><p><span class=\"mention mention-component\" data-id=\"a\" data-label=\"Manolis\" data-type=\"component\">Manolis</span></p><blockquote><p>inside blockquotes</p></blockquote><p></p><pre><code>if true</code></pre><p>John</p><pre><code>endif</code></pre>",
+			"output": "<blockquote><p>This is a test</p></blockquote><p><span class=\"mention mention-component\" data-id=\"a\" data-label=\"Manolis\" data-type=\"component\">Manolis</span></p><blockquote><p>inside blockquotes</p></blockquote><p>John</p>"
 		}
 	]
 }

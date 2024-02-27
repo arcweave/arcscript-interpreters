@@ -6,14 +6,8 @@ import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
 
-// The project variables names, default values and types
-let varObjects = {};
-
-// Extract the initial values from these varObjects
-let varValues = {};
-
 function setVarValues(vars) {
-  varValues = Object.fromEntries(
+  return Object.fromEntries(
     Object.entries(vars)
       .filter(([k, v]) => !v.children)
       .map(([k, v]) => [k, v.value])
@@ -21,8 +15,8 @@ function setVarValues(vars) {
 }
 
 describe('Interprete valid scripts', () => {
-  varObjects = validTests.initialVars;
-  setVarValues(varObjects);
+  const varObjects = validTests.initialVars;
+  const varValues = setVarValues(varObjects);
 
   test.each(validTests.cases)(
     'Tests script: $code',
@@ -49,8 +43,8 @@ describe('Interprete valid scripts', () => {
 });
 
 describe('Interprete script with parse errors', () => {
-  varObjects = parseErrorTests.initialVars;
-  setVarValues(varObjects);
+  const varObjects = parseErrorTests.initialVars;
+  const varValues = setVarValues(varObjects);
 
   test.each(parseErrorTests.cases)(
     'Test error script: $code',
@@ -76,8 +70,8 @@ describe('Interprete script with parse errors', () => {
 });
 
 describe('Interprete script with runtime errors', () => {
-  varObjects = runtimeErrorTests.initialVars;
-  setVarValues(varObjects);
+  const varObjects = runtimeErrorTests.initialVars;
+  const varValues = setVarValues(varObjects);
 
   test.each(runtimeErrorTests.cases)(
     'Test error script: $code',
@@ -103,8 +97,8 @@ describe('Interprete script with runtime errors', () => {
 });
 
 describe('Interprete condition', () => {
-  varObjects = conditionTests.initialVars;
-  setVarValues(varObjects);
+  const varObjects = conditionTests.initialVars;
+  const varValues = setVarValues(varObjects);
 
   test.each(conditionTests.cases)(
     'Tests condition: $code',
@@ -130,8 +124,8 @@ describe('Interprete condition', () => {
 });
 
 describe('Replace variables', () => {
-  varObjects = replaceVariableTests.initialVars;
-  setVarValues(varObjects);
+  const varObjects = replaceVariableTests.initialVars;
+  const varValues = setVarValues(varObjects);
 
   test.each(replaceVariableTests.cases)(
     'Tests replace: $code',
