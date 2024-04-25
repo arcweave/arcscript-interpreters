@@ -306,70 +306,96 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
   }
 
   visitAdditive_numeric_expression(ctx) {
-    let multiplicative_numeric_expression =
-      this.visitMultiplicative_numeric_expression(
-        ctx.multiplicative_numeric_expression()
-      );
     if (ctx.additive_numeric_expression()) {
-      if (typeof multiplicative_numeric_expression === 'boolean') {
-        multiplicative_numeric_expression = multiplicative_numeric_expression
-          ? 1
-          : 0;
-      }
       let additive_numeric_expression = this.visitAdditive_numeric_expression(
         ctx.additive_numeric_expression()
       );
-      if (typeof additive_numeric_expression === 'boolean') {
-        additive_numeric_expression = additive_numeric_expression ? 1 : 0;
+
+      let multiplicative_numeric_expression =
+        this.visitMultiplicative_numeric_expression(
+          ctx.multiplicative_numeric_expression()
+        );
+
+      let hasString = typeof multiplicative_numeric_expression === 'string';
+
+      hasString = hasString || typeof additive_numeric_expression === 'string';
+
+      if (!hasString) {
+        if (typeof multiplicative_numeric_expression === 'boolean') {
+          multiplicative_numeric_expression = multiplicative_numeric_expression
+            ? 1
+            : 0;
+        }
+        if (typeof additive_numeric_expression === 'boolean') {
+          additive_numeric_expression = additive_numeric_expression ? 1 : 0;
+        }
       }
+
       if (ctx.ADD()) {
-        return new BigNumber(multiplicative_numeric_expression)
-          .plus(new BigNumber(additive_numeric_expression))
+        if (hasString) {
+          return (
+            additive_numeric_expression + multiplicative_numeric_expression
+          );
+        }
+        return new BigNumber(additive_numeric_expression)
+          .plus(new BigNumber(multiplicative_numeric_expression))
           .toNumber();
       }
-      return new BigNumber(multiplicative_numeric_expression)
-        .minus(new BigNumber(additive_numeric_expression))
+      if (hasString) {
+        throw new RuntimeError('Invalid subtraction with string');
+      }
+      return new BigNumber(additive_numeric_expression)
+        .minus(new BigNumber(multiplicative_numeric_expression))
         .toNumber();
     }
+
+    const multiplicative_numeric_expression =
+      this.visitMultiplicative_numeric_expression(
+        ctx.multiplicative_numeric_expression()
+      );
 
     return multiplicative_numeric_expression;
   }
 
   visitMultiplicative_numeric_expression(ctx) {
-    let signed_unary_numeric_expression =
-      this.visitSigned_unary_numeric_expression(
-        ctx.signed_unary_numeric_expression()
-      );
-
     if (ctx.multiplicative_numeric_expression()) {
+      let multiplicative_numeric_expression =
+        this.visitMultiplicative_numeric_expression(
+          ctx.multiplicative_numeric_expression()
+        );
+      let signed_unary_numeric_expression =
+        this.visitSigned_unary_numeric_expression(
+          ctx.signed_unary_numeric_expression()
+        );
       if (typeof signed_unary_numeric_expression === 'boolean') {
         signed_unary_numeric_expression = signed_unary_numeric_expression
           ? 1
           : 0;
       }
-      let multiplicative_numeric_expression =
-        this.visitMultiplicative_numeric_expression(
-          ctx.multiplicative_numeric_expression()
-        );
       if (typeof multiplicative_numeric_expression === 'boolean') {
         multiplicative_numeric_expression = multiplicative_numeric_expression
           ? 1
           : 0;
       }
       if (ctx.MUL()) {
-        return new BigNumber(signed_unary_numeric_expression)
-          .multipliedBy(new BigNumber(multiplicative_numeric_expression))
+        return new BigNumber(multiplicative_numeric_expression)
+          .multipliedBy(new BigNumber(signed_unary_numeric_expression))
           .toNumber();
       }
       // else DIV
-      const result = new BigNumber(signed_unary_numeric_expression)
-        .dividedBy(new BigNumber(multiplicative_numeric_expression))
+      const result = new BigNumber(multiplicative_numeric_expression)
+        .dividedBy(new BigNumber(signed_unary_numeric_expression))
         .toNumber();
       if (!Number.isFinite(result)) {
         throw new RuntimeError(`Invalid division by zero`);
       }
       return result;
     }
+
+    const signed_unary_numeric_expression =
+      this.visitSigned_unary_numeric_expression(
+        ctx.signed_unary_numeric_expression()
+      );
 
     return signed_unary_numeric_expression;
   }
@@ -401,6 +427,17 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
       const variableObject = this.state.getVar(variableName);
 
       return this.state.getVarValue(variableObject.id);
+    }
+    if (ctx.STRING()) {
+      let result = ctx.STRING().getText();
+      result = result.replace(/^"(.*)"$/, '$1');
+      return result;
+    }
+    if (ctx.BOOLEAN()) {
+      if (ctx.BOOLEAN().getText() === 'true') {
+        return true;
+      }
+      return false;
     }
     if (ctx.function_call()) {
       return this.visitFunction_call(ctx.function_call());
