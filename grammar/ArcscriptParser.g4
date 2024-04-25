@@ -79,14 +79,12 @@ mention:
 mention_attributes: ATTR_NAME (TAG_EQUALS ATTR_VALUE)?;
 
 additive_numeric_expression:
-	multiplicative_numeric_expression (
-		(ADD | SUB) additive_numeric_expression
-	)?;
+	multiplicative_numeric_expression
+	| additive_numeric_expression (ADD | SUB) multiplicative_numeric_expression;
 
 multiplicative_numeric_expression:
-	signed_unary_numeric_expression (
-		(MUL | DIV) multiplicative_numeric_expression
-	)?;
+	signed_unary_numeric_expression
+	| multiplicative_numeric_expression (MUL | DIV) signed_unary_numeric_expression;
 
 signed_unary_numeric_expression:
 	sign unary_numeric_expression
@@ -96,6 +94,8 @@ unary_numeric_expression:
 	FLOAT
 	| VARIABLE {this.assertVariable($VARIABLE);}
 	| INTEGER
+	| STRING
+	| BOOLEAN
 	| function_call
 	| LPAREN compound_condition_or RPAREN;
 

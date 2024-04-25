@@ -5,6 +5,7 @@ import parseErrorTests from './parseErrors.json';
 import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
+import stringTests from './stringConcat.json';
 
 function setVarValues(vars) {
   return Object.fromEntries(
@@ -19,6 +20,34 @@ describe('Interprete valid scripts', () => {
   const varValues = setVarValues(varObjects);
 
   test.each(validTests.cases)(
+    'Tests script: $code',
+    ({
+      code,
+      changes: expectedChanges = {},
+      output: expectedOutput = '',
+      visits,
+      elementId = '',
+      result,
+    }) => {
+      const interpreter = new Interpreter(
+        varValues,
+        varObjects,
+        visits,
+        elementId
+      );
+      const { tree, changes, output } = interpreter.runScript(code);
+      expect(changes).toMatchObject(expectedChanges);
+      expect(output).toEqual(expectedOutput);
+      expect(tree).not.toBeNull();
+    }
+  );
+});
+
+describe('Interprete string test scripts', () => {
+  const varObjects = stringTests.initialVars;
+  const varValues = setVarValues(varObjects);
+
+  test.each(stringTests.cases)(
     'Tests script: $code',
     ({
       code,
