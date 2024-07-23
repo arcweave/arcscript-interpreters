@@ -2,7 +2,7 @@ import antlr4 from 'antlr4';
 import { clearBlockStyle, joinParagraphs } from './utils.js';
 import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import ArcscriptParser from './Generated/ArcscriptParser.js';
-import ArcscriptVisitor from './AcrscriptVisitor.js';
+import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 
 export default class Interpreter {
