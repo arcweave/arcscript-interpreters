@@ -12,6 +12,8 @@ export default class ArcscriptState {
     this.changes = {};
 
     this.outputDoc = document.implementation.createHTMLDocument();
+    this.rootElement = this.outputDoc.createElement('div');
+    this.outputDoc.body.appendChild(this.rootElement);
     this.inBlockquote = false;
     this.insertBlockquote = false;
   }
@@ -70,14 +72,14 @@ export default class ArcscriptState {
       .firstChild;
 
     // If this is the first output to be inserted
-    if (!this.outputDoc.body.innerHTML) {
+    if (!this.rootElement.innerHTML) {
       if (this.insertBlockquote) {
         const newNode = this.outputDoc.createElement('blockquote');
         newNode.appendChild(outputNode);
         outputNode = newNode;
         this.insertBlockquote = false;
       }
-      this.outputDoc.body.appendChild(outputNode);
+      this.rootElement.appendChild(outputNode);
     }
     // If current output is coming from a script, we are merging it with the previous output
     else if (fromScript) {
@@ -86,9 +88,10 @@ export default class ArcscriptState {
         newNode.appendChild(outputNode);
         outputNode = newNode;
         this.insertBlockquote = false;
-        this.outputDoc.body.appendChild(outputNode);
+        this.rootElement.appendChild(outputNode);
       } else if (outputNode.innerHTML) {
-        const children = this.outputDoc.body.querySelectorAll('p:last-child');
+        const children =
+          this.outputDoc.body.querySelectorAll('div p:last-child');
         if (children[children.length - 1].innerHTML === '') {
           children[children.length - 1].innerHTML = outputNode.innerHTML;
         } else {
@@ -104,10 +107,11 @@ export default class ArcscriptState {
       previousOutput.index !== this.conditionDepth
     ) {
       const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
-      const previousNode = this.outputDoc.body.lastChild;
+      const previousNode = this.rootElement.lastChild;
       if (previousNode.nodeName === nodeName) {
         if (outputNode.innerHTML) {
-          const children = this.outputDoc.body.querySelectorAll('p:last-child');
+          const children =
+            this.rootElement.querySelectorAll('div p:last-child');
           if (children[children.length - 1].innerHTML === '') {
             children[children.length - 1].innerHTML = outputNode.innerHTML;
           } else {
@@ -123,13 +127,13 @@ export default class ArcscriptState {
           outputNode = newNode;
           this.insertBlockquote = false;
         }
-        this.outputDoc.body.appendChild(outputNode);
+        this.rootElement.appendChild(outputNode);
       }
     } else if (this.inBlockquote) {
       if (this.insertBlockquote) {
         const newNode = this.outputDoc.createElement('blockquote');
         newNode.appendChild(outputNode);
-        this.outputDoc.body.appendChild(newNode);
+        this.rootElement.appendChild(newNode);
 
         this.insertBlockquote = false;
       } else {
@@ -138,7 +142,7 @@ export default class ArcscriptState {
           .appendChild(outputNode);
       }
     } else {
-      this.outputDoc.body.appendChild(outputNode);
+      this.rootElement.appendChild(outputNode);
     }
 
     this.insertBlockquote = false;
@@ -176,6 +180,6 @@ export default class ArcscriptState {
    * @returns {String} The output to be shown
    */
   generateOutput() {
-    return this.outputDoc.body.innerHTML;
+    return this.rootElement.innerHTML;
   }
 }
