@@ -63,6 +63,10 @@
     {
       "code": "<pre><code>w = w - \"test\"</code></pre>",
       "error": "runtime"
+    },
+    {
+      "code": "<pre><code>w -= _a</code></pre>",
+      "error": "runtime"
     }
   ]
 }
