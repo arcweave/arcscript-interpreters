@@ -97,6 +97,36 @@
 			"changes": {
 				"var4": "2test"
 			}
+		},
+		{
+			"code": "<pre><code>w += \" test\"</code></pre>",
+			"changes": {
+				"var4": "Dummy text test"
+			}
+		},
+		{
+			"code": "<pre><code>x += \"test\"</code></pre>",
+			"changes": {
+				"var1": "14test"
+			}
+		},
+		{
+			"code": "<pre><code>w += 42</code></pre>",
+			"changes": {
+				"var4": "Dummy text42"
+			}
+		},
+		{
+			"code": "<pre><code>w += _a</code></pre>",
+			"changes": {
+				"var4": "Dummy textfalse"
+			}
+		},
+		{
+			"code": "<pre><code>w += man</code></pre>",
+			"changes": {
+				"var4": "Dummy textDifferent Text"
+			}
 		}
 	]
 }

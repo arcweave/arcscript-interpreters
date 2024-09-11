@@ -146,6 +146,20 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
     );
     let result = 0;
     if (
+      typeof variableValue === 'string' ||
+      typeof compound_condition_or === 'string'
+    ) {
+      if (ctx.ASSIGNADD()) {
+        result = variableValue + compound_condition_or;
+      } else if (ctx.ASSIGN()) {
+        result = compound_condition_or;
+      } else {
+        throw new RuntimeError('Invalid operation with string');
+      }
+      this.state.setVarValues([variableObject.id], [result]);
+      return null;
+    }
+    if (
       ctx.ASSIGNADD() ||
       ctx.ASSIGNSUB() ||
       ctx.ASSIGNMUL() ||
