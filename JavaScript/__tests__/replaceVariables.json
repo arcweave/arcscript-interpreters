@@ -57,6 +57,13 @@
         "var1": "zed"
       },
       "result": "<pre><code>zed = \"x marks the spot\"</code></pre><pre><code>xy = 5 + zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>b = \"x marks the spot\"</code></pre><pre><code>xy = 5 + x</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>b = \"x marks the spot\"</code></pre><pre><code>xy = 5 + zed</code></pre>"
     }
   ]
 }
