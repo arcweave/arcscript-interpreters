@@ -91,11 +91,15 @@ export default class Interpreter {
       const targetVar = Object.values(this.varObjects).find(
         variable => variable.name === varToken.text
       );
-      varToken.id = targetVar.id;
+      if (targetVar?.id) {
+        varToken.id = targetVar.id;
+      }
     });
 
     const f = variableTokens
-      .filter(varToken => Object.keys(variables).includes(varToken.id))
+      .filter(varToken =>
+        varToken.id ? Object.keys(variables).includes(varToken.id) : false
+      )
       .sort((a, b) => b.start - a.start);
     let newCode = code;
     f.forEach(varToken => {
