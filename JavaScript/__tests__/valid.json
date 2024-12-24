@@ -457,6 +457,10 @@
 		{
 			"code": "<blockquote><p>This is a test</p></blockquote><p><span class=\"mention mention-component\" data-id=\"a\" data-label=\"Manolis\" data-type=\"component\">Manolis</span></p><blockquote><p>inside blockquotes</p></blockquote><p></p><pre><code>if true</code></pre><p>John</p><pre><code>endif</code></pre>",
 			"output": "<blockquote><p>This is a test</p></blockquote><p><span class=\"mention mention-component\" data-id=\"a\" data-label=\"Manolis\" data-type=\"component\">Manolis</span></p><blockquote><p>inside blockquotes</p></blockquote><p>John</p>"
+		},
+		{
+			"code": "<pre><code>w = \"String with \\\"quotes\\\" \\t tabs and \\n new lines\"</code></pre><pre><code>show(w)</code></pre>",
+			"output": "<p>String with \"quotes\" \t tabs and \n new lines</p>"
 		}
 	]
 }

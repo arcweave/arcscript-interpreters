@@ -53,7 +53,31 @@ export default class ArcscriptFunctions {
   }
 
   show(...args) {
-    const result = args.join('');
+    let result = args.join('');
+    result = result.replace(/\\([abfnrtv'"])/g, (match, p1) => {
+      switch (p1) {
+        case 'a':
+          return '\x07';
+        case 'b':
+          return '\b';
+        case 'f':
+          return '\f';
+        case 'n':
+          return '\n';
+        case 'r':
+          return '\r';
+        case 't':
+          return '\t';
+        case 'v':
+          return '\v';
+        case "'":
+          return "'";
+        case '"':
+          return '"';
+        default:
+          return match;
+      }
+    });
     this.state.pushOutput(`<p>${result}</p>`, true);
   }
 
