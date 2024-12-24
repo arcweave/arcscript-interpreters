@@ -1,0 +1,26 @@
+name: pkg.pr.new on PR
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Runs a single command using the runners shell
+      - name: Download Antlr4 tool
+        run: sh generate.sh
+
+      - name: Install dependencies
+        working-directory: ./JavaScript
+        run: npm install
+
+      - name: Build JS
+        working-directory: ./JavaScript
+        run: npm run build
+
+      - name: Publish on pkg.pr.new
+        working-directory: ./JavaScript
+        run: npx pkg-pr-new publish
