@@ -55,7 +55,21 @@ include_directories(src)
 
 add_library(ArcscriptTranspiler SHARED)
 
-target_sources(ArcscriptTranspiler PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.cpp)
+target_sources(ArcscriptTranspiler PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptParserBase.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptVisitor.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptOutputs.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptFunctions.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptExpression.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptErrorListener.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Generated/ArcscriptLexer/ArcscriptLexer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Generated/ArcscriptParser/ArcscriptParser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Generated/ArcscriptParser/ArcscriptParserBaseVisitor.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Generated/ArcscriptParser/ArcscriptParserVisitor.cpp
+)
+
+target_sources(ArcscriptTranspiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h)
 
 set_target_properties(ArcscriptTranspiler PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
 
@@ -67,4 +81,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_definitions(ArcscriptTranspiler PRIVATE WIN_EXPORT)
 endif()
 
-target_link_libraries(ArcscriptTranspiler antlr4_shared)
+target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared)
+
+add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
+
+include(FetchContent)
+
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
+target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
