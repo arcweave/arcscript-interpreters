@@ -1,5 +1,8 @@
+#include "antlr4-runtime.h"
 #include "ArcscriptVisitor.h"
 #include "ArcscriptParser.h"
+#include "ArcscriptExpression.h"
+#include "ArcscriptErrorExceptions.h"
 
 using namespace Arcweave;
 

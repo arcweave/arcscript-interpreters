@@ -1,8 +1,6 @@
 #pragma once
-#include "antlr4-runtime.h"
-#include "ArcscriptLexer.h"
-#include "ArcscriptParser.h"
-#include "ArcscriptVisitor.h"
+#include "ArcscriptHelpers.h"
+#include "ArcscriptErrorExceptions.h"
 
 #if defined _WIN64
 	#ifdef WIN_EXPORT
@@ -28,15 +26,6 @@
 		#define NOT_EXPORTED
 	#endif
 #endif
-
-// 	#ifdef ARCSCRIPTTRANSPILER_EXPORTS
-// 		#define ARCSCRIPTTRANSPILER_API __declspec(dllexport)
-// 	#else
-// 		#define ARCSCRIPTTRANSPILER_API __declspec(dllimport)
-// 	#endif
-// #else
-// 	#define ARCSCRIPTTRANSPILER_API
-// #endif
 
 namespace Arcweave
 {
@@ -160,5 +149,5 @@ namespace Arcweave
 	//ARCSCRIPTTRANSPILER_API UTranspilerOutput URunScript(char* code);
   };
 };
-EXPORTED UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength);
-EXPORTED void deallocateOutput(UTranspilerOutput* output);
+EXPORTED Arcweave::UTranspilerOutput* runScriptExport(const char* code, const char* elId, Arcweave::UVariable* variables, size_t varLength, Arcweave::UVisit* visits, size_t visitsLength);
+EXPORTED void deallocateOutput(Arcweave::UTranspilerOutput* output);

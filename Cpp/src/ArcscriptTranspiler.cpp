@@ -1,6 +1,9 @@
 #include "ArcscriptTranspiler.h"
 #include "ArcscriptErrorListener.h"
-#include <sstream>
+#include "antlr4-runtime.h"
+#include "ArcscriptVisitor.h"
+#include "ArcscriptLexer.h"
+#include "ArcscriptParser.h"
 #include <iterator>
 
 #define _CRT_SECURE_NO_WARNINGS

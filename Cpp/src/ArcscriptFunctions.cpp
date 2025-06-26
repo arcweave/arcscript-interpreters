@@ -1,4 +1,5 @@
 #include "ArcscriptFunctions.h"
+#include "ArcscriptExpression.h"
 #include <cmath>
 #include <stdlib.h>
 #include <time.h>

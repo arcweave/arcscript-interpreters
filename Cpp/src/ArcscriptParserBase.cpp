@@ -1,6 +1,9 @@
 #include "ArcscriptParser.h"
 #include "ArcscriptLexer.h"
 #include "ArcscriptParserBase.h"
+#include "ArcscriptExpression.h"
+#include "ArcscriptErrorExceptions.h"
+#include "ArcscriptFunctions.h"
 
 using namespace antlr4;
 

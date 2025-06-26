@@ -1,6 +1,5 @@
 #pragma once
 
-#include "antlr4-runtime.h"
 #include "ArcscriptParserBaseVisitor.h"
 #include "ArcscriptFunctions.h"
 

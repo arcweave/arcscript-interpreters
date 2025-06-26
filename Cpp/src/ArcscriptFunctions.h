@@ -1,9 +1,7 @@
 #pragma once
 
 #include "ArcscriptHelpers.h"
-#include <typeindex>
 #include <iostream>
-#include <functional>
 
 namespace Arcweave {
 class ArcscriptFunctions {

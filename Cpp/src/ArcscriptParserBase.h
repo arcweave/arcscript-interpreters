@@ -2,7 +2,6 @@
 
 #include "antlr4-runtime.h"
 #include "ArcscriptHelpers.h"
-#include "ArcscriptFunctions.h"
 
 class ArcscriptParserBase : public antlr4::Parser {
 private:
