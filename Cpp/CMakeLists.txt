@@ -6,6 +6,11 @@ project(ArcscriptTranspiler VERSION ${PROJECT_VERSION})
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 message(CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID})
+
+message(STATUS "Generator: ${CMAKE_GENERATOR}")
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_CONFIGURATION_TYPES: ${CMAKE_CONFIGURATION_TYPES}")
+
 # compiler must be 17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -71,7 +76,17 @@ target_sources(ArcscriptTranspiler PRIVATE
 
 target_sources(ArcscriptTranspiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h)
 
-set_target_properties(ArcscriptTranspiler PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION})
+set_target_properties(ArcscriptTranspiler PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION}
+)
+
+set(ARCSCRIPT_INCLUDE_HEADERS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptHelpers.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptErrorExceptions.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptOutputs.h
+)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # For MSVC, we need to link against the shared library
@@ -83,12 +98,42 @@ endif()
 
 target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared)
 
-add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
+add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -E copy ${ANTLR4_RUNTIME_LIBRARIES} "$<TARGET_FILE_DIR:ArcscriptTranspiler>"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-include(FetchContent)
+if (NOT EXISTS "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include")
+    add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -E make_directory "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include")
+endif()
 
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
-FetchContent_MakeAvailable(json)
+add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+        -E copy ${ARCSCRIPT_INCLUDE_HEADERS} "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
+if (WITH_DEMO)
+    add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
+
+    include(FetchContent)
+    FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+    FetchContent_MakeAvailable(json)
+
+    target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
+    target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
+
+    file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/demo/tests/*.json")
+
+    if (NOT EXISTS "$<TARGET_FILE_DIR:ArcscriptTest>/tests")
+        add_custom_command(TARGET ArcscriptTest POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                -E make_directory "$<TARGET_FILE_DIR:ArcscriptTest>/tests")
+    endif()
+
+    add_custom_command(TARGET ArcscriptTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -E copy ${TEST_SOURCES} "$<TARGET_FILE_DIR:ArcscriptTest>/tests"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif (WITH_DEMO)

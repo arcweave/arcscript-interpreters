@@ -130,7 +130,11 @@ int testFile(std::filesystem::path path) {
 
 int main()
 {
-    const std::filesystem::path path{ "./stringConcat.json" };
+    const std::filesystem::path path{ "./tests/valid.json" };
+    if (!std::filesystem::exists(path)) {
+        std::cout << "File not found: " << path << std::endl;
+        return 1;
+    }
     testFile(path);
 
     system("pause");
