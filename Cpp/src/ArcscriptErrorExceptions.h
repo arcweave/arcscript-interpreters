@@ -46,7 +46,7 @@ namespace Arcweave {
       if (line > -1) {
         std::ostringstream oss;
         oss << "line " << line << ":" << charPositionInLine << " " << message << std::endl;
-        return oss.str().c_str();
+        return strdup(oss.str().c_str());
       }
       return message.c_str();
     }

@@ -10,6 +10,10 @@
 #include <nlohmann/json.hpp>
 #include "ArcscriptTranspiler.h"
 
+#ifdef _WIN64
+#define strdup _strdup
+#endif
+
 using json = nlohmann::json;
 
 using namespace Arcweave;
@@ -22,8 +26,8 @@ UVariable* getInitialVars(json initialVarsJson) {
         std::string name = it.value()["name"].template get<std::string>();
         std::string type = it.value()["type"].template get<std::string>();
 
-        initVars[i].id = _strdup(id.c_str());
-        initVars[i].name = _strdup(name.c_str());
+        initVars[i].id = strdup(id.c_str());
+        initVars[i].name = strdup(name.c_str());
         initVars[i].type = VariableType::AW_ANY;
         if (type == "string") {
             initVars[i].type = VariableType::AW_STRING;
@@ -39,7 +43,7 @@ UVariable* getInitialVars(json initialVarsJson) {
         }
 
         if (initVars[i].type == VariableType::AW_STRING) {
-            initVars[i].string_val = _strdup(it.value()["value"].template get<std::string>().c_str());
+            initVars[i].string_val = strdup(it.value()["value"].template get<std::string>().c_str());
         }
         else if (initVars[i].type == VariableType::AW_INTEGER) {
             initVars[i].int_val = it.value()["value"].template get<int>();
@@ -61,7 +65,7 @@ UVisit* getVisits(json initVisits) {
     UVisit* visits = new UVisit[initVisits.size()];
     int i = 0;
     for (json::iterator it = initVisits.begin(); it != initVisits.end(); ++it) {
-        visits[i].elId = _strdup(it.key().c_str());
+        visits[i].elId = strdup(it.key().c_str());
         visits[i].visits = it.value().template get<int>();
         i += 1;
     }
@@ -76,15 +80,15 @@ int testFile(std::filesystem::path path) {
     UVariable* initVars = getInitialVars(initVarsJson);
     size_t initVarLen = initVarsJson.size();
     for (json::iterator it = data["cases"].begin(); it != data["cases"].end(); ++it) {
-        const char* code = _strdup((*it)["code"].template get<std::string>().c_str());
+        const char* code = strdup((*it)["code"].template get<std::string>().c_str());
         UVisit* visits = nullptr;
         size_t visitsLen = 0;
         const char* currentElement = nullptr;
         if ((*it).contains("elementId")) {
-            currentElement = _strdup((*it)["elementId"].template get<std::string>().c_str());
+            currentElement = strdup((*it)["elementId"].template get<std::string>().c_str());
         }
         else {
-            currentElement = _strdup("TestElement");
+            currentElement = strdup("TestElement");
         }
         if ((*it).contains("visits")) {
             visits = getVisits((*it)["visits"]);
@@ -137,5 +141,6 @@ int main()
     }
     testFile(path);
 
-    system("pause");
+    system( "read -n 1 -s -p \"Press any key to continue...\"" );
+
 }
