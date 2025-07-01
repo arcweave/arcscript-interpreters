@@ -32,31 +32,9 @@ include(ExternalAntlr4Cpp)
 # add antlr4cpp artifacts to project environment
 include_directories(${ANTLR4_INCLUDE_DIRS})
 
-## set variable pointing to the antlr tool that supports C++
-## this is not required if the jar file can be found under PATH environment
-#set(ANTLR_EXECUTABLE /home/user/antlr-4.13.2-complete.jar)
-## add macros to generate ANTLR Cpp code from grammar
-#find_package(ANTLR REQUIRED)
-#
-## Call macro to add lexer and grammar to your build dependencies.
-#antlr_target(SampleGrammarLexer TLexer.g4 LEXER
-#        PACKAGE antlrcpptest)
-#antlr_target(SampleGrammarParser TParser.g4 PARSER
-#        PACKAGE antlrcpptest
-#        DEPENDS_ANTLR SampleGrammarLexer
-#        COMPILE_FLAGS -lib ${ANTLR_SampleGrammarLexer_OUTPUT_DIR})
-
-# include generated files in project environment
-#include_directories(${ANTLR_SampleGrammarLexer_OUTPUT_DIR})
-#include_directories(${ANTLR_SampleGrammarParser_OUTPUT_DIR})
-
 include_directories(src/Generated/ArcscriptLexer)
 include_directories(src/Generated/ArcscriptParser)
 include_directories(src)
-# add generated grammar to demo binary target
-#add_executable(demo main.cpp
-#        src/Generated/ArcscriptLexer
-#        src/Generated/ArcscriptParser)
 
 add_library(ArcscriptTranspiler SHARED)
 
@@ -76,11 +54,6 @@ target_sources(ArcscriptTranspiler PRIVATE
 
 target_sources(ArcscriptTranspiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h)
 
-set_target_properties(ArcscriptTranspiler PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${PROJECT_VERSION}
-)
-
 set(ARCSCRIPT_INCLUDE_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptHelpers.h
@@ -98,20 +71,50 @@ endif()
 
 target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared)
 
-add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
+if (WIN32 OR WIN64)
+    set(LIBRARY_NAME "${PROJECT_NAME}.lib")
+    set(DLL_NAME "${PROJECT_NAME}.dll")
+    if (WIN64)
+        set(PLATFORM "Win64")
+    else()
+        set(PLATFORM "Win32")
+    endif()
+elseif (APPLE)
+    set(DLL_NAME "lib${PROJECT_NAME}.dylib")
+    set(PLATFORM "Mac")
+elseif (UNIX)
+    set(DLL_NAME "lib${PROJECT_NAME}.so")
+    set(PLATFORM "Linux")
+endif()
+
+set_target_properties(ArcscriptTranspiler PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/${PLATFORM}"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/${PLATFORM}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/${PLATFORM}"
+    OUTPUT_NAME ${PROJECT_NAME}
+)
+
+if (APPLE)
+    add_custom_command(TARGET ArcscriptTranspiler PRE_BUILD
+            COMMAND install_name_tool -id @rpath/libantlr4-runtime.dylib ${ANTLR4_RUNTIME_LIBRARIES})
+endif ()
+
+# Copy the antlr4 runtime library to the output directory
+add_custom_command(TARGET ArcscriptTranspiler PRE_BUILD
         COMMAND ${CMAKE_COMMAND}
-            -E copy ${ANTLR4_RUNTIME_LIBRARIES} "$<TARGET_FILE_DIR:ArcscriptTranspiler>"
+        -E copy ${ANTLR4_RUNTIME_LIBRARIES} "$<TARGET_FILE_DIR:ArcscriptTranspiler>"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-if (NOT EXISTS "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include")
+# Copy the generated headers to the output directory
+if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/lib/include")
     add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
             COMMAND ${CMAKE_COMMAND}
-            -E make_directory "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include")
+            -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/lib/include")
 endif()
 
 add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
         COMMAND ${CMAKE_COMMAND}
-        -E copy ${ARCSCRIPT_INCLUDE_HEADERS} "$<TARGET_FILE_DIR:ArcscriptTranspiler>/include"
+        -E copy ${ARCSCRIPT_INCLUDE_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/lib/include"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 if (WITH_DEMO)
@@ -123,6 +126,13 @@ if (WITH_DEMO)
 
     target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
     target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
+
+    set_target_properties(ArcscriptTest PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
+            OUTPUT_NAME ArcscriptTest
+    )
 
     file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/demo/tests/*.json")
 
