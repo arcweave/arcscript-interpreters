@@ -6,7 +6,7 @@
 class ArcscriptParserBase : public antlr4::Parser {
 private:
   Arcweave::ArcscriptState* _state;
-  int openTagEndPos;
+  size_t openTagEndPos;
 public:
   int currentLine = 0;
   ArcscriptParserBase(antlr4::TokenStream *input) : Parser(input) { }

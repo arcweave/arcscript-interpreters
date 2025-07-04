@@ -106,6 +106,18 @@
 			}
 		},
 		{
+			"code": "<pre><code>x = 3 + 4 * 5</code></pre>",
+			"changes": {
+				"var1": 23
+			}
+		},
+		{
+			"code": "<pre><code>x = 3 * 4 + 5</code></pre>",
+			"changes": {
+				"var1": 17
+			}
+		},
+		{
 			"code": "<pre><code>x = 3 / 4 / 5</code></pre>",
 			"changes": {
 				"var1": 0.15

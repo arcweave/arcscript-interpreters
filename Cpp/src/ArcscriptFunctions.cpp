@@ -5,7 +5,54 @@
 #include <time.h>
 #include <algorithm>
 
+#include "../build/lib/include/ArcscriptErrorExceptions.h"
+
 namespace Arcweave {
+    std::string replaceEscapes(std::string str) {
+        std::string result;
+        for (size_t i = 0; i < str.length(); i++) {
+            if (str[i] == '\\' && i + 1 < str.length()) {
+                switch (str[i + 1]) {
+                    case 'a':
+                        result += '\x07';
+                        break;
+                    case 'b':
+                        result += '\b';
+                        break;
+                    case 'f':
+                        result += '\f';
+                    case 'n':
+                        result += '\n';
+                        break;
+                    case 'r':
+                        result += '\r';
+                        break;
+                    case 't':
+                        result += '\t';
+                        break;
+                    case 'v':
+                        result += '\v';
+                        break;
+                    case '\'':
+                        result += '\'';
+                        break;
+                    case '\\':
+                        result += '\\';
+                        break;
+                    case '"':
+                        result += '"';
+                        break;
+                    default:
+                        result += str[i];
+                }
+                i++;
+            } else {
+                result += str[i];
+            }
+        }
+        return result;
+    }
+
     std::map<std::string, ArcscriptFunctions::FunctionInfo> ArcscriptFunctions::functions = {
       { "abs", { 1, 1 } },
       { "max", { 2, -1 }},
@@ -72,11 +119,21 @@ namespace Arcweave {
     }
 
     std::any ArcscriptFunctions::Sqrt(std::vector<std::any> args) {
-
         if (args[0].type() == typeid(int)) {
-            return sqrt(std::any_cast<int>(args[0]));
+            const int arg = std::any_cast<int>(args[0]);
+            if (arg < 0) {
+                throw RuntimeErrorException("Cannot calculate square root of a negative number.");
+            }
+            return sqrt(arg);
         }
-        return sqrt(std::any_cast<double>(args[0]));
+        if (args[0].type() != typeid(double)) {
+            throw RuntimeErrorException("The argument of sqrt must be a number.");
+        }
+        const double arg = std::any_cast<double>(args[0]);
+        if (arg < 0) {
+            throw RuntimeErrorException("Cannot calculate square root of a negative number.");
+        }
+        return sqrt(arg);
     }
 
     std::any ArcscriptFunctions::Sqr(std::vector<std::any> args) {
@@ -97,11 +154,14 @@ namespace Arcweave {
     }
 
     std::any ArcscriptFunctions::Random(std::vector<std::any> args) {
-        srand(time(NULL));
+        srand(static_cast<unsigned int>(time(NULL)));
         return ((double)rand() / (RAND_MAX));
     }
 
     std::any ArcscriptFunctions::Roll(std::vector<std::any> args) {
+        if (args[0].type() != typeid(int)) {
+            throw RuntimeErrorException("The argument of roll must be an integer.");
+        }
         int maxRoll = std::any_cast<int>(args[0]);
         int numRolls = 1;
         if (args.size() == 2) {
@@ -132,6 +192,7 @@ namespace Arcweave {
                 result += std::any_cast<std::string>(arg);
             }
         }
+        result = replaceEscapes(result);
         _state->outputs.AddScriptOutput(result);
         return std::any();
     }

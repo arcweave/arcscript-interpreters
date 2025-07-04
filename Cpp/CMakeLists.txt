@@ -90,7 +90,7 @@ endif()
 set_target_properties(ArcscriptTranspiler PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/${PLATFORM}"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/${PLATFORM}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/${PLATFORM}"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/${PLATFORM}"
     OUTPUT_NAME ${PROJECT_NAME}
 )
 
@@ -145,5 +145,22 @@ if (WITH_DEMO)
     add_custom_command(TARGET ArcscriptTest POST_BUILD
             COMMAND ${CMAKE_COMMAND}
             -E copy ${TEST_SOURCES} "$<TARGET_FILE_DIR:ArcscriptTest>/tests"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    set(ARCSCRIPT_TRANSPILER_LIB_FILES
+        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
+        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"
+        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.exp"
+        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.pdb"
+    )
+
+    add_custom_command(TARGET ArcscriptTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -E copy ${ANTLR4_RUNTIME_LIBRARIES} "$<TARGET_FILE_DIR:ArcscriptTest>"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+    add_custom_command(TARGET ArcscriptTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -E copy ${ARCSCRIPT_TRANSPILER_LIB_FILES} "$<TARGET_FILE_DIR:ArcscriptTest>"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif (WITH_DEMO)

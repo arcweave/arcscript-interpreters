@@ -1,6 +1,8 @@
 #include "ArcscriptExpression.h"
 #include <sstream>
 
+#include "../build/lib/include/ArcscriptErrorExceptions.h"
+
 namespace Arcweave {
 
 std::string Expression::valueToString(std::any value)
@@ -83,12 +85,12 @@ bool Expression::valueToBool(std::any value) {
 Expression Expression::operator+ (const Expression &other) {
   if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string))
   {
-    return new Expression(valueToString(value) + valueToString(other.value));
+    return Expression(valueToString(value) + valueToString(other.value));
   }
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
   if (!values.hasDoubles) {
-    int intValue = values.value1 + values.value2;
+    int intValue = static_cast<int>(values.value1 + values.value2);
     result  = new Expression(intValue);
   } else {
     result = new Expression(values.value1 + values.value2);
@@ -97,10 +99,13 @@ Expression Expression::operator+ (const Expression &other) {
 }
 
 Expression Expression::operator- (const Expression &other) {
+  if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
+    throw RuntimeErrorException("Cannot subtract strings");
+  }
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
   if (!values.hasDoubles) {
-    int intValue = values.value1 - values.value2;
+    int intValue = static_cast<int>(values.value1 - values.value2);
     result  = new Expression(intValue);
   } else {
     result = new Expression(values.value1 - values.value2);
@@ -112,7 +117,7 @@ Expression Expression::operator* (const Expression &other) {
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
   if (!values.hasDoubles) {
-    int intValue = values.value1 * values.value2;
+    int intValue = static_cast<int>(values.value1 * values.value2);
     result  = new Expression(intValue);
   } else {
     result = new Expression(values.value1 * values.value2);
@@ -124,7 +129,7 @@ Expression Expression::operator* (const int other) {
   NumberValues values = doubleValues(value, other);
   Expression* result;
   if (!values.hasDoubles) {
-    int intValue = values.value1 * values.value2;
+    int intValue = static_cast<int>(values.value1 * values.value2);
     result  = new Expression(intValue);
   } else {
     result = new Expression(values.value1 * values.value2);
@@ -135,35 +140,50 @@ Expression Expression::operator* (const int other) {
 Expression Expression::operator/ (const Expression &other) {
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
-  if (!values.hasDoubles) {
-    int intValue = values.value1 / values.value2;
-    result  = new Expression(intValue);
-  } else {
-    result = new Expression(values.value1 / values.value2);
+
+  if (values.value2 == 0) {
+    throw RuntimeErrorException("Division by zero is not allowed.");
   }
+
+  result = new Expression(values.value1 / values.value2);
+
   return *result;
 }
 
 Expression Expression::operator+= (const Expression &other) {
-  if (value.type() == typeid(int) || value.type() == typeid(double)) {
-    NumberValues values = doubleValues(value, other.value);
-    if (!values.hasDoubles) {
-      int intValue = values.value1 + values.value2;
-      value = intValue;
+  if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
+    auto val1 = valueToString(value);
+    auto val2 = valueToString(other.value);
+    if (val1.empty() && val2.empty()) {
+      value = std::string();
+    } else if (val1.empty()) {
+      value = val2;
+    } else if (val2.empty()) {
+      value = val1;
     } else {
-      value = values.value1 + values.value2;
+      value = val1 + val2;
     }
+    return *this;
   }
-  if (value.type() == typeid(std::string)) {
-    value = std::any_cast<std::string>(value) + std::any_cast<std::string>(other.value);
+
+  NumberValues values = doubleValues(value, other.value);
+  if (!values.hasDoubles) {
+    int intValue = static_cast<int>(values.value1 + values.value2);
+    value = intValue;
+  } else {
+    value = values.value1 + values.value2;
   }
+
   return *this;
 }
 
 Expression Expression::operator-= (const Expression &other) {
+  if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
+    throw RuntimeErrorException("Cannot subtract strings");
+  }
   NumberValues values = doubleValues(value, other.value);
   if (!values.hasDoubles) {
-    int intValue = values.value1 - values.value2;
+    int intValue = static_cast<int>(values.value1 - values.value2);
     value = intValue;
   } else {
     value = values.value1 - values.value2;
@@ -174,7 +194,7 @@ Expression Expression::operator-= (const Expression &other) {
 Expression Expression::operator*= (const Expression &other) {
   NumberValues values = doubleValues(value, other.value);
   if (!values.hasDoubles) {
-    int intValue = values.value1 * values.value2;
+    int intValue = static_cast<int>(values.value1 * values.value2);
     value = intValue;
   } else {
     value = values.value1 * values.value2;
@@ -184,8 +204,11 @@ Expression Expression::operator*= (const Expression &other) {
 
 Expression Expression::operator/= (const Expression &other) {
   NumberValues values = doubleValues(value, other.value);
+  if (values.value2 == 0) {
+    throw RuntimeErrorException("Division by zero is not allowed.");
+  }
   if (!values.hasDoubles) {
-    int intValue = values.value1 / values.value2;
+    int intValue = static_cast<int>(values.value1 / values.value2);
     value = intValue;
   } else {
     value = values.value1 / values.value2;
@@ -223,6 +246,13 @@ bool Expression::operator== (bool other) {
 }
 
 bool Expression::operator!= (const Expression &other) {
+  if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
+    if (value.type() != other.value.type()) {
+      return true; // Different types, cannot be equal
+    } else {
+      return std::any_cast<std::string>(value) != std::any_cast<std::string>(other.value);
+    }
+  }
   if (value.type() == typeid(int) || value.type() == typeid(double)) {
     NumberValues values = doubleValues(value, other.value);
     return values.value1 != values.value2;

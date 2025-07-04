@@ -78,13 +78,13 @@ bool ArcscriptParserBase::assertFunctionArguments(Token *fname, std::any argumen
   if (argumentList.type() == typeid(Arcweave::ArcscriptParser::Argument_listContext*)) {
     Arcweave::ArcscriptParser::Argument_listContext *argumentListCtx = std::any_cast<Arcweave::ArcscriptParser::Argument_listContext*>(argumentList);
     if (argumentListCtx != NULL) {
-      argListLength = argumentListCtx->argument().size();
+      argListLength = static_cast<int>(argumentListCtx->argument().size());
     }
   }
   if (argumentList.type() == typeid(Arcweave::ArcscriptParser::Variable_listContext*)) {
     Arcweave::ArcscriptParser::Variable_listContext *variableListCtx = std::any_cast<Arcweave::ArcscriptParser::Variable_listContext*>(argumentList);
     if (variableListCtx != NULL) {
-      argListLength = variableListCtx->VARIABLE().size();
+      argListLength = static_cast<int>(variableListCtx->VARIABLE().size());
     }
   }
 

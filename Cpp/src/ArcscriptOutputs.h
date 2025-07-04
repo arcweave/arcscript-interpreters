@@ -33,9 +33,13 @@ namespace Arcweave
         
         inline void MergeScriptOutput(std::string text) override
         {
-            if (text.length() > 0)
-            {
-                text_ += ' ' + text;
+            if (text.length() > 0) {
+                if (text_.length() > 0)
+                {
+                    text_ += ' ' + text;
+                } else {
+                    text_ = text;
+                }
             }
         }
 

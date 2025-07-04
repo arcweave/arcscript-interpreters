@@ -262,6 +262,7 @@ std::any ArcscriptVisitor::visitAdditive_numeric_expression(ArcscriptParser::Add
     else if (ctx->SUB() != NULL) {
       mult_num_expr = result - mult_num_expr;
     }
+    return mult_num_expr;
   }
   return std::any_cast<Expression>(visitMultiplicative_numeric_expression(ctx->multiplicative_numeric_expression()));
 }
@@ -277,6 +278,7 @@ std::any ArcscriptVisitor::visitMultiplicative_numeric_expression(ArcscriptParse
     else if (ctx->DIV() != NULL) {
       signed_unary_num_expr = result / signed_unary_num_expr;
     }
+    return signed_unary_num_expr;
   }
 
   return std::any_cast<Expression>(visitSigned_unary_numeric_expression(ctx->signed_unary_numeric_expression()));
