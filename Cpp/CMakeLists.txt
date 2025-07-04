@@ -147,12 +147,19 @@ if (WITH_DEMO)
             -E copy ${TEST_SOURCES} "$<TARGET_FILE_DIR:ArcscriptTest>/tests"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-    set(ARCSCRIPT_TRANSPILER_LIB_FILES
-        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
-        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"
-        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.exp"
-        "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.pdb"
-    )
+    if (WIN32 OR WIN64)
+        set(ARCSCRIPT_TRANSPILER_LIB_FILES
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.exp"
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.pdb"
+        )
+    elseif (APPLE)
+        set(ARCSCRIPT_TRANSPILER_LIB_FILES
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
+                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"
+        )
+    endif()
 
     add_custom_command(TARGET ArcscriptTest POST_BUILD
             COMMAND ${CMAKE_COMMAND}
