@@ -1,7 +1,7 @@
 #include "ArcscriptExpression.h"
 #include <sstream>
 
-#include "../build/lib/include/ArcscriptErrorExceptions.h"
+#include "ArcscriptErrorExceptions.h"
 
 namespace Arcweave {
 

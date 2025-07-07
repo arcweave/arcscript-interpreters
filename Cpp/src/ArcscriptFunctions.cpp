@@ -5,7 +5,7 @@
 #include <time.h>
 #include <algorithm>
 
-#include "../build/lib/include/ArcscriptErrorExceptions.h"
+#include "ArcscriptErrorExceptions.h"
 
 namespace Arcweave {
     std::string replaceEscapes(std::string str) {
