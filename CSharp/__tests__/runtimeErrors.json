@@ -55,6 +55,18 @@
     {
       "code": "<pre><code>x = roll(\"2\")</code></pre>",
       "error": "runtime"
+    },
+    {
+      "code": "<pre><code>w = \"2\" - \"test\"</code></pre>",
+      "error": "runtime"
+    },
+    {
+      "code": "<pre><code>w = w - \"test\"</code></pre>",
+      "error": "runtime"
+    },
+    {
+      "code": "<pre><code>w -= _a</code></pre>",
+      "error": "runtime"
     }
   ]
 }

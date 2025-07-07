@@ -38,6 +38,16 @@ public class Tests
             yield return new TestCaseData(tests.Variables, validTestsCase);
         }
     }
+    
+    private static IEnumerable<TestCaseData> GetStringConcatTestData()
+    {
+        var tests = LoadJson("../../../__tests__/stringConcat.json");
+        
+        foreach (var stringConcatTestCase in tests.Cases)
+        {
+            yield return new TestCaseData(tests.Variables, stringConcatTestCase);
+        }
+    }
 
     private static TestData LoadJson(string filePath)
     {
@@ -130,5 +140,37 @@ public class Tests
         var output = i.RunScript(testCase.code);
         
         Assert.That(output.Result, Is.EqualTo(testCase.result));
+    }
+    
+    [Test]
+    [TestCaseSource(nameof(GetStringConcatTestData))]
+    public void StringConcatTests(Dictionary<string, Variable> variables, TestCase testCase)
+    {
+        var elements = new Dictionary<string, Element>();
+        if (testCase.visits != null)
+        {
+            foreach (var kvp in testCase.visits)
+            {
+                elements[kvp.Key] = new Element
+                {
+                    Visits = kvp.Value
+                };
+            }
+        }
+        Console.WriteLine("Testing Case: " + testCase.code);
+        var project = new Project.Project(variables.Values.ToList(), elements);
+        var i = new AwInterpreter(project, testCase.elementId);
+        var output = i.RunScript(testCase.code);
+        
+        if (testCase.output != null)
+        {
+            Assert.That(output.Output, Is.EqualTo(testCase.output));
+        }
+
+        var changesByName = ChangesByName(variables, testCase.changes);
+        if (changesByName != null)
+        {
+            Assert.That(output.Changes, Is.EqualTo(changesByName));
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace Arcweave.Interpreter
         {
             if (first.Type() == typeof(string) || second.Type() == typeof(string))
             {
-                return new Expression(first.Value.ToString() + second.Value.ToString());
+                return new Expression(first.ToString() + second.ToString());
             }
             var doubleValues = GetDoubleValues(first.Value, second.Value);
             if (!doubleValues.HasDouble)
@@ -288,6 +288,14 @@ namespace Arcweave.Interpreter
 
         public override string ToString()
         {
+            if (Value.GetType() == typeof(bool))
+            {
+                if ((bool)Value)
+                {
+                    return "true";
+                }
+                return "false";
+            }
             return Value.ToString();
         }
 

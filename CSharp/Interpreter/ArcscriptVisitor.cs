@@ -267,10 +267,10 @@ namespace Arcweave.Interpreter
             if ( context.additive_numeric_expression() != null ) {
                 Expression result = (Expression)this.VisitAdditive_numeric_expression(context.additive_numeric_expression());
                 if ( context.ADD() != null ) {
-                    return mult_num_expression + result;
+                    return result + mult_num_expression;
                 }
                 // Else MINUS
-                return mult_num_expression - result;
+                return result - mult_num_expression;
             }
 
             return mult_num_expression;
@@ -282,10 +282,10 @@ namespace Arcweave.Interpreter
             if ( context.multiplicative_numeric_expression() != null ) {
                 Expression result = (Expression)this.VisitMultiplicative_numeric_expression(context.multiplicative_numeric_expression());
                 if ( context.MUL() != null ) {
-                    return signed_unary_num_expr * result;
+                    return result * signed_unary_num_expr;
                 }
                 // Else DIV
-                return signed_unary_num_expr / result;
+                return result / signed_unary_num_expr;
             }
 
             return signed_unary_num_expr;
@@ -311,6 +311,18 @@ namespace Arcweave.Interpreter
             }
             if ( context.INTEGER() != null ) {
                 return new Expression(int.Parse(context.INTEGER().GetText()));
+            }
+
+            if (context.STRING() != null)
+            {
+                string result = context.STRING().GetText();
+                result = result.Substring(1, result.Length - 2);
+                return new Expression(result);
+            }
+
+            if (context.BOOLEAN() != null)
+            {
+                return new Expression(context.BOOLEAN().GetText() == "true");
             }
             if ( context.VARIABLE() != null ) {
                 string variableName = context.VARIABLE().GetText();
