@@ -1,4 +1,5 @@
 /* eslint-env jest */
+import { expect, test, describe, jest } from '@jest/globals';
 import { Interpreter, ParseError, RuntimeError } from '../src/index.js';
 import validTests from './valid.json';
 import parseErrorTests from './parseErrors.json';
@@ -25,20 +26,31 @@ describe('Interprete valid scripts', () => {
       code,
       changes: expectedChanges = {},
       output: expectedOutput = '',
+      events = null,
       visits,
       elementId = '',
       result,
     }) => {
+      const eventHandler = jest.fn();
+
       const interpreter = new Interpreter(
         varValues,
         varObjects,
         visits,
-        elementId
+        elementId,
+        eventHandler
       );
       const { tree, changes, output } = interpreter.runScript(code);
       expect(changes).toMatchObject(expectedChanges);
       expect(output).toEqual(expectedOutput);
       expect(tree).not.toBeNull();
+      if (events) {
+        expect(eventHandler).toHaveBeenCalledTimes(events.length);
+        events.forEach((event, index) => {
+          expect(eventHandler.mock.calls[index][0]).toBe(event.name);
+          expect(eventHandler.mock.calls[index][1]).toEqual(event.args);
+        });
+      }
     }
   );
 });

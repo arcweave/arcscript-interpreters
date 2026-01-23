@@ -12,13 +12,21 @@ export default class Interpreter {
    * @param {object} varObjects
    * @param {object} elementVisits    The current element visits
    * @param {String} currentElement   The current element ID
+   * @param {Function} onEvent       The event callback
    */
-  constructor(varValues, varObjects, elementVisits = {}, currentElement = '') {
+  constructor(
+    varValues,
+    varObjects,
+    elementVisits = {},
+    currentElement = '',
+    eventHandler = () => {}
+  ) {
     this.varValues = varValues;
     this.varObjects = varObjects;
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
     this.variableOffsets = [];
+    this.emit = eventHandler;
   }
 
   runScript(code, varValues = {}) {
@@ -30,7 +38,8 @@ export default class Interpreter {
       this.varValues,
       this.varObjects,
       this.elementVisits,
-      this.currentElement
+      this.currentElement,
+      this.emit
     );
     Object.entries(varValues).forEach(([key, value]) => {
       visitor.state.changes[key] = value;

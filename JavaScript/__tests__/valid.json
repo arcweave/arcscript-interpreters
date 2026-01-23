@@ -395,7 +395,13 @@
 			"elementId": "a",
 			"changes": {
 				"var1": 0
-			}
+			},
+			"events": [
+				{
+					"name": "resetVisits",
+					"args": {}
+				}
+			]
 		},
 		{
 			"code": "<p>this</p><p>text</p><p>must</p><p>not</p><p>be</p><p>in</p><p>one</p><p>paragraph</p>",

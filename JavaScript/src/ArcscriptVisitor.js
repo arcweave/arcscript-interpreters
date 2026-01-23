@@ -6,14 +6,15 @@ import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
 
 export default class ArcscriptVisitor extends ArcscriptParserVisitor {
-  constructor(varValues, varObjects, elementVisits, currentElement) {
+  constructor(varValues, varObjects, elementVisits, currentElement, emit) {
     super();
 
     this.state = new ArcscriptState(
       varValues,
       varObjects,
       elementVisits,
-      currentElement
+      currentElement,
+      emit
     );
 
     this.functions = new ArcscriptFunctions(this.state);
