@@ -37,11 +37,13 @@ ASSIGNMUL: '*=';
 ASSIGNDIV: '/=';
 ASSIGNADD: '+=';
 ASSIGNSUB: '-=';
+ASSIGNMOD: '%=';
 
 MUL: '*';
 DIV: '/';
 ADD: '+';
 SUB: '-';
+MOD: '%';
 
 GE: GT '=';
 GT: '>' | '&gt;';
