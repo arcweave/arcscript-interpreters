@@ -182,4 +182,10 @@ export default class ArcscriptState {
   generateOutput() {
     return this.rootElement.innerHTML;
   }
+
+  resetVisits() {
+    Object.keys(this.elementVisits).forEach(key => {
+      this.elementVisits[key] = 0;
+    });
+  }
 }
