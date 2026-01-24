@@ -6,7 +6,12 @@ name: CI Javascript
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+    paths:
+      - "JavaScript/**"
+      - "grammar/*.g4"
+  pull_request:
+    branches: ["main"]
     paths:
       - "JavaScript/**"
       - "grammar/*.g4"
