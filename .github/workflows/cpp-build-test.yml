@@ -1,0 +1,44 @@
+name: Cpp Build and Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cpp/**"
+      - "grammar/*.g4"
+  pull_request:
+    branches: [main]
+    paths:
+      - "Cpp/**"
+      - "grammar/*.g4"
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate ANTLR4 files (based on runner OS)
+        run: |
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            .\generate.ps1
+          else
+            sh generate.sh
+          fi
+
+      - name: Configure CMake
+        run: |
+          mkdir -p Cpp/build
+          cd Cpp/build
+          cmake -DWITH_DEMO=true ..
+
+      - name: Build
+        run: cmake --build .
+
+      - name: Run tests
+        run: cd demo
+          ./ArcscriptTest
