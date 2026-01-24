@@ -12,7 +12,7 @@ namespace Arcweave.Interpreter
 
         private System.Action<string> _emit;
 
-        public AwInterpreter(IProject project, string elementId = "", System.Action<string> onEvent = null)
+        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null)
         {
             this.Project = project;
             this.ElementId = elementId;

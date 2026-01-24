@@ -13,7 +13,7 @@ namespace Arcweave.Interpreter
         public IProject project { get; set; }
 
         private System.Action<string> _emit;
-        public ArcscriptState(string elementId, IProject project, System.Action<string> emit = null)
+        public ArcscriptState(string elementId, IProject project, System.Action<string>? emit = null)
         {
             Outputs = new ArcscriptOutputs();
             this.currentElement = elementId;

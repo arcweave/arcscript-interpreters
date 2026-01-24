@@ -12,7 +12,7 @@ namespace Arcweave.Interpreter
         public string elementId;
         private readonly Functions _functions;
         private System.Action<string> _emit;
-        public ArcscriptVisitor(string elementId, IProject project, System.Action<string> emit = null) {
+        public ArcscriptVisitor(string elementId, IProject project, System.Action<string>? emit = null) {
             this.elementId = elementId;
             this.project = project;
             this.state = new ArcscriptState(elementId, project, emit);
