@@ -1,6 +1,5 @@
 using Antlr4.Runtime.Misc;
-using System.Collections.Generic;
-using System;
+using System.Globalization;
 using Antlr4.Runtime.Tree;
 using Arcweave.Interpreter.INodes;
 
@@ -262,10 +261,9 @@ namespace Arcweave.Interpreter
         }
 
         public override object VisitAdditive_numeric_expression([NotNull] ArcscriptParser.Additive_numeric_expressionContext context) {
-            Expression mult_num_expression = (Expression)this.VisitMultiplicative_numeric_expression(context.multiplicative_numeric_expression());
-
             if ( context.additive_numeric_expression() != null ) {
                 Expression result = (Expression)this.VisitAdditive_numeric_expression(context.additive_numeric_expression());
+                Expression mult_num_expression = (Expression)this.VisitMultiplicative_numeric_expression(context.multiplicative_numeric_expression());
                 if ( context.ADD() != null ) {
                     return result + mult_num_expression;
                 }
@@ -273,14 +271,13 @@ namespace Arcweave.Interpreter
                 return result - mult_num_expression;
             }
 
-            return mult_num_expression;
+            return (Expression)this.VisitMultiplicative_numeric_expression(context.multiplicative_numeric_expression());
         }
 
         public override object VisitMultiplicative_numeric_expression([NotNull] ArcscriptParser.Multiplicative_numeric_expressionContext context) {
-            Expression signed_unary_num_expr = (Expression)this.VisitSigned_unary_numeric_expression(context.signed_unary_numeric_expression());
-
             if ( context.multiplicative_numeric_expression() != null ) {
                 Expression result = (Expression)this.VisitMultiplicative_numeric_expression(context.multiplicative_numeric_expression());
+                Expression signed_unary_num_expr = (Expression)this.VisitSigned_unary_numeric_expression(context.signed_unary_numeric_expression());
                 if ( context.MUL() != null ) {
                     return result * signed_unary_num_expr;
                 }
@@ -288,7 +285,7 @@ namespace Arcweave.Interpreter
                 return result / signed_unary_num_expr;
             }
 
-            return signed_unary_num_expr;
+            return (Expression)this.VisitSigned_unary_numeric_expression(context.signed_unary_numeric_expression());
         }
 
         public override object VisitSigned_unary_numeric_expression([NotNull] ArcscriptParser.Signed_unary_numeric_expressionContext context) {
@@ -307,7 +304,7 @@ namespace Arcweave.Interpreter
 
         public override object VisitUnary_numeric_expression([NotNull] ArcscriptParser.Unary_numeric_expressionContext context) {
             if ( context.FLOAT() != null ) {
-                return new Expression(double.Parse(context.FLOAT().GetText()));
+                return new Expression(double.Parse(context.FLOAT().GetText(), CultureInfo.InvariantCulture));
             }
             if ( context.INTEGER() != null ) {
                 return new Expression(int.Parse(context.INTEGER().GetText()));

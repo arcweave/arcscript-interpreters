@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace Arcweave.Interpreter
 {
-    public class Expression : IComparable
+    public class Expression : ArcscriptExpressionBase, IComparable
     {
         public object Value { get; set; }
         public Expression() { Value = null; }
@@ -295,6 +295,11 @@ namespace Arcweave.Interpreter
                     return "true";
                 }
                 return "false";
+            }
+
+            if (Value.GetType() == typeof(double))
+            {
+                return ((double)Value).ToString(NumberFormat);
             }
             return Value.ToString();
         }
