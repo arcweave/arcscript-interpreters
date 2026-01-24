@@ -22,13 +22,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate ANTLR4 files (based on runner OS)
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            .\generate.ps1
-          else
-            sh generate.sh
-          fi
+      - name: Generate ANTLR4 files (Windows)
+        if: matrix.os == 'windows-latest'
+        run: .\generate.ps1
+
+      - name: Generate ANTLR4 files (macOS)
+        if: matrix.os == 'macos-latest'
+        run: sh ./generate.sh
+        shell: bash
 
       - name: Configure CMake
         run: |
@@ -37,8 +38,11 @@ jobs:
           cmake -DWITH_DEMO=true ..
 
       - name: Build
-        run: cmake --build .
+        run: |
+          cd Cpp/build
+          cmake --build .
 
       - name: Run tests
-        run: cd demo
+        run: |
+          cd Cpp/build/demo
           ./ArcscriptTest
