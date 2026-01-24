@@ -15,6 +15,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./CSharp
 
     steps:
       - name: Checkout repository
@@ -27,6 +30,7 @@ jobs:
 
       - name: Generate ANTLR4 files
         run: sh generate.sh
+        working-directory: .
 
       - name: Restore
         run: dotnet restore CSharp.sln
