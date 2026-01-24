@@ -135,8 +135,12 @@ namespace Arcweave.Interpreter
             return false;
         }
 
-        public int CompareTo(object other)
+        public int CompareTo(object? other)
         {
+            if (other == null || !(other is Expression))
+            {
+                throw new ArgumentException("Object is not an Expression");
+            }
             Expression o = (Expression)other;
             DoubleValues fValues = GetDoubleValues(this.Value, o.Value);
             double result = fValues.Value1 - fValues.Value2;
@@ -150,7 +154,7 @@ namespace Arcweave.Interpreter
             return 0;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is Expression))
             {
