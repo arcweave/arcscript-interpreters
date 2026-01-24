@@ -93,6 +93,28 @@ namespace Arcweave.Interpreter
             }
             return new Expression(result);
         }
+        
+        public static Expression operator %(Expression first, Expression second)
+        {
+            if (first.Type() == typeof(string) || second.Type() == typeof(string))
+            {
+                throw new InvalidOperationException("Modulo is not supported for string types.");
+            }
+            var doubleValues = GetDoubleValues(first.Value, second.Value);
+            if (doubleValues.Value2 == 0)
+            {
+                throw new DivideByZeroException("Modulo by zero.");
+            }
+            if (!doubleValues.HasDouble)
+            {
+                var intValue = (int)(doubleValues.Value1 % doubleValues.Value2);
+                return new Expression(intValue);
+            }
+            else
+            {
+                return new Expression(doubleValues.Value1 % doubleValues.Value2);
+            }
+        }
 
         public static bool operator ==(Expression first, Expression second)
         {

@@ -167,6 +167,8 @@ namespace Arcweave.Interpreter
                 variableValue *= compound_condition_or;
             } else if ( context.ASSIGNDIV() != null ) {
                 variableValue /= compound_condition_or;
+            } else if (context.ASSIGNMOD() != null) {
+                variableValue %= compound_condition_or;
             }
 
             this.state.SetVarValue(variableName, variableValue.Value);
@@ -281,8 +283,13 @@ namespace Arcweave.Interpreter
                 if ( context.MUL() != null ) {
                     return result * signed_unary_num_expr;
                 }
-                // Else DIV
-                return result / signed_unary_num_expr;
+
+                if (context.DIV() != null)
+                {
+                    return result / signed_unary_num_expr;
+                }
+                // Else MOD
+                return result % signed_unary_num_expr;
             }
 
             return (Expression)this.VisitSigned_unary_numeric_expression(context.signed_unary_numeric_expression());
