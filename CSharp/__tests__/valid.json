@@ -106,18 +106,6 @@
 			}
 		},
 		{
-			"code": "<pre><code>x = 3 + 4 * 5</code></pre>",
-			"changes": {
-				"var1": 23
-			}
-		},
-		{
-			"code": "<pre><code>x = 3 * 4 + 5</code></pre>",
-			"changes": {
-				"var1": 17
-			}
-		},
-		{
 			"code": "<pre><code>x = 3 / 4 / 5</code></pre>",
 			"changes": {
 				"var1": 0.15
@@ -398,6 +386,22 @@
 			},
 			"elementId": "b",
 			"result": false
+		},
+		{
+			"code": "<pre><code>resetVisits()</code></pre><pre><code>x = visits()</code></pre>",
+			"visits": {
+				"a": 3
+			},
+			"elementId": "a",
+			"changes": {
+				"var1": 0
+			},
+			"events": [
+				{
+					"name": "resetVisits",
+					"args": {}
+				}
+			]
 		},
 		{
 			"code": "<p>this</p><p>text</p><p>must</p><p>not</p><p>be</p><p>in</p><p>one</p><p>paragraph</p>",

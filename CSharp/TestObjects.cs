@@ -8,6 +8,12 @@ public struct TestVariable
     public object value;
 }
 
+public struct EventData
+{
+    public string name;
+    public Dictionary<string, object> args;
+}
+
 public struct TestCase
 {
     public string code;
@@ -17,6 +23,7 @@ public struct TestCase
     public object result;
     public string? error;
     public Dictionary<string, int>? visits;
+    public List<EventData>? events;
 }
 
 public struct TestFile

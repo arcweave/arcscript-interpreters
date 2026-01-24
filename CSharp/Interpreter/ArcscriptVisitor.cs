@@ -11,11 +11,20 @@ namespace Arcweave.Interpreter
         public readonly ArcscriptState state;
         public string elementId;
         private readonly Functions _functions;
-        public ArcscriptVisitor(string elementId, IProject project) {
+        private System.Action<string> _emit;
+        public ArcscriptVisitor(string elementId, IProject project, System.Action<string> emit = null) {
             this.elementId = elementId;
             this.project = project;
-            this.state = new ArcscriptState(elementId, project);
+            this.state = new ArcscriptState(elementId, project, emit);
             this._functions = new Functions(elementId, project, this.state);
+            if (emit != null)
+            {
+                _emit = emit;
+            }
+            else
+            {
+                _emit = (string eventName) => {  };
+            }
         }
 
         public override object VisitInput([NotNull] ArcscriptParser.InputContext context) {

@@ -3,7 +3,7 @@
 public partial class Project
 {
     public List<Variable> Variables { get; }
-    public Dictionary<string, Element> Elements;
+    public Dictionary<string, Element> Elements { get;  }
     public Project(List<Variable> variables, Dictionary<string, Element> elements)
     {
         Variables = variables;
