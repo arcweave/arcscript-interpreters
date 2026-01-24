@@ -1,0 +1,42 @@
+name: CI CSharp
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "CSharp/**"
+      - "grammar/*.g4"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "CSharp/**"
+      - "grammar/*.g4"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./CSharp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+
+      - name: Generate ANTLR4 files
+        run: sh generate.sh
+        working-directory: .
+
+      - name: Restore
+        run: dotnet restore CSharp.sln
+
+      - name: Build
+        run: dotnet build CSharp.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test CSharp.sln --configuration Release --no-build --verbosity normal

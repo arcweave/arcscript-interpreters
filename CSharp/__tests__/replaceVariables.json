@@ -1,0 +1,69 @@
+{
+  "initialVars": {
+    "var1": {
+      "id": "var1",
+      "name": "x",
+      "type": "integer",
+      "value": 14
+    },
+    "var2": {
+      "id": "var2",
+      "name": "y",
+      "type": "integer",
+      "value": 15
+    },
+    "var3": {
+      "id": "var3",
+      "name": "z",
+      "type": "integer",
+      "value": 0
+    },
+    "var4": {
+      "id": "var4",
+      "name": "w",
+      "type": "string",
+      "value": "Dummy text"
+    },
+    "var5": {
+      "id": "var5",
+      "name": "$c5",
+      "type": "integer",
+      "value": 0
+    },
+    "var6": {
+      "id": "var6",
+      "name": "_a",
+      "type": "boolean",
+      "value": false
+    },
+    "var7": {
+      "id": "var7",
+      "name": "xy",
+      "type": "integer",
+      "value": -1
+    }
+  },
+  "cases": [
+    {
+      "code": "<pre><code>x = x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + x</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>zed = zed + 2 * sqrt(zed)</code></pre><pre><code>y = 5 + zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>x = \"x marks the spot\"</code></pre><pre><code>xy = 5 + x</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>zed = \"x marks the spot\"</code></pre><pre><code>xy = 5 + zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>b = \"x marks the spot\"</code></pre><pre><code>xy = 5 + x</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>b = \"x marks the spot\"</code></pre><pre><code>xy = 5 + zed</code></pre>"
+    }
+  ]
+}

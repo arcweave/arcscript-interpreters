@@ -23,6 +23,6 @@ rm -rf *.g4 *.g4.bak
 cd ..
 
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=CSharp ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./CSharp -package Arcweave.Interpreter
-mkdir -p ../CSharp/src/Generated
-cp CSharp/*.cs ../CSharp/src/Generated/.
+mkdir -p ../CSharp/Interpreter/Generated
+cp CSharp/*.cs ../CSharp/Interpreter/Generated/.
 rm -rf ./CSharp
