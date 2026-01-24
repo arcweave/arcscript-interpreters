@@ -46,6 +46,10 @@ namespace Arcweave.Interpreter
 
         public static Expression operator -(Expression first, Expression second)
         {
+            if (first.Type() == typeof(string) || second.Type() == typeof(string))
+            {
+                throw new InvalidOperationException("Subtraction is not supported for string types.");
+            }
             var doubleValues = GetDoubleValues(first.Value, second.Value);
             if (!doubleValues.HasDouble)
             {
@@ -59,6 +63,10 @@ namespace Arcweave.Interpreter
 
         public static Expression operator *(Expression first, Expression second)
         {
+            if (first.Type() == typeof(string) || second.Type() == typeof(string))
+            {
+                throw new InvalidOperationException("Multiplication is not supported for string types.");
+            }
             var doubleValues = GetDoubleValues(first.Value, second.Value);
             if (!doubleValues.HasDouble)
             {
@@ -73,8 +81,17 @@ namespace Arcweave.Interpreter
 
         public static Expression operator /(Expression first, Expression second)
         {
+            if (first.Type() == typeof(string) || second.Type() == typeof(string))
+            {
+                throw new InvalidOperationException("Division is not supported for string types.");
+            }
             var doubleValues = GetDoubleValues(first.Value, second.Value);
-            return new Expression(doubleValues.Value1 / doubleValues.Value2);
+            var result = doubleValues.Value1 / doubleValues.Value2;
+            if (double.IsInfinity(result))
+            {
+                throw new DivideByZeroException("Division by zero.");
+            }
+            return new Expression(result);
         }
 
         public static bool operator ==(Expression first, Expression second)

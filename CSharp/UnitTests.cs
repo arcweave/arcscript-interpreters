@@ -18,34 +18,54 @@ public class Tests
             Cases = cases;
         }
     }
-    
+
     private static IEnumerable<TestCaseData> GetValidTestData()
     {
         var tests = LoadJson("../../../__tests__/valid.json");
-        
+
         foreach (var testCase in tests.Cases)
         {
             yield return new TestCaseData(tests.Variables, testCase);
         }
     }
-    
+
     private static IEnumerable<TestCaseData> GetConditionsTestData()
     {
         var tests = LoadJson("../../../__tests__/conditions.json");
-        
+
         foreach (var validTestsCase in tests.Cases)
         {
             yield return new TestCaseData(tests.Variables, validTestsCase);
         }
     }
-    
+
     private static IEnumerable<TestCaseData> GetStringConcatTestData()
     {
         var tests = LoadJson("../../../__tests__/stringConcat.json");
-        
+
         foreach (var stringConcatTestCase in tests.Cases)
         {
             yield return new TestCaseData(tests.Variables, stringConcatTestCase);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> GetRuntimeErrorTestData()
+    {
+        var tests = LoadJson("../../../__tests__/runtimeErrors.json");
+
+        foreach (var runtimeErrorTestCase in tests.Cases)
+        {
+            yield return new TestCaseData(tests.Variables, runtimeErrorTestCase);
+        }
+    }
+
+    private static IEnumerable<TestCaseData> GetParseErrorTestData()
+    {
+        var tests = LoadJson("../../../__tests__/parseErrors.json");
+
+        foreach (var parseErrorTestCase in tests.Cases)
+        {
+            yield return new TestCaseData(tests.Variables, parseErrorTestCase);
         }
     }
 
@@ -60,7 +80,7 @@ public class Tests
         {
             if (variable.value is long l)
             {
-                variables[variable.id] = new Variable(variable.name, (int) l);
+                variables[variable.id] = new Variable(variable.name, (int)l);
             }
             else
             {
@@ -78,6 +98,7 @@ public class Tests
         {
             return null;
         }
+
         var changesByName = new Dictionary<string, object>();
         foreach (var varChange in changes)
         {
@@ -86,7 +107,7 @@ public class Tests
 
         return changesByName;
     }
-    
+
     [Test]
     [TestCaseSource(nameof(GetValidTestData))]
     public void ValidTests(Dictionary<string, Variable> variables, TestCase testCase)
@@ -102,11 +123,12 @@ public class Tests
                 };
             }
         }
+
         Console.WriteLine("Testing Case: " + testCase.code);
         var project = new Project.Project(variables.Values.ToList(), elements);
         var i = new AwInterpreter(project, testCase.elementId);
         var output = i.RunScript(testCase.code);
-        
+
         if (testCase.output != null)
         {
             Assert.That(output.Output, Is.EqualTo(testCase.output));
@@ -134,14 +156,15 @@ public class Tests
                 };
             }
         }
+
         Console.WriteLine("Testing Case: " + testCase.code);
         var project = new Project.Project(variables.Values.ToList(), elements);
         var i = new AwInterpreter(project, testCase.elementId);
         var output = i.RunScript(testCase.code);
-        
+
         Assert.That(output.Result, Is.EqualTo(testCase.result));
     }
-    
+
     [Test]
     [TestCaseSource(nameof(GetStringConcatTestData))]
     public void StringConcatTests(Dictionary<string, Variable> variables, TestCase testCase)
@@ -157,11 +180,12 @@ public class Tests
                 };
             }
         }
+
         Console.WriteLine("Testing Case: " + testCase.code);
         var project = new Project.Project(variables.Values.ToList(), elements);
         var i = new AwInterpreter(project, testCase.elementId);
         var output = i.RunScript(testCase.code);
-        
+
         if (testCase.output != null)
         {
             Assert.That(output.Output, Is.EqualTo(testCase.output));
@@ -172,5 +196,49 @@ public class Tests
         {
             Assert.That(output.Changes, Is.EqualTo(changesByName));
         }
+    }
+
+    [Test]
+    [TestCaseSource(nameof(GetRuntimeErrorTestData))]
+    public void RuntimeErrorTests(Dictionary<string, Variable> variables, TestCase testCase)
+    {
+        var Elements = new Dictionary<string, Element>();
+        if (testCase.visits != null)
+        {
+            foreach (var kvp in testCase.visits)
+            {
+                Elements[kvp.Key] = new Element
+                {
+                    Visits = kvp.Value
+                };
+            }
+        }
+
+        Console.WriteLine("Testing Case: " + testCase.code);
+        var project = new Project.Project(variables.Values.ToList(), Elements);
+        var i = new AwInterpreter(project, testCase.elementId);
+        var ex = Assert.Throws<RuntimeException>(() => i.RunScript(testCase.code));
+    }
+
+    [Test]
+    [TestCaseSource(nameof(GetParseErrorTestData))]
+    public void ParseErrorTests(Dictionary<string, Variable> variables, TestCase testCase)
+    {
+        var Elements = new Dictionary<string, Element>();
+        if (testCase.visits != null)
+        {
+            foreach (var kvp in testCase.visits)
+            {
+                Elements[kvp.Key] = new Element
+                {
+                    Visits = kvp.Value
+                };
+            }
+        }
+
+        Console.WriteLine("Testing Case: " + testCase.code);
+        var project = new Project.Project(variables.Values.ToList(), Elements);
+        var i = new AwInterpreter(project, testCase.elementId);
+        var ex = Assert.Throws<ParseException>(() => i.RunScript(testCase.code));
     }
 }

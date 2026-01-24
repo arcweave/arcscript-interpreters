@@ -62,7 +62,12 @@ namespace Arcweave.Interpreter
             {
                 n = (double)e.Value;
             }
-            return Math.Sqrt(n);
+            var result = Math.Sqrt(n);
+            if (double.IsNaN(result))
+            {
+                throw new InvalidOperationException("Cannot compute square root of a negative number.");
+            }
+            return result;
         }
 
         public object Sqr(IList<object> args) {

@@ -15,6 +15,7 @@ public struct TestCase
     public string? output;
     public string elementId;
     public object result;
+    public string? error;
     public Dictionary<string, int>? visits;
 }
 
