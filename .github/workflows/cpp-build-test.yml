@@ -29,6 +29,14 @@ jobs:
         with:
           cmake-version: "3.x"
 
+      - name: Cache CMake packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            Cpp/build/_deps
+            Cpp/build/antlr4_runtime/src/antlr4_runtime/runtime/Cpp
+          key: ${{ runner.os }}-cmake-deps-${{ hashFiles('grammar/*.g4', 'Cpp/CMakeLists.txt', 'Cpp/cmake/ExternalAntlr4Cpp.cmake') }}
+
       - name: Generate ANTLR4 files (Windows)
         if: matrix.os == 'windows-latest'
         run: .\generate.ps1
