@@ -42,9 +42,16 @@ We are using the JavaScript parser to interpret arcscript in our arcweave app. W
 
 You can find more info in [JavaScript](JavaScript) folder.
 
-### C# & C++
+### C#
 
-The implementation on these two languages are not yet ready to be published.
+Use the C# code along with the antlr4 NuGet package in your project.
+
+Find more info in the [CSharp](CSharp) folder.
+
+### C++
+
+Building the C++ solution will create the include headers and the shared libaries (.dll for Windows and .dylib for macOS) to be included in your project
+Find more info in the [Cpp](Cpp) folder.
 
 ## Links & References
 
