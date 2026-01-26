@@ -1,5 +1,5 @@
 .DS_Store
-
+.idea
 /grammar/**/.antlr
 !/grammar/*.g4
 

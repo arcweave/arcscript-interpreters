@@ -1,0 +1,56 @@
+name: Cpp Build and Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cpp/**"
+      - "grammar/*.g4"
+  pull_request:
+    branches: [main]
+    paths:
+      - "Cpp/**"
+      - "grammar/*.g4"
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+      fail-fast: false
+    env:
+      DEMO_DIR: demo/${{ matrix.os == 'windows-latest' && 'Win32/Debug' || 'Mac' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.x"
+
+      - name: Generate ANTLR4 files (Windows)
+        if: matrix.os == 'windows-latest'
+        run: .\generate.ps1
+
+      - name: Generate ANTLR4 files (macOS)
+        if: matrix.os == 'macos-latest'
+        run: sh ./generate.sh
+        shell: bash
+
+      - name: Configure CMake
+        run: |
+          mkdir -p Cpp/build
+          cd Cpp/build
+          cmake .. -DWITH_TEST=true
+
+      - name: Build
+        run: |
+          cd Cpp/build
+          cmake --build .
+
+      - name: Run tests
+        run: |
+          cd Cpp/build/${{ env.DEMO_DIR }}
+          ls
+          ./ArcscriptTest

@@ -28,6 +28,6 @@ Set-Location ..
 
 # CSharp generation
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=CSharp ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./CSharp -package Arcweave.Interpreter
-New-Item -ItemType Directory -Force -Path ../CSharp/src/Generated | Out-Null
-Copy-Item CSharp\*.cs ../CSharp/src/Generated\
+New-Item -ItemType Directory -Force -Path ../CSharp/Interpreter/Generated | Out-Null
+Copy-Item CSharp\*.cs ../CSharp/Interpreter/Generated\
 Remove-Item -Recurse -Force ./CSharp

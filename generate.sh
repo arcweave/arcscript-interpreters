@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+cd "$(dirname "$0")"
+
 if [ ! -f ./antlr4.jar ]
 then  
   curl https://www.antlr.org/download/antlr-4.13.1-complete.jar -o antlr4.jar
