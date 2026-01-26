@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p Cpp/build
           cd Cpp/build
-          cmake .. --DWITH_TEST=true
+          cmake .. -DWITH_TEST=true
 
       - name: Build
         run: |
