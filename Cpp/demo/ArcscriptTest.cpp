@@ -262,6 +262,7 @@ int testFile(std::filesystem::path path, int testIndex = -1) {
 
         if (errorOutput.length() > 0) {
             std::cout << errorOutput << std::endl;
+            return 1;
         }
 
         return 0;
