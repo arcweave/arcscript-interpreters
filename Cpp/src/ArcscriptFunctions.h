@@ -34,5 +34,6 @@ public:
   std::any Sqr(std::vector<std::any> args);
   std::any Sqrt(std::vector<std::any> args);
   std::any Visits(std::vector<std::any> args);
+  std::any ResetVisits(std::vector<std::any> args);
 };
 }
