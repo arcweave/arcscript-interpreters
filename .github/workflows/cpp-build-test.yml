@@ -20,7 +20,7 @@ jobs:
         os: [macos-latest, windows-latest]
       fail-fast: false
     env:
-      PLATFORM: ${{ matrix.os == 'windows-latest' && 'Win32' || 'Mac' }}
+      DEMO_DIR: ${{ matrix.os == 'windows-latest' && 'Win32/Debug' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,6 +51,6 @@ jobs:
 
       - name: Run tests
         run: |
-          cd Cpp/build/demo/${{ env.PLATFORM }}
+          cd Cpp/build/${{ env.DEMO_DIR }}
           ls
           ./ArcscriptTest
