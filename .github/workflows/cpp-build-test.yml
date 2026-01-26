@@ -18,6 +18,8 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, windows-latest]
+    env:
+      PLATFORM: ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,7 +42,7 @@ jobs:
         run: |
           mkdir -p Cpp/build
           cd Cpp/build
-          cmake -DWITH_DEMO=true ..
+          cmake .. --DWITH_TEST=true
 
       - name: Build
         run: |
@@ -49,5 +51,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd Cpp/build/demo
+          cd Cpp/build/demo/${{ env.PLATFORM }}
           ./ArcscriptTest

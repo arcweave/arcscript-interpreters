@@ -119,7 +119,7 @@ add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
         -E copy ${ARCSCRIPT_INCLUDE_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/lib/include"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-if (WITH_DEMO)
+if (WITH_TEST)
     add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
 
     include(FetchContent)
@@ -172,4 +172,4 @@ if (WITH_DEMO)
             COMMAND ${CMAKE_COMMAND}
             -E copy ${ARCSCRIPT_TRANSPILER_LIB_FILES} "$<TARGET_FILE_DIR:ArcscriptTest>"
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endif (WITH_DEMO)
+endif (WITH_TEST)
