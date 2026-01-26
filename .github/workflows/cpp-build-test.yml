@@ -44,27 +44,10 @@ jobs:
           cd Cpp/build
           cmake .. -DWITH_TEST=true
 
-      - name: Restore Cache
-        id: cache-deps-restore
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            Cpp/build/_deps
-            Cpp/build/antlr4_runtime/src/antlr4_runtime/runtime/Cpp
-          key: ${{ runner.os }}-cmake-deps-${{ hashFiles('grammar/*.g4', 'Cpp/CMakeLists.txt', 'Cpp/cmake/ExternalAntlr4Cpp.cmake') }}
-
       - name: Build
         run: |
           cd Cpp/build
           cmake --build .
-
-      - name: Save Cache
-        uses: actions/cache/save@v5
-        with:
-          path: |
-            Cpp/build/_deps
-            Cpp/build/antlr4_runtime/src/antlr4_runtime/runtime/Cpp
-          key: ${{ steps.cache-deps-restore.outputs.cache-primary-key }}
 
       - name: Run tests
         run: |
