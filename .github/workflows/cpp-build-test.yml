@@ -20,7 +20,7 @@ jobs:
         os: [macos-latest, windows-latest]
       fail-fast: false
     env:
-      DEMO_DIR: ${{ matrix.os == 'windows-latest' && 'Win32/Debug' || 'Mac' }}
+      DEMO_DIR: demo/${{ matrix.os == 'windows-latest' && 'Win32/Debug' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
