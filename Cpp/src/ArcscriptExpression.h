@@ -1,7 +1,8 @@
+#pragma once
+
 #include <iostream>
 #include <any>
 #include <string>
-#include <cstring>
 
 namespace Arcweave {
 
@@ -46,35 +47,37 @@ public:
     return value.type();
   }
 
-  Expression operator+ (const Expression &other);
-  Expression operator- (const Expression &other);
-  Expression operator* (const Expression &other);
-  Expression operator* (const int other);
-  Expression operator/ (const Expression &other);
+  Expression operator+ (const Expression &other) const;
+  Expression operator- (const Expression &other) const;
+  Expression operator* (const Expression &other) const;
+  Expression operator* (const int other) const;
+  Expression operator/ (const Expression &other) const;
+  Expression operator% (const Expression &other) const;
   Expression operator+= (const Expression &other);
   Expression operator-= (const Expression &other);
   Expression operator*= (const Expression &other);
   Expression operator/= (const Expression &other);
+  Expression operator%= (const Expression &other);
 
-  bool operator== (const Expression &other);
-  bool operator== (double other);
-  bool operator== (int other);
-  bool operator== (std::string other);
-  bool operator== (bool other);
-  bool operator!= (const Expression &other);
-  bool operator!= (double other);
-  bool operator!= (int other);
-  bool operator!= (std::string other);
-  bool operator!= (const char other[]);
-  bool operator> (const Expression &other);
-  bool operator> (int other);
-  bool operator> (double other);
-  bool operator>= (const Expression &other);
-  bool operator< (const Expression &other);
-  bool operator<= (const Expression &other);
-  bool operator! ();
-  bool operator&& (const Expression &other);
-  bool operator|| (const Expression &other);
+  bool operator== (const Expression &other) const;
+  bool operator== (double other) const;
+  bool operator== (int other) const;
+  bool operator== (const std::string& other) const;
+  bool operator== (bool other) const;
+  bool operator!= (const Expression &other) const;
+  bool operator!= (double other) const;
+  bool operator!= (int other) const;
+  bool operator!= (const std::string& other) const;
+  bool operator!= (const char other[]) const;
+  bool operator> (const Expression &other) const;
+  bool operator> (int other) const;
+  bool operator> (double other) const;
+  bool operator>= (const Expression &other) const;
+  bool operator< (const Expression &other) const;
+  bool operator<= (const Expression &other) const;
+  bool operator! () const;
+  bool operator&& (const Expression &other) const;
+  bool operator|| (const Expression &other) const;
 };
 
 }

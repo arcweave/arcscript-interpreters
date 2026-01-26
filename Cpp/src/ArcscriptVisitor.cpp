@@ -154,6 +154,9 @@ std::any ArcscriptVisitor::visitStatement_assignment(ArcscriptParser::Statement_
   if (ctx->ASSIGNDIV() != NULL) {
     varValue /= compound_condition_or;
   }
+  if (ctx->ASSIGNMOD() != NULL) {
+    varValue %= compound_condition_or;
+  }
 
   state->setVarValue(variableName, varValue.value);
   return std::any();
@@ -277,6 +280,8 @@ std::any ArcscriptVisitor::visitMultiplicative_numeric_expression(ArcscriptParse
     }
     else if (ctx->DIV() != NULL) {
       signed_unary_num_expr = result / signed_unary_num_expr;
+    } else if (ctx->MOD() != NULL) {
+      signed_unary_num_expr = result % signed_unary_num_expr;
     }
     return signed_unary_num_expr;
   }
