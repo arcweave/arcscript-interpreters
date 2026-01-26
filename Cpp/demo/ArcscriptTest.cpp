@@ -19,7 +19,7 @@ using json = nlohmann::json;
 using namespace Arcweave;
 
 UVariable* getInitialVars(json initialVarsJson) {
-    UVariable* initVars = new UVariable[initialVarsJson.size()];
+    auto initVars = new UVariable[initialVarsJson.size()];
     int i = 0;
     for (json::iterator it = initialVarsJson.begin(); it != initialVarsJson.end(); ++it) {
         std::string id = it.value()["id"].template get<std::string>();
@@ -82,7 +82,7 @@ std::map<std::string, std::any> getExpectedChanges(json changes) {
 
 UVisit* getVisits(json initVisits) {
     if (initVisits.size() == 0) return nullptr;
-    UVisit* visits = new UVisit[initVisits.size()];
+    auto visits = new UVisit[initVisits.size()];
     int i = 0;
     for (json::iterator it = initVisits.begin(); it != initVisits.end(); ++it) {
         visits[i].elId = strdup(it.key().c_str());
@@ -230,7 +230,6 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
         delete visits;
     }
     free(const_cast<char *>(currentElement));
-    free(const_cast<char *>(code));
 
     deallocateOutput(result);
 
@@ -240,6 +239,8 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
         temp << "Test case " << caseIndex << " failed: \"" << code << "\"" << std::endl << errorOutput.rdbuf();
         errorOutput.swap(temp);
     }
+
+    free(const_cast<char *>(code));
 
     return errorOutput.str();
 }
@@ -296,6 +297,11 @@ int testFile(std::filesystem::path path, int testIndex = -1) {
         }
     }
     delete initVars;
+
+    if (fileError) {
+        return 1;
+    }
+
     return 0;
 }
 
@@ -311,12 +317,18 @@ int main(int argc, char* argv[])
         "./tests/runtimeErrors.json",
         "./tests/parseErrors.json",
     };
-
+    bool hasErrors = false;
     for (auto path : testPaths) {
         if (!std::filesystem::exists(path)) {
             std::cout << "File not found: " << path << std::endl;
             continue;
         }
-        testFile(path);
+        auto result = testFile(path);
+        if (result != 0) {
+            hasErrors = true;
+        }
+    }
+    if (hasErrors) {
+        return 1;
     }
 }
