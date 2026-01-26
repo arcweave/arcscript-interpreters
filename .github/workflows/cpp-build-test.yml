@@ -19,11 +19,10 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     env:
-      PLATFORM: ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }}
+      PLATFORM: ${{ matrix.os == 'windows-latest' && 'Win32' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
