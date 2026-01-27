@@ -66,6 +66,7 @@ namespace Arcweave {
       { "sqr", { 1, 1 } },
       { "sqrt", { 1, 1 } },
       { "visits", { 0, 1 } },
+      { "resetVisits", { 0, 0 } },
     };
 
     std::any ArcscriptFunctions::Call(std::string functionName, std::vector<std::any> _args) {
@@ -114,6 +115,9 @@ namespace Arcweave {
         }
         else if (functionName == "visits") {
             result = this->Visits(args);
+        }
+        else if (functionName == "resetVisits") {
+            result = this->ResetVisits(args);
         }
         return result;
     }
@@ -265,4 +269,10 @@ namespace Arcweave {
 
         return _state->visits[nodeId];
     }
+
+    std::any ArcscriptFunctions::ResetVisits(std::vector<std::any> args) {
+        _state->resetVisits();
+        return {};
+    }
+
 }

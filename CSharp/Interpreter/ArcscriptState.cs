@@ -11,11 +11,21 @@ namespace Arcweave.Interpreter
         public ArcscriptOutputs Outputs;
         public string currentElement { get; set; }
         public IProject project { get; set; }
-        public ArcscriptState(string elementId, IProject project)
+
+        private System.Action<string> _emit;
+        public ArcscriptState(string elementId, IProject project, System.Action<string>? emit = null)
         {
             Outputs = new ArcscriptOutputs();
             this.currentElement = elementId;
             this.project = project;
+            if (emit != null)
+            {
+                _emit = emit;
+            }
+            else
+            {
+                _emit = (string eventName) => { };
+            }
         }
 
         public IVariable GetVariable(string name) {
@@ -42,6 +52,15 @@ namespace Arcweave.Interpreter
             for ( int i = 0; i < names.Length; i++ ) {
                 this.VariableChanges[names[i]] = values[i];
             }
+        }
+
+        public void ResetVisits()
+        {
+            foreach (var projectElement in project.Elements)
+            {
+                projectElement.Value.Visits = 0;
+            }
+            _emit("resetVisits");
         }
     }
 }

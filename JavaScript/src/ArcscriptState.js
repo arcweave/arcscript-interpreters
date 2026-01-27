@@ -2,7 +2,7 @@ import cloneDeep from 'lodash.clonedeep';
 import { joinParagraphs, joinSameTypes } from './utils.js';
 
 export default class ArcscriptState {
-  constructor(varValues, varObjects, elementVisits, currentElement) {
+  constructor(varValues, varObjects, elementVisits, currentElement, emit) {
     this.varValues = varValues;
     this.varObjects = varObjects;
     this.elementVisits = elementVisits;
@@ -10,6 +10,7 @@ export default class ArcscriptState {
     this.outputs = [];
     this.conditionDepth = 0;
     this.changes = {};
+    this.emit = emit;
 
     this.outputDoc = document.implementation.createHTMLDocument();
     this.rootElement = this.outputDoc.createElement('div');
@@ -181,5 +182,12 @@ export default class ArcscriptState {
    */
   generateOutput() {
     return this.rootElement.innerHTML;
+  }
+
+  resetVisits() {
+    Object.keys(this.elementVisits).forEach(key => {
+      this.elementVisits[key] = 0;
+    });
+    this.emit('resetVisits', {});
   }
 }

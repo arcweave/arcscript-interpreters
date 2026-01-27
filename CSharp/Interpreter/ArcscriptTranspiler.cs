@@ -10,10 +10,20 @@ namespace Arcweave.Interpreter
         private IProject Project { get; set; }
         private string ElementId { get; set; }
 
-        public AwInterpreter(IProject project, string elementId = "")
+        private System.Action<string> _emit;
+
+        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null)
         {
             this.Project = project;
             this.ElementId = elementId;
+            if (onEvent != null)
+            {
+                _emit = onEvent;
+            }
+            else
+            {
+                _emit = (string eventName) => { };
+            }
         }
 
         private ArcscriptParser.InputContext GetParseTree(string code)
@@ -59,7 +69,7 @@ namespace Arcweave.Interpreter
                 throw new ParseException(e.Message, e);
             }
             
-            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project);
+            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit);
             object result;
             try
             {

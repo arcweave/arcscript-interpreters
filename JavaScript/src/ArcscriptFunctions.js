@@ -124,6 +124,10 @@ export default class ArcscriptFunctions {
     return this.state.elementVisits[elementId];
   }
 
+  resetVisits(...args) {
+    this.state.resetVisits();
+  }
+
   /**
    * Checks if the function argument is a number
    * @param {string} name         The function name

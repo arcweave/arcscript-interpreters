@@ -33,14 +33,17 @@ public:
   std::string currentElement;
   std::map<std::string, int> visits;
 
-  ArcscriptState(std::string elementId, std::map<std::string, Variable> varValues, std::map<std::string, int> _visits) {
+  void (*emit) (const char* eventName);
+
+  ArcscriptState(std::string elementId, std::map<std::string, Variable> varValues, std::map<std::string, int> _visits, void (*_emit) (const char* eventName)) {
     currentElement = elementId;
     variableValues = varValues;
     for(const auto var : variableValues) {
       varNameToID[var.second.name] = var.first;
     }
     visits = _visits;
-  };
+    emit = _emit;
+  }
 
   inline Variable getVar(std::string name) {
     std::string varId = varNameToID[name];
@@ -86,6 +89,13 @@ public:
       }
       it++;
     }
+  }
+
+  inline void resetVisits() {
+    for (auto visit: visits) {
+      visits[visit.first] = 0;
+    }
+    emit("resetVisits");
   }
 };
 

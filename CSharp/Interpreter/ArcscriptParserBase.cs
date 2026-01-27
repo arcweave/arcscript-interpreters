@@ -34,6 +34,7 @@ namespace Arcweave.Interpreter
             { "show", new FunctionArgs { MinArgs=1 } },
             { "reset", new FunctionArgs { MinArgs=1 } },
             { "resetAll", new FunctionArgs { MinArgs=0 } },
+            { "resetVisits", new FunctionArgs { MinArgs=0, MaxArgs = 0} },
         };
 
             this.ArcscriptFunctions = functions;
@@ -54,6 +55,7 @@ namespace Arcweave.Interpreter
             { "show", new FunctionArgs { MinArgs=1 } },
             { "reset", new FunctionArgs { MinArgs=1 } },
             { "resetAll", new FunctionArgs { MinArgs=0 } },
+            { "resetVisits", new FunctionArgs { MinArgs=0, MaxArgs = 0} },
         };
 
             this.ArcscriptFunctions = functions;

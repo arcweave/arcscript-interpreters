@@ -8,7 +8,8 @@ export declare class Interpreter {
     varValues: object,
     varObjects: object,
     elementVisits: object,
-    currentElement: string
+    currentElement: string,
+    eventHandler?: Function
   );
   runScript(code: string, varValues?: object): object;
   parse(code: string): object;

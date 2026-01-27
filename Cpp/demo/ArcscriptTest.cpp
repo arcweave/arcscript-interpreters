@@ -92,6 +92,16 @@ UVisit* getVisits(json initVisits) {
     return visits;
 }
 
+std::vector<std::string> events;
+
+void onEvent(const char* eventName) {
+    events.emplace_back(eventName);
+}
+
+void resetEvents() {
+    events.clear();
+}
+
 std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t initVarLen) {
     std::stringstream errorOutput;
 
@@ -110,6 +120,8 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
         visitsLen = testCase["visits"].size();
     }
 
+    resetEvents();
+
     bool hasError = false;
     std::string errorType;
     if (testCase.contains("error")) {
@@ -118,7 +130,7 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
     }
     UTranspilerOutput* result = nullptr;
     try {
-        result = runScriptExport(code, currentElement, initVars, initVarLen, visits, visitsLen);
+        result = runScriptExport(code, currentElement, initVars, initVarLen, visits, visitsLen, onEvent);
     } catch (RuntimeErrorException &e) {
         if (!hasError) {
             errorOutput << "Unexpected Runtime Error: " << e.what() << std::endl;
@@ -210,6 +222,23 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
                 bool expectedValue = expectedChangeValue.get<bool>();
                 if (expectedValue != change.bool_result) {
                     errorOutput << "Variable change mismatch for " << expectedChangeKey << ": expected " << expectedValue << ", got " << change.bool_result << std::endl;
+                }
+            }
+        }
+    }
+
+    if (testCase.contains("events")) {
+        std::vector<std::string> expectedEvents;
+        for (auto event_json: testCase["events"]) {
+            expectedEvents.push_back(event_json["name"].get<std::string>());
+        }
+
+        if (expectedEvents.size() != events.size()) {
+            errorOutput << "Event count mismatch: expected " << expectedEvents.size() << ", got " << events.size() << std::endl;
+        } else {
+            for (size_t i = 0; i < expectedEvents.size(); i++) {
+                if (expectedEvents[i] != events[i]) {
+                    errorOutput << "Event mismatch at index " << i << ": expected \"" << expectedEvents[i] << "\", got \"" << events[i] << "\"" << std::endl;
                 }
             }
         }

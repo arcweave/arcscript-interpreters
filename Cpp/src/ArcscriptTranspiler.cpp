@@ -60,7 +60,7 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
   return result;
 }
 
-UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength)
+UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, void (*onEvent)(const char*))
 {
     Arcweave::TranspilerOutput transpilerOutput;
 
@@ -96,7 +96,7 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         initVisits[std::string(visits[i].elId)] = visits[i].visits;
     }
 
-    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits);
+    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits, onEvent);
     transpilerOutput = transpiler.runScript(sCode);
 
     UTranspilerOutput* uTranspilerOutput = new UTranspilerOutput();

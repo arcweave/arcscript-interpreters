@@ -126,7 +126,15 @@ public class Tests
 
         Console.WriteLine("Testing Case: " + testCase.code);
         var project = new Project.Project(variables.Values.ToList(), elements);
-        var i = new AwInterpreter(project, testCase.elementId);
+        List<EventData> events = new List<EventData>();
+        var onEvent = (string eventName) =>
+        {
+            var eventData = new EventData();
+            eventData.name = eventName;
+            eventData.args = new Dictionary<string, object>();
+            events.Add(eventData);
+        };
+        var i = new AwInterpreter(project, testCase.elementId, onEvent);
         var output = i.RunScript(testCase.code);
 
         if (testCase.output != null)
@@ -138,6 +146,17 @@ public class Tests
         if (changesByName != null)
         {
             Assert.That(output.Changes, Is.EqualTo(changesByName));
+        }
+        
+        if (testCase.events != null)
+        {
+            Assert.That(events.Count, Is.EqualTo(testCase.events.Count));
+            for (int index = 0; index < events.Count; index++)
+            {
+                var expectedEvent = testCase.events[index];
+                Assert.That(events[index].name, Is.EqualTo(expectedEvent.name));
+                Assert.That(events[index].args, Is.EqualTo(expectedEvent.args));
+            }
         }
     }
 

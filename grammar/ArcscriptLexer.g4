@@ -75,7 +75,7 @@ FNAME: 'abs'|
   'sqrt'|
   'visits';
 
-VFNAME: 'show';
+VFNAME: 'show' | 'resetVisits';
 
 VFNAMEVARS: 'reset' | 'resetAll';
 

@@ -16,6 +16,7 @@ export default class ArcscriptParserBase extends antlr4.Parser {
     show: [1, null],
     reset: [1, null],
     resetAll: [0, null],
+    resetVisits: [0, 0],
   };
 
   constructor(input) {
