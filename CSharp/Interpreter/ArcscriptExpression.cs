@@ -93,6 +93,28 @@ namespace Arcweave.Interpreter
             }
             return new Expression(result);
         }
+        
+        public static Expression operator %(Expression first, Expression second)
+        {
+            if (first.Type() == typeof(string) || second.Type() == typeof(string))
+            {
+                throw new InvalidOperationException("Modulo is not supported for string types.");
+            }
+            var doubleValues = GetDoubleValues(first.Value, second.Value);
+            if (doubleValues.Value2 == 0)
+            {
+                throw new DivideByZeroException("Modulo by zero.");
+            }
+            if (!doubleValues.HasDouble)
+            {
+                var intValue = (int)(doubleValues.Value1 % doubleValues.Value2);
+                return new Expression(intValue);
+            }
+            else
+            {
+                return new Expression(doubleValues.Value1 % doubleValues.Value2);
+            }
+        }
 
         public static bool operator ==(Expression first, Expression second)
         {
@@ -113,8 +135,12 @@ namespace Arcweave.Interpreter
             return false;
         }
 
-        public int CompareTo(object other)
+        public int CompareTo(object? other)
         {
+            if (other == null || !(other is Expression))
+            {
+                throw new ArgumentException("Object is not an Expression");
+            }
             Expression o = (Expression)other;
             DoubleValues fValues = GetDoubleValues(this.Value, o.Value);
             double result = fValues.Value1 - fValues.Value2;
@@ -128,7 +154,7 @@ namespace Arcweave.Interpreter
             return 0;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is Expression))
             {

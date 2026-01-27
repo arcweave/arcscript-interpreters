@@ -67,6 +67,18 @@
     {
       "code": "<pre><code>w -= _a</code></pre>",
       "error": "runtime"
+    },
+    {
+      "code": "<pre><code>z = 10 % 0</code></pre>",
+      "error": "runtime"
+    },
+    {
+      "code": "<pre><code>x %= 0</code></pre>",
+      "error": "runtime"
+    },
+    {
+      "code": "<pre><code>y = 5 % \"test\"</code></pre>",
+      "error": "runtime"
     }
   ]
 }

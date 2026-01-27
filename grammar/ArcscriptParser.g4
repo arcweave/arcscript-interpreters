@@ -63,6 +63,7 @@ statement_assignment:
 		| ASSIGNSUB
 		| ASSIGNMUL
 		| ASSIGNDIV
+		| ASSIGNMOD
 		| ASSIGN
 	) compound_condition_or {this.assertVariable($VARIABLE);};
 
@@ -84,7 +85,7 @@ additive_numeric_expression:
 
 multiplicative_numeric_expression:
 	signed_unary_numeric_expression
-	| multiplicative_numeric_expression (MUL | DIV) signed_unary_numeric_expression;
+	| multiplicative_numeric_expression (MUL | DIV | MOD) signed_unary_numeric_expression;
 
 signed_unary_numeric_expression:
 	sign unary_numeric_expression

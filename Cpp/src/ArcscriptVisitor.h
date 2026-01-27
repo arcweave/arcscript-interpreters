@@ -15,7 +15,7 @@ public:
   ArcscriptState *state;
   ArcscriptFunctions *functions;
 
-  ArcscriptVisitor(ArcscriptState* _state) : state(_state) {
+  explicit ArcscriptVisitor(ArcscriptState* _state) : state(_state) {
     functions = new ArcscriptFunctions(state);
   }
 

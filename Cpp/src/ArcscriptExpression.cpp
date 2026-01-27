@@ -1,5 +1,6 @@
 #include "ArcscriptExpression.h"
 #include <sstream>
+#include <cstring>
 
 #include "ArcscriptErrorExceptions.h"
 
@@ -31,11 +32,10 @@ std::string Expression::valueToString(std::any value)
 
   
 Expression::NumberValues Expression::doubleValues(std::any value1, std::any value2) {
-  int intValue1, intValue2;
-  double dblValue1, dblValue2;
+  double dblValue1 = 0, dblValue2 = 0;
   bool isDouble = false;
   if (value1.type() == typeid(int)) {
-    intValue1 = std::any_cast<int>(value1); 
+    const int intValue1 = std::any_cast<int>(value1);
     dblValue1 = intValue1;
   } else if (value1.type() == typeid(double)){ // type double;
     isDouble = true;
@@ -49,7 +49,7 @@ Expression::NumberValues Expression::doubleValues(std::any value1, std::any valu
     }
   }
   if (value2.type() == typeid(int)) {
-    intValue2 = std::any_cast<int>(value2); 
+    const int intValue2 = std::any_cast<int>(value2);
     dblValue2 = intValue2;
   } else if (value2.type() == typeid(double)) {
     isDouble = true;
@@ -77,15 +77,15 @@ bool Expression::valueToBool(std::any value) {
     return (std::any_cast<double>(value) > 0);
   }
   if (value.type() == typeid(std::string))  {
-    return (std::any_cast<std::string>(value) != "");
+    return (!std::any_cast<std::string>(value).empty());
   }
   return (std::any_cast<bool>(value));
 }
 
-Expression Expression::operator+ (const Expression &other) {
+Expression Expression::operator+ (const Expression &other) const {
   if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string))
   {
-    return Expression(valueToString(value) + valueToString(other.value));
+    return {valueToString(value) + valueToString(other.value)};
   }
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
@@ -98,7 +98,7 @@ Expression Expression::operator+ (const Expression &other) {
   return *result;
 }
 
-Expression Expression::operator- (const Expression &other) {
+Expression Expression::operator- (const Expression &other) const {
   if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
     throw RuntimeErrorException("Cannot subtract strings");
   }
@@ -113,7 +113,7 @@ Expression Expression::operator- (const Expression &other) {
   return *result;
 }
 
-Expression Expression::operator* (const Expression &other) {
+Expression Expression::operator* (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
   if (!values.hasDoubles) {
@@ -125,7 +125,7 @@ Expression Expression::operator* (const Expression &other) {
   return *result;
 }
 
-Expression Expression::operator* (const int other) {
+Expression Expression::operator* (const int other) const {
   NumberValues values = doubleValues(value, other);
   Expression* result;
   if (!values.hasDoubles) {
@@ -137,7 +137,7 @@ Expression Expression::operator* (const int other) {
   return *result;
 }
 
-Expression Expression::operator/ (const Expression &other) {
+Expression Expression::operator/ (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   Expression* result;
 
@@ -147,6 +147,24 @@ Expression Expression::operator/ (const Expression &other) {
 
   result = new Expression(values.value1 / values.value2);
 
+  return *result;
+}
+
+Expression Expression::operator% (const Expression &other) const {
+  NumberValues values = doubleValues(value, other.value);
+  Expression* result;
+
+  if (values.value2 == 0) {
+    throw RuntimeErrorException("Modulo by zero is not allowed.");
+  }
+
+  if (!values.hasDoubles) {
+    int intValue = static_cast<int>(static_cast<int>(values.value1) % static_cast<int>(values.value2));
+    result  = new Expression(intValue);
+  } else {
+    double modValue = std::fmod(values.value1, values.value2);
+    result = new Expression(modValue);
+  }
   return *result;
 }
 
@@ -216,7 +234,24 @@ Expression Expression::operator/= (const Expression &other) {
   return *this;
 }
 
-bool Expression::operator== (const Expression &other) {
+Expression Expression::operator%= (const Expression &other) {
+  NumberValues values = doubleValues(value, other.value);
+
+  if (values.value2 == 0) {
+    throw RuntimeErrorException("Modulo by zero is not allowed.");
+  }
+
+  if (!values.hasDoubles) {
+    int intValue = static_cast<int>(static_cast<int>(values.value1) % static_cast<int>(values.value2));
+    value  = new Expression(intValue);
+  } else {
+    double modValue = std::fmod(values.value1, values.value2);
+    value = new Expression(modValue);
+  }
+  return *this;
+}
+
+bool Expression::operator== (const Expression &other) const {
   if (value.type() == typeid(int) || value.type() == typeid(double)) {
     NumberValues values = doubleValues(value, other.value);
     return values.value1 == values.value2;
@@ -227,28 +262,28 @@ bool Expression::operator== (const Expression &other) {
   return std::any_cast<std::string>(value) == std::any_cast<std::string>(other.value);
 }
 
-bool Expression::operator== (double other) {
+bool Expression::operator== (double other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 == values.value2;
 }
 
-bool Expression::operator== (int other) {
+bool Expression::operator== (int other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 == values.value2;
 }
 
-bool Expression::operator== (std::string other) {
+bool Expression::operator== (const std::string& other) const {
   return std::any_cast<std::string>(value) == other;
 }
 
-bool Expression::operator== (bool other) {
+bool Expression::operator== (const bool other) const {
   return valueToBool(value) == other;
 }
 
-bool Expression::operator!= (const Expression &other) {
+bool Expression::operator!= (const Expression &other) const {
   if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
     if (value.type() != other.value.type()) {
-      return true; // Different types, cannot be equal
+      return true; // Different types cannot be equal
     } else {
       return std::any_cast<std::string>(value) != std::any_cast<std::string>(other.value);
     }
@@ -263,63 +298,63 @@ bool Expression::operator!= (const Expression &other) {
   return std::any_cast<std::string>(value) != std::any_cast<std::string>(other.value);
 }
 
-bool Expression::operator!= (double other) {
+bool Expression::operator!= (double other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 != values.value2;
 }
 
-bool Expression::operator!= (int other) {
+bool Expression::operator!= (int other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 != values.value2;
 }
 
-bool Expression::operator!= (std::string other) {
+bool Expression::operator!= (const std::string& other) const {
   return std::any_cast<std::string>(value) != other;
 }
 
-bool Expression::operator!= (const char other[]) {
+bool Expression::operator!= (const char other[]) const {
   return strcmp(std::any_cast<std::string>(value).c_str(), other) == 0;
 }
 
-bool Expression::operator> (const Expression &other) {
+bool Expression::operator> (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   return values.value1 > values.value2;
 }
 
-bool Expression::operator> (int other) {
+bool Expression::operator> (int other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 > values.value2;
 }
 
-bool Expression::operator> (double other) {
+bool Expression::operator> (double other) const {
   NumberValues values = doubleValues(value, other);
   return values.value1 > values.value2;
 }
 
-bool Expression::operator>= (const Expression &other) {
+bool Expression::operator>= (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   return values.value1 >= values.value2;
 }
 
-bool Expression::operator< (const Expression &other) {
+bool Expression::operator< (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   return values.value1 < values.value2;
 }
 
-bool Expression::operator<= (const Expression &other) {
+bool Expression::operator<= (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
   return values.value1 <= values.value2;
 }
 
-bool Expression::operator! () {
+bool Expression::operator! () const {
   return !(valueToBool(value));
 }
 
-bool Expression::operator&& (const Expression &other) {
+bool Expression::operator&& (const Expression &other) const {
   return valueToBool(value) && valueToBool(other.value);
 }
 
-bool Expression::operator|| (const Expression &other) {
+bool Expression::operator|| (const Expression &other) const {
   return valueToBool(value) || valueToBool(other.value);
 }
 }

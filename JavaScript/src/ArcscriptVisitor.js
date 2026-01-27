@@ -163,6 +163,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
       ctx.ASSIGNADD() ||
       ctx.ASSIGNSUB() ||
       ctx.ASSIGNMUL() ||
+      ctx.ASSIGNMOD() ||
       ctx.ASSIGNDIV()
     ) {
       if (typeof variableValue === 'boolean') {
@@ -187,6 +188,13 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
     } else if (ctx.ASSIGNDIV()) {
       result = new BigNumber(variableValue)
         .dividedBy(new BigNumber(compound_condition_or))
+        .toNumber();
+      if (!Number.isFinite(result)) {
+        throw new RuntimeError(`Invalid division by zero`);
+      }
+    } else if (ctx.ASSIGNMOD()) {
+      result = new BigNumber(variableValue)
+        .modulo(new BigNumber(compound_condition_or))
         .toNumber();
       if (!Number.isFinite(result)) {
         throw new RuntimeError(`Invalid division by zero`);
@@ -396,9 +404,18 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor {
           .multipliedBy(new BigNumber(signed_unary_numeric_expression))
           .toNumber();
       }
-      // else DIV
+      if (ctx.DIV()) {
+        const result = new BigNumber(multiplicative_numeric_expression)
+          .dividedBy(new BigNumber(signed_unary_numeric_expression))
+          .toNumber();
+        if (!Number.isFinite(result)) {
+          throw new RuntimeError(`Invalid division by zero`);
+        }
+        return result;
+      }
+      // else MOD
       const result = new BigNumber(multiplicative_numeric_expression)
-        .dividedBy(new BigNumber(signed_unary_numeric_expression))
+        .modulo(new BigNumber(signed_unary_numeric_expression))
         .toNumber();
       if (!Number.isFinite(result)) {
         throw new RuntimeError(`Invalid division by zero`);
