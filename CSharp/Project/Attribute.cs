@@ -1,7 +1,8 @@
 ﻿using Arcweave.Interpreter.INodes;
 
-namespace Arcweave.Project;
-
+namespace Arcweave.Project
+{
+    
 public partial class Attribute
 {
     public string Name { get; }
@@ -9,3 +10,5 @@ public partial class Attribute
     public IAttribute.ContainerType containerType { get; }
     public string containerId { get; }
 }
+}
+

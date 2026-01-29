@@ -1,7 +1,8 @@
-﻿using Arcweave.Interpreter.INodes;
+﻿using System;
+using Arcweave.Interpreter.INodes;
 
-namespace Arcweave.Project;
-
+namespace Arcweave.Project
+{
 public partial class Connection
 {
     public string Id { get; }
@@ -25,3 +26,5 @@ public partial class Connection
         throw new NotImplementedException();
     }
 }
+}
+

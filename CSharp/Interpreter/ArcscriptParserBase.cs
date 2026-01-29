@@ -92,7 +92,7 @@ namespace Arcweave.Interpreter
                 }
                 attrs.Add(attrName, attrValue);
             }
-            string[] classList = attrs["class"].Split(" ");
+            string[] classList = attrs["class"].Split(' ');
             if ( !classList.Contains("mention") ) {
                 return false;
             }

@@ -1,10 +1,10 @@
+#nullable enable
 using Antlr4.Runtime;
 using System.Collections.Generic;
 using Arcweave.Interpreter.INodes;
 
 namespace Arcweave.Interpreter
 {
-
     public class AwInterpreter
     {
         private IProject Project { get; set; }
@@ -64,7 +64,7 @@ namespace Arcweave.Interpreter
             {
                 tree = this.GetParseTree(code);
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 throw new ParseException(e.Message, e);
             }

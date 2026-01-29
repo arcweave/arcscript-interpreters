@@ -1,5 +1,8 @@
-﻿namespace Arcweave.Project;
+﻿using System;
+using System.Collections.Generic;
 
+namespace Arcweave.Project
+{
 public partial class Component
 {
     public List<Attribute> Attributes { get; }
@@ -8,3 +11,5 @@ public partial class Component
         throw new NotImplementedException();
     }
 }
+}
+

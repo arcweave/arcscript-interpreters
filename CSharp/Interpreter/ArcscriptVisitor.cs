@@ -1,3 +1,6 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
 using Antlr4.Runtime.Misc;
 using System.Globalization;
 using Antlr4.Runtime.Tree;
@@ -445,7 +448,7 @@ namespace Arcweave.Interpreter
             object value = true;
             if ( ctxvalue != null ) {
                 string strvalue = ctxvalue.GetText();
-                if ( ( strvalue.StartsWith('"') && strvalue.EndsWith('"') ) ||
+                if ( ( strvalue.StartsWith("\"") && strvalue.EndsWith("\"") ) ||
                     ( strvalue.StartsWith("'") && strvalue.EndsWith("'") ) ) {
                     strvalue = strvalue.Substring(1, strvalue.Length - 2);
                 }
