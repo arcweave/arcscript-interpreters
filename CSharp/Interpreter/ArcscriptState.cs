@@ -1,6 +1,8 @@
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using Arcweave.Interpreter.INodes;
+using Arcweave.Project;
 
 namespace Arcweave.Interpreter
 {
@@ -28,7 +30,7 @@ namespace Arcweave.Interpreter
             }
         }
 
-        public IVariable GetVariable(string name) {
+        public IVariable? GetVariable(string name) {
             try
             {
                 return this.project.Variables.First(variable => variable.Name == name);
@@ -56,9 +58,12 @@ namespace Arcweave.Interpreter
 
         public void ResetVisits()
         {
-            foreach (var projectElement in project.Elements)
+            foreach (var board in project.Boards)
             {
-                projectElement.Value.Visits = 0;
+                foreach (var element in board.Nodes.OfType<Element>())
+                {
+                    element.Visits = 0;
+                }
             }
             _emit("resetVisits");
         }

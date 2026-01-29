@@ -1,26 +1,33 @@
-﻿namespace Arcweave.Project;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Arcweave.Interpreter.INodes;
 
+namespace Arcweave.Project
+{
 public partial class Project
 {
     public List<Variable> Variables { get; }
-    public Dictionary<string, Element> Elements { get;  }
-    public Project(List<Variable> variables, Dictionary<string, Element> elements)
+    public List<Board> Boards { get;  }
+    public Project(List<Board> boards, List<Variable> variables)
     {
         Variables = variables;
-        Elements = elements;
+        Boards = boards;
     }
-    public Element ElementWithId(string id)
-    {
-        if (Elements.ContainsKey(id))
-        {
-            return Elements[id];
-        }
-
-        return null;
-    }
+    public Element ElementWithId(string id) => GetNodeWithID<Element>(id);
 
     public Variable GetVariable(string name)
     {
         return Variables.FirstOrDefault(variable => variable.Name == name);
     }
+    
+    public T GetNodeWithID<T>(string id) where T : INode {
+        T result = default(T);
+        foreach ( var board in Boards ) {
+            result = board.NodeWithID<T>(id);
+            if ( result != null ) { return result; }
+        }
+        return result;
+    }
 }
+}
+

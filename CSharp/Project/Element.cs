@@ -1,9 +1,17 @@
-﻿namespace Arcweave.Project;
+﻿using System;
+using System.Collections.Generic;
 
+namespace Arcweave.Project
+{
 public partial class Element
 {
     public string Id { get; }
     public Project Project { get; }
+
+    public Element(string id)
+    {
+        Id = id;
+    }
     
     public Path ResolvePath(Path path)
     {
@@ -30,3 +38,5 @@ public partial class Element
         throw new NotImplementedException();
     }
 }
+}
+

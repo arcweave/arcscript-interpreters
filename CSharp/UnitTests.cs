@@ -1,10 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using Newtonsoft.Json;
 using Arcweave.Interpreter;
+using Arcweave.Interpreter.INodes;
 using Arcweave.Project;
 
-namespace Arcweave;
-
+namespace Arcweave
+{
 public class Tests
 {
     struct TestData
@@ -112,29 +117,32 @@ public class Tests
     [TestCaseSource(nameof(GetValidTestData))]
     public void ValidTests(Dictionary<string, Variable> variables, TestCase testCase)
     {
-        var elements = new Dictionary<string, Element>();
+        var nodes = new List<INode>();
         if (testCase.visits != null)
         {
             foreach (var kvp in testCase.visits)
             {
-                elements[kvp.Key] = new Element
+                var element = new Element(kvp.Key)
                 {
                     Visits = kvp.Value
                 };
+                nodes.Add(element);
             }
         }
+        var board = new Board("testBoardId", nodes);
+        var boards = new List<Board> { board };
 
         Console.WriteLine("Testing Case: " + testCase.code);
-        var project = new Project.Project(variables.Values.ToList(), elements);
+        var project = new Project.Project(boards, variables.Values.ToList());
         List<EventData> events = new List<EventData>();
-        var onEvent = (string eventName) =>
+
+        void OnEvent(string eventName)
         {
-            var eventData = new EventData();
-            eventData.name = eventName;
-            eventData.args = new Dictionary<string, object>();
+            var eventData = new EventData { name = eventName, args = new Dictionary<string, object>() };
             events.Add(eventData);
-        };
-        var i = new AwInterpreter(project, testCase.elementId, onEvent);
+        }
+
+        var i = new AwInterpreter(project, testCase.elementId, OnEvent);
         var output = i.RunScript(testCase.code);
 
         if (testCase.output != null)
@@ -164,20 +172,23 @@ public class Tests
     [TestCaseSource(nameof(GetConditionsTestData))]
     public void ConditionTests(Dictionary<string, Variable> variables, TestCase testCase)
     {
-        var elements = new Dictionary<string, Element>();
+        var nodes = new List<INode>();
         if (testCase.visits != null)
         {
             foreach (var kvp in testCase.visits)
             {
-                elements[kvp.Key] = new Element
+                var element = new Element(kvp.Key)
                 {
                     Visits = kvp.Value
                 };
+                nodes.Add(element);
             }
         }
+        var board = new Board("testBoardId", nodes);
+        var boards = new List<Board> { board };
 
         Console.WriteLine("Testing Case: " + testCase.code);
-        var project = new Project.Project(variables.Values.ToList(), elements);
+        var project = new Project.Project(boards, variables.Values.ToList());
         var i = new AwInterpreter(project, testCase.elementId);
         var output = i.RunScript(testCase.code);
 
@@ -188,20 +199,23 @@ public class Tests
     [TestCaseSource(nameof(GetStringConcatTestData))]
     public void StringConcatTests(Dictionary<string, Variable> variables, TestCase testCase)
     {
-        var elements = new Dictionary<string, Element>();
+        var nodes = new List<INode>();
         if (testCase.visits != null)
         {
             foreach (var kvp in testCase.visits)
             {
-                elements[kvp.Key] = new Element
+                var element = new Element(kvp.Key)
                 {
                     Visits = kvp.Value
                 };
+                nodes.Add(element);
             }
         }
+        var board = new Board("testBoardId", nodes);
+        var boards = new List<Board> { board };
 
         Console.WriteLine("Testing Case: " + testCase.code);
-        var project = new Project.Project(variables.Values.ToList(), elements);
+        var project = new Project.Project(boards, variables.Values.ToList());
         var i = new AwInterpreter(project, testCase.elementId);
         var output = i.RunScript(testCase.code);
 
@@ -221,43 +235,51 @@ public class Tests
     [TestCaseSource(nameof(GetRuntimeErrorTestData))]
     public void RuntimeErrorTests(Dictionary<string, Variable> variables, TestCase testCase)
     {
-        var Elements = new Dictionary<string, Element>();
+        var nodes = new List<INode>();
         if (testCase.visits != null)
         {
             foreach (var kvp in testCase.visits)
             {
-                Elements[kvp.Key] = new Element
+                var element = new Element(kvp.Key)
                 {
                     Visits = kvp.Value
                 };
+                nodes.Add(element);
             }
         }
+        var board = new Board("testBoardId", nodes);
+        var boards = new List<Board> { board };
 
         Console.WriteLine("Testing Case: " + testCase.code);
-        var project = new Project.Project(variables.Values.ToList(), Elements);
+        var project = new Project.Project(boards, variables.Values.ToList());
         var i = new AwInterpreter(project, testCase.elementId);
-        var ex = Assert.Throws<RuntimeException>(() => i.RunScript(testCase.code));
+        Assert.Throws<RuntimeException>(() => i.RunScript(testCase.code));
     }
 
     [Test]
     [TestCaseSource(nameof(GetParseErrorTestData))]
     public void ParseErrorTests(Dictionary<string, Variable> variables, TestCase testCase)
     {
-        var Elements = new Dictionary<string, Element>();
+        var nodes = new List<INode>();
         if (testCase.visits != null)
         {
             foreach (var kvp in testCase.visits)
             {
-                Elements[kvp.Key] = new Element
+                var element = new Element(kvp.Key)
                 {
                     Visits = kvp.Value
                 };
+                nodes.Add(element);
             }
         }
+        var board = new Board("testBoardId", nodes);
+        var boards = new List<Board> { board };
 
         Console.WriteLine("Testing Case: " + testCase.code);
-        var project = new Project.Project(variables.Values.ToList(), Elements);
+        var project = new Project.Project(boards, variables.Values.ToList());
         var i = new AwInterpreter(project, testCase.elementId);
-        var ex = Assert.Throws<ParseException>(() => i.RunScript(testCase.code));
+        Assert.Throws<ParseException>(() => i.RunScript(testCase.code));
     }
 }
+}
+

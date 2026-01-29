@@ -1,4 +1,4 @@
-
+#nullable enable
 using System;
 using System.Collections;
 
@@ -6,8 +6,7 @@ namespace Arcweave.Interpreter
 {
     public class Expression : ArcscriptExpressionBase, IComparable
     {
-        public object Value { get; set; }
-        public Expression() { Value = null; }
+        public object Value { get; private set; }
         public Expression(object value) { Value = value; }
         public Expression(object value, Type type) { Value = Convert.ChangeType(value, type); } 
         public Expression(Expression expression) { Value = expression.Value; }

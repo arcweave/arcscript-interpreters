@@ -11,10 +11,11 @@ namespace Arcweave.Interpreter.INodes
     {
 #if GODOT
         public Array<Arcweave.Project.Variable> Variables { get; }
+        public Array<Arcweave.Project.Board> Boards { get; }
 #else
         public List<Arcweave.Project.Variable> Variables { get; }
+        public List<Arcweave.Project.Board> Boards { get; }
 #endif
-        public Dictionary<string, Element> Elements { get; }
         public Arcweave.Project.Element ElementWithId(string id);
 
         public Arcweave.Project.Variable GetVariable(string name);

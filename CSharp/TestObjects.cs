@@ -1,5 +1,8 @@
-﻿namespace Arcweave;
+﻿using System.Collections.Generic;
 
+namespace Arcweave
+{
+    
 public struct TestVariable
 {
     public string id;
@@ -31,3 +34,5 @@ public struct TestFile
     public Dictionary<string, TestVariable> initialVars;
     public List<TestCase> cases;
 }
+}
+

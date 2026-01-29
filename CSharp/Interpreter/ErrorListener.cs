@@ -1,7 +1,9 @@
+using System.Collections.Generic;
+using System.IO;
 using Antlr4.Runtime;
 
-namespace Arcweave.Interpreter;
-
+namespace Arcweave.Interpreter
+{
 public class ErrorListener<S>: ConsoleErrorListener<S>
 {
     public bool HasErrors = false;
@@ -15,3 +17,5 @@ public class ErrorListener<S>: ConsoleErrorListener<S>
         base.SyntaxError(output, recognizer, offendingSymbol, line, charPositionInLine, msg, e);
     }
 }
+}
+
