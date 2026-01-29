@@ -30,7 +30,7 @@ namespace Arcweave.Interpreter
             }
         }
 
-        public IVariable GetVariable(string name) {
+        public IVariable? GetVariable(string name) {
             try
             {
                 return this.project.Variables.First(variable => variable.Name == name);
