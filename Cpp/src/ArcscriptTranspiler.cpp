@@ -60,7 +60,7 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
   return result;
 }
 
-UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, void (*onEvent)(const char*))
+UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent)
 {
     Arcweave::TranspilerOutput transpilerOutput;
 

@@ -137,7 +137,7 @@ namespace Arcweave
 
 	ArcscriptState state;
 
-	ArcscriptTranspiler(std::string elId, std::map<std::string, Variable> initVars, std::map<std::string, int> _visits, void (*onEvent)(const char*)) : state(elId, initVars, _visits, onEvent) { };
+	ArcscriptTranspiler(std::string elId, std::map<std::string, Variable> initVars, std::map<std::string, int> _visits, std::function<void(const char*)> onEvent) : state(elId, initVars, _visits, onEvent) { };
 
 	/**
 	 * Runs the arcscript code and returns it's results.
@@ -149,5 +149,5 @@ namespace Arcweave
 	//ARCSCRIPTTRANSPILER_API UTranspilerOutput URunScript(char* code);
   };
 };
-EXPORTED Arcweave::UTranspilerOutput* runScriptExport(const char* code, const char* elId, Arcweave::UVariable* variables, size_t varLength, Arcweave::UVisit* visits, size_t visitsLength, void (*onEvent)(const char*));
+EXPORTED Arcweave::UTranspilerOutput* runScriptExport(const char* code, const char* elId, Arcweave::UVariable* variables, size_t varLength, Arcweave::UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent);
 EXPORTED void deallocateOutput(Arcweave::UTranspilerOutput* output);

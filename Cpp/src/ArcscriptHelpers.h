@@ -33,9 +33,9 @@ public:
   std::string currentElement;
   std::map<std::string, int> visits;
 
-  void (*emit) (const char* eventName);
+  std::function<void(const char*)>(emit);
 
-  ArcscriptState(std::string elementId, std::map<std::string, Variable> varValues, std::map<std::string, int> _visits, void (*_emit) (const char* eventName)) {
+  ArcscriptState(std::string elementId, std::map<std::string, Variable> varValues, std::map<std::string, int> _visits, std::function<void(const char*)> _emit) {
     currentElement = elementId;
     variableValues = varValues;
     for(const auto var : variableValues) {
