@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <functional>
 #include "ArcscriptOutputs.h"
 
 namespace Arcweave {
