@@ -128,6 +128,10 @@ if (WITH_TEST)
 
     target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
     target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
+    if (CMAKE_HOST_UNIX)
+        find_package(Threads REQUIRED)
+        target_link_libraries(ArcscriptTest PRIVATE Threads::Threads)
+    endif()
 
     set_target_properties(ArcscriptTest PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
@@ -156,7 +160,7 @@ if (WITH_TEST)
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.exp"
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.pdb"
         )
-    elseif (APPLE)
+    else()
         set(ARCSCRIPT_TRANSPILER_LIB_FILES
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"

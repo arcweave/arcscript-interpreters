@@ -1,6 +1,7 @@
 #include "ArcscriptExpression.h"
 #include <sstream>
 #include <cstring>
+#include <cmath>
 
 #include "ArcscriptErrorExceptions.h"
 
@@ -88,14 +89,13 @@ Expression Expression::operator+ (const Expression &other) const {
     return {valueToString(value) + valueToString(other.value)};
   }
   NumberValues values = doubleValues(value, other.value);
-  Expression* result;
+
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(values.value1 + values.value2);
-    result  = new Expression(intValue);
-  } else {
-    result = new Expression(values.value1 + values.value2);
+    return Expression(intValue);
   }
-  return *result;
+
+  return Expression(values.value1 + values.value2);
 }
 
 Expression Expression::operator- (const Expression &other) const {
@@ -103,56 +103,46 @@ Expression Expression::operator- (const Expression &other) const {
     throw RuntimeErrorException("Cannot subtract strings");
   }
   NumberValues values = doubleValues(value, other.value);
-  Expression* result;
+
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(values.value1 - values.value2);
-    result  = new Expression(intValue);
-  } else {
-    result = new Expression(values.value1 - values.value2);
+    return Expression(intValue);
   }
-  return *result;
+  return Expression(values.value1 - values.value2);
 }
 
 Expression Expression::operator* (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
-  Expression* result;
+
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(values.value1 * values.value2);
-    result  = new Expression(intValue);
-  } else {
-    result = new Expression(values.value1 * values.value2);
+    return Expression(intValue);
   }
-  return *result;
+  return Expression(values.value1 * values.value2);
 }
 
 Expression Expression::operator* (const int other) const {
   NumberValues values = doubleValues(value, other);
-  Expression* result;
+
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(values.value1 * values.value2);
-    result  = new Expression(intValue);
-  } else {
-    result = new Expression(values.value1 * values.value2);
+    return Expression(intValue);
   }
-  return *result;
+  return Expression(values.value1 * values.value2);
 }
 
 Expression Expression::operator/ (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
-  Expression* result;
 
   if (values.value2 == 0) {
     throw RuntimeErrorException("Division by zero is not allowed.");
   }
 
-  result = new Expression(values.value1 / values.value2);
-
-  return *result;
+  return Expression(values.value1 / values.value2);
 }
 
 Expression Expression::operator% (const Expression &other) const {
   NumberValues values = doubleValues(value, other.value);
-  Expression* result;
 
   if (values.value2 == 0) {
     throw RuntimeErrorException("Modulo by zero is not allowed.");
@@ -160,13 +150,17 @@ Expression Expression::operator% (const Expression &other) const {
 
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(static_cast<int>(values.value1) % static_cast<int>(values.value2));
-    result  = new Expression(intValue);
-  } else {
-    double modValue = std::fmod(values.value1, values.value2);
-    result = new Expression(modValue);
+    return Expression(intValue);
   }
-  return *result;
+  double modValue = std::fmod(values.value1, values.value2);
+  return Expression(modValue);
 }
+
+Expression Expression::operator=(const Expression &other) {
+  value = other.value;
+  return *this;
+}
+
 
 Expression Expression::operator+= (const Expression &other) {
   if (value.type() == typeid(std::string) || other.value.type() == typeid(std::string)) {
@@ -243,10 +237,10 @@ Expression Expression::operator%= (const Expression &other) {
 
   if (!values.hasDoubles) {
     int intValue = static_cast<int>(static_cast<int>(values.value1) % static_cast<int>(values.value2));
-    value  = new Expression(intValue);
+    value  = intValue;
   } else {
     double modValue = std::fmod(values.value1, values.value2);
-    value = new Expression(modValue);
+    value = modValue;
   }
   return *this;
 }

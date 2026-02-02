@@ -53,6 +53,7 @@ public:
   Expression operator* (const int other) const;
   Expression operator/ (const Expression &other) const;
   Expression operator% (const Expression &other) const;
+  Expression operator= (const Expression &other);
   Expression operator+= (const Expression &other);
   Expression operator-= (const Expression &other);
   Expression operator*= (const Expression &other);

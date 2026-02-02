@@ -92,6 +92,13 @@ UVisit* getVisits(json initVisits) {
     return visits;
 }
 
+void freeVisits(UVisit* visits, size_t visitsLen) {
+    for (size_t i = 0; i < visitsLen; i++) {
+        free(const_cast<char *>(visits[i].elId));
+    }
+    delete[] visits;
+}
+
 std::vector<std::string> events;
 
 void onEvent(const char* eventName) {
@@ -147,15 +154,13 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
                 errorOutput << "Received Parse Error: " << e.what() << std::endl;
             }
         }
-    } catch (std::exception &e) {
-        if (!hasError) {
-            errorOutput << "Unexpected Exception: " << e.what() << std::endl;
-        } else {
-            if (errorType != "exception") {
-                errorOutput << "Received Exception: " << e.what() << std::endl;
-            }
-        }
     }
+
+    free(const_cast<char *>(currentElement));
+    if (visits != nullptr) {
+        freeVisits(visits, visitsLen);
+    }
+
 
     if (result == nullptr) {
         if (!errorOutput.str().empty()) {
@@ -163,13 +168,14 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
             temp << "Test case " << caseIndex << " failed: \"" << code << "\"" << std::endl << errorOutput.rdbuf();
             errorOutput.swap(temp);
         }
+        free(const_cast<char *>(code));
         return errorOutput.str();
     }
 
     if (hasError) {
         errorOutput << "Test case " << caseIndex << " failed: \"" << code << "\"" << std::endl;
         errorOutput << "Expected error of type: " << errorType << " but no error thrown." << std::endl;
-
+        free(const_cast<char *>(code));
         return errorOutput.str();
     }
 
@@ -251,14 +257,6 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
         }
     }
 
-    if (visits != nullptr) {
-        for (int i = 0; i < visitsLen; i++) {
-            free(const_cast<char *>(visits[i].elId));
-        }
-        delete visits;
-    }
-    free(const_cast<char *>(currentElement));
-
     deallocateOutput(result);
 
     if (!errorOutput.str().empty()) {
@@ -321,7 +319,7 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
             free(const_cast<char *>(initVars[j].string_val));
         }
     }
-    delete initVars;
+    delete[] initVars;
 
     if (fileError) {
         return 1;

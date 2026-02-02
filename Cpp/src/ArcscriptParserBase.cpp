@@ -39,7 +39,7 @@ bool ArcscriptParserBase::assertMention(std::any attrCtxList) {
     }
 
     if ((attrValue.rfind("\"", 0) == 0 && ends_with(attrValue, "\"")) ||
-         attrValue.rfind("'", 0) == 0 && ends_with(attrValue, "'")) {
+         (attrValue.rfind("'", 0) == 0 && ends_with(attrValue, "'"))) {
       
       attrValue = attrValue.substr(1, attrValue.size() - 2);
       
