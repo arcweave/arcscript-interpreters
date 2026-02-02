@@ -60,7 +60,11 @@ namespace Arcweave.Interpreter
         {
             foreach (var board in project.Boards)
             {
+#if GODOT
+                foreach (var element in board.Value.Elements)
+#else
                 foreach (var element in board.Nodes.OfType<Element>())
+#endif
                 {
                     element.Visits = 0;
                 }
