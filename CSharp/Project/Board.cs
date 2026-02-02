@@ -6,9 +6,12 @@ namespace Arcweave.Project
 {
     public partial class Board
     {
-        public string Id { get; set; }
+        public string Id { get; set; } 
+#if GODOT
+        [Export] public Array<Element> Elements { get; private set; }
+#else
         public List<INode> Nodes { get; set; }
-        
+#endif
         public Board(string id, List<INode> nodes)
         {
             Id = id;
