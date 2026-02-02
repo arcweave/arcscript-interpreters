@@ -18,6 +18,9 @@ public:
   explicit ArcscriptVisitor(ArcscriptState* _state) : state(_state) {
     functions = new ArcscriptFunctions(state);
   }
+  ~ArcscriptVisitor() override {
+    delete functions;
+  }
 
   std::any visitInput(ArcscriptParser::InputContext *ctx) override;
   std::any visitScript_section(ArcscriptParser::Script_sectionContext *ctx) override;

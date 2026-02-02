@@ -460,7 +460,7 @@ std::any ArcscriptVisitor::visitMention_attributes(ArcscriptParser::Mention_attr
   if (valueNode != NULL) {
     std::string strvalue = valueNode->getText();
     if ((strvalue.rfind("\"", 0) == 0 && ends_with(strvalue, "\"")) ||
-         strvalue.rfind("'", 0) == 0 && ends_with(strvalue, "'")) {
+         (strvalue.rfind("'", 0) == 0 && ends_with(strvalue, "'"))) {
       
       strvalue = strvalue.substr(1, strvalue.size() - 2);
       

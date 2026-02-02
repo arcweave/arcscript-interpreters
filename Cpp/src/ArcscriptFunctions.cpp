@@ -21,6 +21,7 @@ namespace Arcweave {
                         break;
                     case 'f':
                         result += '\f';
+                        break;
                     case 'n':
                         result += '\n';
                         break;
@@ -181,7 +182,7 @@ namespace Arcweave {
 
     std::any ArcscriptFunctions::Show(std::vector<std::any> args) {
         std::string result;
-        for (int i = 0; i < args.size(); i++) {
+        for (size_t i = 0; i < args.size(); i++) {
             std::any arg = args[i];
             if (arg.type() == typeid(int)) {
                 result += std::to_string(std::any_cast<int>(arg));

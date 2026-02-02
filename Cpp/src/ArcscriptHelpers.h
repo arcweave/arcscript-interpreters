@@ -34,7 +34,7 @@ public:
   std::string currentElement;
   std::map<std::string, int> visits;
 
-  std::function<void(const char*)>(emit);
+  std::function<void(const char*)> emit;
 
   ArcscriptState(std::string elementId, std::map<std::string, Variable> varValues, std::map<std::string, int> _visits, std::function<void(const char*)> _emit) {
     currentElement = elementId;
@@ -66,7 +66,7 @@ public:
     variableChanges[varId] = value;
   }
   inline void setVarValues(std::vector<std::string> names, std::vector<std::any> values) {
-    for (int i = 0; i < names.size(); i++) {
+    for (size_t i = 0; i < names.size(); i++) {
       variableChanges[names[i]] = values[i];
     }
   }
