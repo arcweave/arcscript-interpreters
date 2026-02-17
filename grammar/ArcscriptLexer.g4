@@ -1,9 +1,11 @@
 lexer grammar ArcscriptLexer;
 
-CODESTART: '<pre' (~('>'))* '><code' (~('>'))* '>' -> pushMode(CODESEGMENT);
+CODESTART:
+	'<pre' (~('>'))* '><code' (~('>'))* '>' -> pushMode(CODESEGMENT);
 
-PARAGRAPHSTART: (('<p>')|('<p ' (~('>'))* '>')) -> pushMode(PARAGRAPH);
-BLOCKQUOTESTART: '<blockquote' (~('>'))* '>' -> pushMode(BLOCKQUOTE);
+PARAGRAPHSTART: (('<p>') | ('<p ' (~('>'))* '>')) -> pushMode(PARAGRAPH);
+BLOCKQUOTESTART:
+	'<blockquote' (~('>'))* '>' -> pushMode(BLOCKQUOTE);
 
 NORMAL_WHITESPACE: [ \t\r\n]+ -> skip;
 
@@ -12,8 +14,9 @@ mode PARAGRAPH;
 PARAGRAPHEND: .*? '</p>' -> popMode;
 
 mode BLOCKQUOTE;
-BQ_CODESTART: '<pre' (~('>'))* '><code' (~('>'))* '>' -> pushMode(CODESEGMENT);
-BQ_PARAGRAPHSTART: (('<p>')|('<p ' (~('>'))* '>')) -> pushMode(PARAGRAPH);
+BQ_CODESTART:
+	'<pre' (~('>'))* '><code' (~('>'))* '>' -> pushMode(CODESEGMENT);
+BQ_PARAGRAPHSTART: (('<p>') | ('<p ' (~('>'))* '>')) -> pushMode(PARAGRAPH);
 BLOCKQUOTEEND: '</blockquote>' -> popMode;
 BQ_WHITESPACE: [ \t\r\n]+ -> skip;
 
@@ -23,7 +26,7 @@ CODEEND: '</code></pre>' -> popMode;
 
 MENTION_TAG_OPEN: '<span' -> pushMode(MENTIONSEGMENT);
 
-FLOAT: DIGIT*'.'DIGIT+;
+FLOAT: DIGIT* '.' DIGIT+;
 
 INTEGER: DIGIT+;
 
@@ -65,15 +68,16 @@ RBRACE: '}';
 
 BOOLEAN: 'true' | 'false';
 
-FNAME: 'abs'|
-  'max'|
-  'min'|
-  'random'|
-  'roll'|
-  'round'|
-  'sqr'|
-  'sqrt'|
-  'visits';
+FNAME:
+	'abs'
+	| 'max'
+	| 'min'
+	| 'random'
+	| 'roll'
+	| 'round'
+	| 'sqr'
+	| 'sqrt'
+	| 'visits';
 
 VFNAME: 'show' | 'resetVisits';
 
@@ -95,14 +99,8 @@ ISKEYWORD: 'is';
 
 NOTKEYWORD: 'not';
 
-STRING
-	: '"' STRING_CONTENT* '"'
-	| '\'' STRING_CONTENT* '\''
-	;
-fragment STRING_CONTENT
-	: ~[\\\r\n'"]
-	| '\\' [abfnrtv'"\\]
-	;
+STRING: '"' STRING_CONTENT* '"' | '\'' STRING_CONTENT* '\'';
+fragment STRING_CONTENT: ~[\\\r\n'"] | '\\' [abfnrtv'"\\];
 
 VARIABLE: [A-Za-z$_][0-9A-Za-z$_]*;
 
@@ -128,48 +126,35 @@ MENTION_LABEL: ~'<'+;
 
 mode MENTION_ATTR_SEGMENT;
 
-ATTR_VALUE
-  : ' '* ATTRIBUTE -> popMode;
+ATTR_VALUE: ' '* ATTRIBUTE -> popMode;
 
-ATTRIBUTE
-  : DOUBLE_QUOTE_STRING
-  | SINGLE_QUOTE_STRING
-  | ATTCHARS
-  | HEXCHARS
-  | DECCHARS
-  ;
+ATTRIBUTE:
+	DOUBLE_QUOTE_STRING
+	| SINGLE_QUOTE_STRING
+	| ATTCHARS
+	| HEXCHARS
+	| DECCHARS;
 
-fragment ATTCHARS
-    : ATTCHAR+ ' '?
-    ;
+fragment ATTCHARS: ATTCHAR+ ' '?;
 
-fragment ATTCHAR
-    : '-'
-    | '_'
-    | '.'
-    | '/'
-    | '+'
-    | ','
-    | '?'
-    | '='
-    | ':'
-    | ';'
-    | '#'
-    | [0-9a-zA-Z]
-    ;
+fragment ATTCHAR:
+	'-'
+	| '_'
+	| '.'
+	| '/'
+	| '+'
+	| ','
+	| '?'
+	| '='
+	| ':'
+	| ';'
+	| '#'
+	| [0-9a-zA-Z];
 
-fragment HEXCHARS
-    : '#' [0-9a-fA-F]+
-    ;
+fragment HEXCHARS: '#' [0-9a-fA-F]+;
 
-fragment DECCHARS
-    : [0-9]+ '%'?
-    ;
+fragment DECCHARS: [0-9]+ '%'?;
 
-fragment DOUBLE_QUOTE_STRING
-    : '"' ~[<"]* '"'
-    ;
+fragment DOUBLE_QUOTE_STRING: '"' ~[<"]* '"';
 
-fragment SINGLE_QUOTE_STRING
-    : '\'' ~[<']* '\''
-    ;
+fragment SINGLE_QUOTE_STRING: '\'' ~[<']* '\'';
