@@ -107,7 +107,7 @@ export default class ArcscriptFunctions {
     const ids = args.map(name => {
       if (typeof name !== 'string' || !this.state.getVar(name)) {
         throw new RuntimeError(
-          `Invalid argument ${name} in function resetAll. Expected a variable`
+          `Invalid argument ${name} in function reset. Expected a variable`
         );
       }
       const v = this.state.getVar(name);
@@ -132,7 +132,7 @@ export default class ArcscriptFunctions {
       }
       return v.id;
     });
-    const all = Object.keys(this.state.getInitialVarValues());
+    const all = Object.keys(this.state.variables);
     const resetIds = all.filter(id => !except.includes(id));
     this.state.resetVarValues(resetIds);
   }

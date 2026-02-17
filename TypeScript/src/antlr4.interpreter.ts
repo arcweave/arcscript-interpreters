@@ -48,16 +48,14 @@ export default class Interpreter {
       this.currentElement,
       this.emit
     );
-    Object.entries(varValues).forEach(([key, value]) => {
-      visitor.state.changes[key] = value;
-    });
+
     const result = tree.accept(visitor);
 
     let output = visitor.state.generateOutput();
     output = clearBlockStyle(output);
 
     return {
-      changes: visitor.state.changes,
+      changes: visitor.state.getChanges(),
       output,
       result,
     };

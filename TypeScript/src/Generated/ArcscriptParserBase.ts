@@ -15,23 +15,24 @@ type ArcscriptParserOptions = {
 type ArcscriptFunctionInfo = {
   minArgs: number;
   maxArgs: number | null;
+  returnType?: 'number' | 'void';
 };
 
 export default class ArcscriptParserBase extends Parser {
-  static arcscriptFunctionsArgLength: Record<string, ArcscriptFunctionInfo> = {
-    abs: { minArgs: 1, maxArgs: 1 },
-    max: { minArgs: 2, maxArgs: null },
-    min: { minArgs: 2, maxArgs: null },
-    random: { minArgs: 0, maxArgs: 0 },
-    roll: { minArgs: 1, maxArgs: 2 },
-    round: { minArgs: 1, maxArgs: 1 },
-    sqr: { minArgs: 1, maxArgs: 1 },
-    sqrt: { minArgs: 1, maxArgs: 1 },
-    visits: { minArgs: 0, maxArgs: 1 },
-    show: { minArgs: 1, maxArgs: null },
-    reset: { minArgs: 1, maxArgs: null },
-    resetAll: { minArgs: 0, maxArgs: null },
-    resetVisits: { minArgs: 0, maxArgs: 0 },
+  static arcscriptFunctionsInfo: Record<string, ArcscriptFunctionInfo> = {
+    abs: { minArgs: 1, maxArgs: 1, returnType: 'number' },
+    max: { minArgs: 2, maxArgs: null, returnType: 'number' },
+    min: { minArgs: 2, maxArgs: null, returnType: 'number' },
+    random: { minArgs: 0, maxArgs: 0, returnType: 'number' },
+    roll: { minArgs: 1, maxArgs: 2, returnType: 'number' },
+    round: { minArgs: 1, maxArgs: 1, returnType: 'number' },
+    sqr: { minArgs: 1, maxArgs: 1, returnType: 'number' },
+    sqrt: { minArgs: 1, maxArgs: 1, returnType: 'number' },
+    visits: { minArgs: 0, maxArgs: 1, returnType: 'number' },
+    show: { minArgs: 1, maxArgs: null, returnType: 'void' },
+    reset: { minArgs: 1, maxArgs: null, returnType: 'void' },
+    resetAll: { minArgs: 0, maxArgs: null, returnType: 'void' },
+    resetVisits: { minArgs: 0, maxArgs: 0, returnType: 'void' },
   };
 
   varObjects: Record<string, VarObject> = {};
@@ -67,10 +68,8 @@ export default class ArcscriptParserBase extends Parser {
         argListLength = argListCtx.VARIABLE_list().length;
       }
     }
-    const min =
-      ArcscriptParserBase.arcscriptFunctionsArgLength[token.text].minArgs;
-    const max =
-      ArcscriptParserBase.arcscriptFunctionsArgLength[token.text].maxArgs;
+    const min = ArcscriptParserBase.arcscriptFunctionsInfo[token.text].minArgs;
+    const max = ArcscriptParserBase.arcscriptFunctionsInfo[token.text].maxArgs;
 
     if (
       (min !== null && argListLength < min) ||

@@ -1,5 +1,5 @@
-import cloneDeep from 'lodash.clonedeep';
 import { VarObject, VarValue } from './types.js';
+import ArcscriptVariable from './ArcscriptVariable.js';
 
 type OutputObject = {
   output?: string;
@@ -10,13 +10,11 @@ type OutputObject = {
 };
 
 export default class ArcscriptState {
-  varValues: Record<string, VarValue>;
-  varObjects: Record<string, VarObject>;
+  variables: Record<string, ArcscriptVariable>;
   elementVisits: Record<string, number>;
   currentElement: string;
   outputs: OutputObject[];
   conditionDepth: number;
-  changes: Record<string, VarValue>;
   emit: (event: string, data?: unknown) => void;
   outputDoc: Document;
   rootElement: HTMLElement;
@@ -30,13 +28,13 @@ export default class ArcscriptState {
     currentElement: string,
     emit: (event: string, data?: unknown) => void
   ) {
-    this.varValues = varValues;
-    this.varObjects = varObjects;
+    this.variables = this.initializeVariables(varObjects, varValues);
+
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
     this.outputs = [];
     this.conditionDepth = 0;
-    this.changes = {};
+
     this.emit = emit;
 
     this.outputDoc = document.implementation.createHTMLDocument();
@@ -46,33 +44,62 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
+  /**
+   *
+   * @param {*} varObjects
+   * @param {*} varValues
+   * @returns {Record<string, ArcscriptVariable>} An object with the variables of the script, where the keys are the variable IDs and the values are ArcscriptVariable instances
+   */
+  initializeVariables(
+    varObjects: Record<string, VarObject>,
+    varValues: Record<string, VarValue>
+  ): Record<string, ArcscriptVariable> {
+    const variables: Record<string, ArcscriptVariable> = {};
+    Object.entries(varObjects).forEach(([, varObject]) => {
+      if (varObject.children) return;
+
+      const variable = new ArcscriptVariable({
+        id: varObject.id,
+        name: varObject.name,
+        type: varObject.type,
+        value: varValues[varObject.id],
+        defaultValue: varValues[varObject.id],
+      });
+      variables[varObject.id] = variable;
+    });
+    return variables;
+  }
+
   getVar(name: string) {
-    return Object.values(this.varObjects).find(v => v.name === name);
+    return Object.values(this.variables).find(v => v.name === name);
   }
 
   getVarValue(id: string) {
-    if (id in this.changes) return this.changes[id];
-    return this.varValues[id];
+    return this.variables[id].getValue();
   }
 
   setVarValues(ids: string[], values: VarValue[]) {
     ids.forEach((id, index) => {
-      this.changes[id] = values[index];
+      this.variables[id].setValue(values[index]);
     });
   }
 
-  getInitialVarValues() {
-    return Object.fromEntries(
-      Object.entries(this.varObjects)
-        .filter(([, v]) => !v.children)
-        .map(([k, v]) => [k, v.value])
-    );
+  resetVarValues(ids: string[]): void {
+    Object.entries(this.variables).forEach(([id, variable]) => {
+      if (ids.includes(id)) {
+        variable.reset();
+      }
+    });
   }
 
-  resetVarValues(ids: string[]) {
-    const initial = cloneDeep(this.getInitialVarValues());
-    const values = ids.map(id => initial[id]);
-    this.setVarValues(ids, values);
+  getChanges(): Record<string, VarValue> {
+    const changes: Record<string, VarValue> = {};
+    Object.entries(this.variables).forEach(([id, variable]) => {
+      if (variable.changed) {
+        changes[id] = variable.getValue();
+      }
+    });
+    return changes;
   }
 
   /**
