@@ -3,8 +3,8 @@ import ArcscriptParser, {
   Argument_listContext,
   Mention_attributesContext,
   Variable_listContext,
-} from './ArcscriptParser.ts';
-import { VarObject } from '../types.ts';
+} from './ArcscriptParser.js';
+import { VarObject } from '../types.js';
 
 type ArcscriptParserOptions = {
   varObjects: Record<string, VarObject>;

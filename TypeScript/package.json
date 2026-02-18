@@ -2,17 +2,18 @@
 	"name": "@arcweave/arcscript",
 	"version": "1.2.0",
 	"description": "An interpreter for arcscript using antlr4",
-	"main": "dist/arcscript.esm.js",
+	"main": "dist/index.mjs",
+	"types": "dist/index.d.mts",
 	"scripts": {
-		"build": "rolldown -c rolldown.config.ts",
+		"build": "tsdown -c tsdown.config.ts",
 		"test": "vitest"
 	},
 	"exports": {
 		".": {
-			"import": "./dist/arcscript.esm.js",
-			"types": "./dist/arcscript.esm.d.ts",
-			"require": "./dist/arcscript.cjs.js",
-			"default": "./dist/arcscript.esm.js"
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.mts",
+			"require": "./dist/index.js",
+			"default": "./dist/index.mjs"
 		}
 	},
 	"repository": {
@@ -41,7 +42,7 @@
 		"jiti": "^2.6.1",
 		"pkg-pr-new": "^0.0.63",
 		"prettier": "3.8.1",
-		"rolldown": "1.0.0-rc.4",
+		"tsdown": "^0.20.3",
 		"typescript-eslint": "^8.56.0",
 		"vitest": "^4.0.18"
 	},

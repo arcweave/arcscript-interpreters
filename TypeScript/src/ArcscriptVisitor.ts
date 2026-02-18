@@ -1,17 +1,57 @@
 /* eslint-disable camelcase */
 import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
-import ArcscriptFunctions, { ArcscriptNonVoidFunctionKeys, ArcscriptVoidFunctionKeys } from './ArcscriptFunctions.js';
+import ArcscriptFunctions, {
+  ArcscriptNonVoidFunctionKeys,
+  ArcscriptVoidFunctionKeys,
+} from './ArcscriptFunctions.js';
 import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
 import { MentionResult, VarObject, VarValue } from './types.js';
-import { Additive_numeric_expressionContext, Argument_listContext, ArgumentContext, Assignment_segmentContext, BlockquoteContext, Compound_condition_andContext, Compound_condition_orContext, Conditional_sectionContext, ConditionContext, Else_if_clauseContext, Else_if_sectionContext, Else_sectionContext, ExpressionContext, Function_call_segmentContext, Function_callContext, If_clauseContext, If_sectionContext, InputContext, Mention_attributesContext, MentionContext, Multiplicative_numeric_expressionContext, Negated_unary_conditionContext, ParagraphContext, Script_sectionContext, Signed_unary_numeric_expressionContext, Statement_assignmentContext, Unary_conditionContext, Unary_numeric_expressionContext, Variable_listContext, Void_function_callContext } from './Generated/ArcscriptParser.js';
+import {
+  Additive_numeric_expressionContext,
+  Argument_listContext,
+  ArgumentContext,
+  Assignment_segmentContext,
+  BlockquoteContext,
+  Compound_condition_andContext,
+  Compound_condition_orContext,
+  Conditional_sectionContext,
+  ConditionContext,
+  Else_if_clauseContext,
+  Else_if_sectionContext,
+  Else_sectionContext,
+  ExpressionContext,
+  Function_call_segmentContext,
+  Function_callContext,
+  If_clauseContext,
+  If_sectionContext,
+  InputContext,
+  Mention_attributesContext,
+  MentionContext,
+  Multiplicative_numeric_expressionContext,
+  Negated_unary_conditionContext,
+  ParagraphContext,
+  Script_sectionContext,
+  Signed_unary_numeric_expressionContext,
+  Statement_assignmentContext,
+  Unary_conditionContext,
+  Unary_numeric_expressionContext,
+  Variable_listContext,
+  Void_function_callContext,
+} from './Generated/ArcscriptParser.js';
 
 export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   state: ArcscriptState;
   functions: ArcscriptFunctions;
 
-  constructor(varValues: Record<string, VarValue>, varObjects: Record<string, VarObject>, elementVisits: Record<string, number>, currentElement: string, emit: (event: string, data: any) => void) {
+  constructor(
+    varValues: Record<string, VarValue>,
+    varObjects: Record<string, VarObject>,
+    elementVisits: Record<string, number>,
+    currentElement: string,
+    emit: (event: string, data: any) => void
+  ) {
     super();
 
     this.state = new ArcscriptState(
@@ -33,21 +73,27 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return {
       condition: this.visitCompound_condition_or(ctx.compound_condition_or()),
     };
-  }
+  };
 
   visitScript_section = (ctx: Script_sectionContext) => {
     if (!ctx) {
       return null;
     }
 
-    if (Array.isArray(ctx.blockquote_list()) && ctx.blockquote_list().length > 0) {
+    if (
+      Array.isArray(ctx.blockquote_list()) &&
+      ctx.blockquote_list().length > 0
+    ) {
       const result = ctx.blockquote_list().map(blockquoteContext => {
         return this.visitBlockquote(blockquoteContext);
       });
       return result;
     }
 
-    if (Array.isArray(ctx.paragraph_list()) && ctx.paragraph_list().length > 0) {
+    if (
+      Array.isArray(ctx.paragraph_list()) &&
+      ctx.paragraph_list().length > 0
+    ) {
       const result = ctx.paragraph_list().map(paragraphContext => {
         return this.visitParagraph(paragraphContext);
       });
@@ -55,12 +101,12 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return this.visitChildren(ctx);
-  }
+  };
 
   visitParagraph = (ctx: ParagraphContext) => {
     this.state.pushOutput(ctx.getText(), false);
     return ctx.getText();
-  }
+  };
 
   visitBlockquote = (ctx: BlockquoteContext) => {
     this.state.addBlockquoteStart();
@@ -68,17 +114,17 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     this.state.addBlockquoteEnd();
 
     return ctx.getText();
-  }
+  };
 
   visitAssignment_segment = (ctx: Assignment_segmentContext) => {
     this.state.addScript();
     return this.visitStatement_assignment(ctx.statement_assignment());
-  }
+  };
 
   visitFunction_call_segment = (ctx: Function_call_segmentContext) => {
     this.state.addScript();
     return this.visitChildren(ctx.statement_function_call());
-  }
+  };
 
   visitConditional_section = (ctx: Conditional_sectionContext) => {
     this.state.addScript();
@@ -112,7 +158,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     this.state.addScript();
     this.state.decrConditionDepth();
     return null;
-  }
+  };
 
   visitIf_section = (ctx: If_sectionContext) => {
     const result = this.visitIf_clause(ctx.if_clause());
@@ -121,7 +167,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return null;
-  }
+  };
 
   visitElse_if_section = (ctx: Else_if_sectionContext) => {
     const result = this.visitElse_if_clause(ctx.else_if_clause());
@@ -129,19 +175,19 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return this.visitChildren(ctx.script());
     }
     return null;
-  }
+  };
 
   visitElse_section = (ctx: Else_sectionContext) => {
     return this.visitChildren(ctx.script());
-  }
+  };
 
   visitIf_clause = (ctx: If_clauseContext) => {
     return this.visitCompound_condition_or(ctx.compound_condition_or());
-  }
+  };
 
   visitElse_if_clause = (ctx: Else_if_clauseContext) => {
     return this.visitCompound_condition_or(ctx.compound_condition_or());
-  }
+  };
 
   visitStatement_assignment = (ctx: Statement_assignmentContext) => {
     const variableName = ctx.VARIABLE().getText();
@@ -160,7 +206,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       typeof compound_condition_or === 'string'
     ) {
       if (ctx.ASSIGNADD()) {
-        result = variableValue as string + compound_condition_or as string;
+        result = ((variableValue as string) + compound_condition_or) as string;
       } else if (ctx.ASSIGN()) {
         result = compound_condition_or;
       } else {
@@ -214,7 +260,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
     this.state.setVarValues([variableObject.id], [result]);
     return null;
-  }
+  };
 
   visitVoid_function_call = (ctx: Void_function_callContext) => {
     let argument_list: (VarValue | MentionResult)[] = [];
@@ -233,13 +279,15 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     this.functions[fname!](...argument_list);
-  }
+  };
 
   visitVariable_list = (ctx: Variable_listContext): string[] => {
     return ctx.VARIABLE_list().map(variable => variable.getText());
-  }
+  };
 
-  visitCompound_condition_or = (ctx: Compound_condition_orContext): VarValue => {
+  visitCompound_condition_or = (
+    ctx: Compound_condition_orContext
+  ): VarValue => {
     const compound_condition_and = this.visitCompound_condition_and(
       ctx.compound_condition_and()
     );
@@ -252,9 +300,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return compound_condition_and;
-  }
+  };
 
-  visitCompound_condition_and = (ctx: Compound_condition_andContext): VarValue => {
+  visitCompound_condition_and = (
+    ctx: Compound_condition_andContext
+  ): VarValue => {
     const negated_unary_condition = this.visitNegated_unary_condition(
       ctx.negated_unary_condition()
     );
@@ -267,7 +317,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return negated_unary_condition;
-  }
+  };
 
   visitNegated_unary_condition = (ctx: Negated_unary_conditionContext) => {
     const unary_condition = this.visitUnary_condition(ctx.unary_condition());
@@ -277,11 +327,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return unary_condition;
-  }
+  };
 
   visitUnary_condition = (ctx: Unary_conditionContext) => {
     return this.visitCondition(ctx.condition());
-  }
+  };
 
   visitCondition = (ctx: ConditionContext): VarValue => {
     if (ctx.expression_list().length === 1) {
@@ -317,7 +367,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
 
     return this.visitChildren(ctx);
-  }
+  };
 
   visitExpression = (ctx: ExpressionContext): VarValue => {
     if (ctx.STRING()) {
@@ -335,9 +385,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitAdditive_numeric_expression(
       ctx.additive_numeric_expression()
     );
-  }
+  };
 
-  visitAdditive_numeric_expression = (ctx: Additive_numeric_expressionContext): VarValue => {
+  visitAdditive_numeric_expression = (
+    ctx: Additive_numeric_expressionContext
+  ): VarValue => {
     if (ctx.additive_numeric_expression()) {
       let additive_numeric_expression = this.visitAdditive_numeric_expression(
         ctx.additive_numeric_expression()
@@ -365,9 +417,8 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
       if (ctx.ADD()) {
         if (hasString) {
-          return (
-            additive_numeric_expression as string + multiplicative_numeric_expression as string
-          );
+          return ((additive_numeric_expression as string) +
+            multiplicative_numeric_expression) as string;
         }
         return new BigNumber(additive_numeric_expression as number)
           .plus(new BigNumber(multiplicative_numeric_expression as number))
@@ -387,9 +438,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       );
 
     return multiplicative_numeric_expression;
-  }
+  };
 
-  visitMultiplicative_numeric_expression = (ctx: Multiplicative_numeric_expressionContext): VarValue => {
+  visitMultiplicative_numeric_expression = (
+    ctx: Multiplicative_numeric_expressionContext
+  ): VarValue => {
     if (ctx.multiplicative_numeric_expression()) {
       let multiplicative_numeric_expression =
         this.visitMultiplicative_numeric_expression(
@@ -439,9 +492,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       );
 
     return signed_unary_numeric_expression;
-  }
+  };
 
-  visitSigned_unary_numeric_expression = (ctx: Signed_unary_numeric_expressionContext): VarValue => {
+  visitSigned_unary_numeric_expression = (
+    ctx: Signed_unary_numeric_expressionContext
+  ): VarValue => {
     const unary_numeric_expression = this.visitUnary_numeric_expression(
       ctx.unary_numeric_expression()
     );
@@ -454,9 +509,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return -unary_numeric_expression;
     }
     return unary_numeric_expression;
-  }
+  };
 
-  visitUnary_numeric_expression = (ctx: Unary_numeric_expressionContext): VarValue => {
+  visitUnary_numeric_expression = (
+    ctx: Unary_numeric_expressionContext
+  ): VarValue => {
     if (ctx.FLOAT()) {
       return parseFloat(ctx.FLOAT().getText());
     }
@@ -486,7 +543,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return this.visitFunction_call(ctx.function_call());
     }
     return this.visitCompound_condition_or(ctx.compound_condition_or());
-  }
+  };
 
   visitFunction_call = (ctx: Function_callContext) => {
     let argument_list: (VarValue | MentionResult)[] = [];
@@ -496,11 +553,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
     const function_name = ctx.FNAME().getText() as ArcscriptNonVoidFunctionKeys;
     return this.functions[function_name](...argument_list);
-  }
+  };
 
   visitArgument_list = (ctx: Argument_listContext) => {
     return ctx.argument_list().map(argument => this.visitArgument(argument));
-  }
+  };
 
   visitArgument = (ctx: ArgumentContext): VarValue | MentionResult => {
     if (ctx.STRING()) {
@@ -514,7 +571,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitAdditive_numeric_expression(
       ctx.additive_numeric_expression()
     );
-  }
+  };
 
   visitMention = (ctx: MentionContext): MentionResult => {
     const attrs: Record<string, string | boolean> = {};
@@ -532,9 +589,11 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       attrs,
       label,
     };
-  }
+  };
 
-  visitMention_attributes = (ctx: Mention_attributesContext): { name: string; value: boolean | string } => {
+  visitMention_attributes = (
+    ctx: Mention_attributesContext
+  ): { name: string; value: boolean | string } => {
     const name = ctx.ATTR_NAME().getText();
     const ctxvalue = ctx.ATTR_VALUE();
     let value: boolean | string = true;
@@ -551,5 +610,5 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       name,
       value,
     };
-  }
+  };
 }

@@ -7,7 +7,7 @@ type OutputObject = {
   fromScript?: boolean;
   inBlockquote?: boolean;
   isScript: boolean;
-}
+};
 
 export default class ArcscriptState {
   varValues: Record<string, VarValue>;
@@ -16,14 +16,20 @@ export default class ArcscriptState {
   currentElement: string;
   outputs: OutputObject[];
   conditionDepth: number;
-  changes: Record<string, VarValue>
+  changes: Record<string, VarValue>;
   emit: (event: string, data?: any) => void;
   outputDoc: Document;
   rootElement: HTMLElement;
   inBlockquote: boolean;
   insertBlockquote: boolean;
 
-  constructor(varValues: Record<string, VarValue>, varObjects: Record<string, VarObject>, elementVisits: Record<string, number>, currentElement: string, emit: (event: string, data?: any) => void) {
+  constructor(
+    varValues: Record<string, VarValue>,
+    varObjects: Record<string, VarObject>,
+    elementVisits: Record<string, number>,
+    currentElement: string,
+    emit: (event: string, data?: any) => void
+  ) {
     this.varValues = varValues;
     this.varObjects = varObjects;
     this.elementVisits = elementVisits;
@@ -76,7 +82,7 @@ export default class ArcscriptState {
    * @param {string} output The output
    * @param {boolean} fromScript If the output comes from a script
    */
-  pushOutput(output:string, fromScript: boolean = false) {
+  pushOutput(output: string, fromScript: boolean = false) {
     let previousOutput = null;
     if (this.outputs.length > 0) {
       previousOutput = this.outputs[this.outputs.length - 1];
@@ -95,7 +101,6 @@ export default class ArcscriptState {
       inBlockquote: this.inBlockquote,
       isScript: false,
     });
-
 
     // If this is the first output to be inserted
     if (!this.rootElement.innerHTML) {
@@ -128,11 +133,10 @@ export default class ArcscriptState {
     // If the previous output was from a script, the node was a script or
     // the condition depth is different, merge if the nodes are of the same type
     else if (
-      previousOutput && (
-        previousOutput.fromScript ||
+      previousOutput &&
+      (previousOutput.fromScript ||
         previousOutput.isScript ||
-        previousOutput.index !== this.conditionDepth
-      )
+        previousOutput.index !== this.conditionDepth)
     ) {
       const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
       const previousNode = this.rootElement.lastElementChild;
@@ -143,9 +147,8 @@ export default class ArcscriptState {
           if (children[children.length - 1].innerHTML === '') {
             children[children.length - 1].innerHTML = outputNode.innerHTML;
           } else {
-            children[
-              children.length - 1
-            ].innerHTML += ` ${outputNode.innerHTML}`;
+            children[children.length - 1].innerHTML +=
+              ` ${outputNode.innerHTML}`;
           }
         }
       } else {
