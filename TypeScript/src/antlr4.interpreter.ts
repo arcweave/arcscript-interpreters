@@ -1,25 +1,33 @@
-import antlr4 from 'antlr4';
-import { clearBlockStyle, joinParagraphs } from './utils.js';
+import antlr4, { CharStream } from 'antlr4';
+import { clearBlockStyle } from './utils.js';
 import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
+import { VarObject, VarValue } from './types.js';
 
 export default class Interpreter {
+  varValues: Record<string, VarValue>;
+  varObjects: Record<string, VarObject>;
+  elementVisits: Record<string, number>;
+  currentElement: string;
+  variableOffsets: { start: number; end: number }[];
+  emit: (event: string, data?: unknown) => void;
+
   /**
    * Interpreter constructor
-   * @param {object} varValues
-   * @param {object} varObjects
-   * @param {object} elementVisits    The current element visits
-   * @param {String} currentElement   The current element ID
-   * @param {Function} onEvent       The event callback
+   * @param varValues
+   * @param varObjects
+   * @param elementVisits     The current element visits
+   * @param currentElement    The current element ID
+   * @param eventHandler      The event callback
    */
   constructor(
-    varValues,
-    varObjects,
-    elementVisits = {},
-    currentElement = '',
-    eventHandler = () => {}
+    varValues: Record<string, VarValue>,
+    varObjects: Record<string, VarObject>,
+    elementVisits: Record<string, number> = {},
+    currentElement: string = '',
+    eventHandler: (event: string, data?: unknown) => void = () => {}
   ) {
     this.varValues = varValues;
     this.varObjects = varObjects;
@@ -29,10 +37,9 @@ export default class Interpreter {
     this.emit = eventHandler;
   }
 
-  runScript(code, varValues = {}) {
-    this.outputs = [];
+  runScript(code: string, varValues: Record<string, VarValue> = {}) {
     this.variableOffsets = [];
-    const { chars, lexer, tokens, parser, tree } = this.parse(code);
+    const { tree } = this.parse(code);
 
     const visitor = new ArcscriptVisitor(
       this.varValues,
@@ -48,6 +55,7 @@ export default class Interpreter {
 
     let output = visitor.state.generateOutput();
     output = clearBlockStyle(output);
+
     return {
       changes: visitor.state.changes,
       output,
@@ -55,15 +63,15 @@ export default class Interpreter {
     };
   }
 
-  parse(code) {
-    const chars = new antlr4.InputStream(code);
+  parse(code: string) {
+    const chars = new CharStream(code);
     const lexer = new ArcscriptLexer(chars);
     const errorListener = new ErrorListener();
-    lexer.removeErrorListeners(errorListener);
+    lexer.removeErrorListeners();
     lexer.addErrorListener(errorListener);
     const tokens = new antlr4.CommonTokenStream(lexer);
-    const parser = new ArcscriptParser({
-      input: tokens,
+    const parser = new ArcscriptParser(tokens);
+    parser.setOptions({
       varObjects: this.varObjects,
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
@@ -83,11 +91,11 @@ export default class Interpreter {
     };
   }
 
-  replaceVariables(code, variables) {
-    const chars = new antlr4.InputStream(code);
+  replaceVariables(code: string, variables: Record<string, string>) {
+    const chars = new CharStream(code);
     const lexer = new ArcscriptLexer(chars);
     const errorListener = new ErrorListener();
-    lexer.removeErrorListeners(errorListener);
+    lexer.removeErrorListeners();
     lexer.addErrorListener(errorListener);
 
     const tokenTypeNames = lexer.getSymbolicNames();
@@ -96,25 +104,28 @@ export default class Interpreter {
       token => tokenTypeNames[token.type] === 'VARIABLE'
     );
 
+    const tokenIdMap = new Map<object, string>();
     variableTokens.forEach(varToken => {
       const targetVar = Object.values(this.varObjects).find(
         variable => variable.name === varToken.text
       );
       if (targetVar?.id) {
-        varToken.id = targetVar.id;
+        tokenIdMap.set(varToken, targetVar.id);
       }
     });
 
     const f = variableTokens
       .filter(varToken =>
-        varToken.id ? Object.keys(variables).includes(varToken.id) : false
+        tokenIdMap.has(varToken)
+          ? Object.keys(variables).includes(tokenIdMap.get(varToken)!)
+          : false
       )
       .sort((a, b) => b.start - a.start);
     let newCode = code;
     f.forEach(varToken => {
       const { start } = varToken;
       const end = start + varToken.text.length;
-      const replace = variables[varToken.id];
+      const replace = variables[tokenIdMap.get(varToken)!];
       newCode = newCode.slice(0, start) + replace + newCode.slice(end);
     });
     return newCode;

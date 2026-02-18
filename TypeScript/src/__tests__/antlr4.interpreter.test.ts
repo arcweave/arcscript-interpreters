@@ -1,37 +1,48 @@
-/* eslint-env jest */
-import { expect, test, describe, jest } from '@jest/globals';
-import { Interpreter, ParseError, RuntimeError } from '../src/index.js';
+import { expect, test, describe, vi } from 'vitest';
+import { Interpreter, ParseError, RuntimeError } from '../index.js';
 import validTests from './valid.json';
 import parseErrorTests from './parseErrors.json';
 import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
 import stringTests from './stringConcat.json';
+import { VarObject, VarValue } from '../types.js';
 
-function setVarValues(vars) {
+type TestCase = {
+  code: string;
+  changes?: Record<string, VarValue>;
+  output?: string;
+  events?: { name: string; args: unknown }[];
+  visits?: Record<string, number>;
+  elementId?: string;
+  result?: unknown;
+  variableChanges?: Record<string, string>;
+};
+
+function setVarValues(vars: Record<string, VarObject>) {
   return Object.fromEntries(
     Object.entries(vars)
-      .filter(([k, v]) => !v.children)
+      .filter(([, v]) => !v.children)
       .map(([k, v]) => [k, v.value])
   );
 }
 
 describe('Interprete valid scripts', () => {
-  const varObjects = validTests.initialVars;
+  const varObjects = validTests.initialVars as Record<string, VarObject>;
   const varValues = setVarValues(varObjects);
+  const cases = validTests.cases as TestCase[];
 
-  test.each(validTests.cases)(
+  test.each(cases)(
     'Tests script: $code',
     ({
       code,
       changes: expectedChanges = {},
       output: expectedOutput = '',
       events = null,
-      visits,
+      visits = {},
       elementId = '',
-      result,
     }) => {
-      const eventHandler = jest.fn();
+      const eventHandler = vi.fn();
 
       const interpreter = new Interpreter(
         varValues,
@@ -40,10 +51,10 @@ describe('Interprete valid scripts', () => {
         elementId,
         eventHandler
       );
-      const { tree, changes, output } = interpreter.runScript(code);
+      const { changes, output } = interpreter.runScript(code);
       expect(changes).toMatchObject(expectedChanges);
       expect(output).toEqual(expectedOutput);
-      expect(tree).not.toBeNull();
+
       if (events) {
         expect(eventHandler).toHaveBeenCalledTimes(events.length);
         events.forEach((event, index) => {
@@ -56,10 +67,10 @@ describe('Interprete valid scripts', () => {
 });
 
 describe('Interprete string test scripts', () => {
-  const varObjects = stringTests.initialVars;
+  const varObjects = stringTests.initialVars as Record<string, VarObject>;
   const varValues = setVarValues(varObjects);
 
-  test.each(stringTests.cases)(
+  test.each(stringTests.cases as unknown as TestCase[])(
     'Tests script: $code',
     ({
       code,
@@ -67,7 +78,6 @@ describe('Interprete string test scripts', () => {
       output: expectedOutput = '',
       visits,
       elementId = '',
-      result,
     }) => {
       const interpreter = new Interpreter(
         varValues,
@@ -75,28 +85,20 @@ describe('Interprete string test scripts', () => {
         visits,
         elementId
       );
-      const { tree, changes, output } = interpreter.runScript(code);
+      const { changes, output } = interpreter.runScript(code);
       expect(changes).toMatchObject(expectedChanges);
       expect(output).toEqual(expectedOutput);
-      expect(tree).not.toBeNull();
     }
   );
 });
 
 describe('Interprete script with parse errors', () => {
-  const varObjects = parseErrorTests.initialVars;
+  const varObjects = parseErrorTests.initialVars as Record<string, VarObject>;
   const varValues = setVarValues(varObjects);
 
-  test.each(parseErrorTests.cases)(
+  test.each(parseErrorTests.cases as TestCase[])(
     'Test error script: $code',
-    ({
-      code,
-      changes: expectedChanges = {},
-      output: expectedOutput = '',
-      visits,
-      elementId = '',
-      result,
-    }) => {
+    ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter(
         varValues,
         varObjects,
@@ -111,19 +113,12 @@ describe('Interprete script with parse errors', () => {
 });
 
 describe('Interprete script with runtime errors', () => {
-  const varObjects = runtimeErrorTests.initialVars;
+  const varObjects = runtimeErrorTests.initialVars as Record<string, VarObject>;
   const varValues = setVarValues(varObjects);
 
-  test.each(runtimeErrorTests.cases)(
+  test.each(runtimeErrorTests.cases as TestCase[])(
     'Test error script: $code',
-    ({
-      code,
-      changes: expectedChanges = {},
-      output: expectedOutput = '',
-      visits,
-      elementId = '',
-      result,
-    }) => {
+    ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter(
         varValues,
         varObjects,
@@ -138,19 +133,12 @@ describe('Interprete script with runtime errors', () => {
 });
 
 describe('Interprete condition', () => {
-  const varObjects = conditionTests.initialVars;
+  const varObjects = conditionTests.initialVars as Record<string, VarObject>;
   const varValues = setVarValues(varObjects);
 
-  test.each(conditionTests.cases)(
+  test.each(conditionTests.cases as TestCase[])(
     'Tests condition: $code',
-    ({
-      code,
-      changes: expectedChanges = {},
-      output: expectedOutput = '',
-      visits,
-      elementId = '',
-      result: expectedResult,
-    }) => {
+    ({ code, visits, elementId = '', result: expectedResult }) => {
       const interpreter = new Interpreter(
         varValues,
         varObjects,
@@ -165,10 +153,13 @@ describe('Interprete condition', () => {
 });
 
 describe('Replace variables', () => {
-  const varObjects = replaceVariableTests.initialVars;
+  const varObjects = replaceVariableTests.initialVars as Record<
+    string,
+    VarObject
+  >;
   const varValues = setVarValues(varObjects);
 
-  test.each(replaceVariableTests.cases)(
+  test.each(replaceVariableTests.cases as TestCase[])(
     'Tests replace: $code',
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition

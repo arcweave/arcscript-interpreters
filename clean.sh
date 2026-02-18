@@ -1,6 +1,6 @@
 rm ./antlr4.jar
 
-rm JavaScript/src/Generated/ArcscriptLexer.js JavaScript/src/Generated/ArcscriptParser.js JavaScript/src/Generated/ArcscriptParserVisitor.js
+rm TypeScript/src/Generated/ArcscriptLexer.js TypeScript/src/Generated/ArcscriptParser.js TypeScript/src/Generated/ArcscriptParserVisitor.js
 
 rm -rf Cpp/src/Generated
 

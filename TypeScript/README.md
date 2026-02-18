@@ -3,25 +3,9 @@
 
 # JS Arcscript Interpreter
 
-> Write a project description
-
-## Prerequisites
-
-This project requires NodeJS (version 8 or later) and NPM.
-[Node](http://nodejs.org/) and [NPM](https://npmjs.org/) are really easy to install.
-To make sure you have them available on your machine,
-try running the following command.
-
-```sh
-$ npm -v && node -v
-6.4.1
-v8.16.0
-```
-
 ## Table of contents
 
 - [JS Arcscript Interpreter](#js-arcscript-interpreter)
-  - [Prerequisites](#prerequisites)
   - [Table of contents](#table-of-contents)
   - [Getting Started](#getting-started)
   - [Installation](#installation)
@@ -39,25 +23,10 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Installation
 
-**BEFORE YOU INSTALL:** please read the [prerequisites](#prerequisites)
-
-Start with cloning this repo on your local machine:
-
-```sh
-$ git clone https://github.com/arcweave/arcscript-interpreters.git
-$ cd arcscript-interpreters/JavaScript
-```
-
-To install and set up the library, run:
+To include `@arcweave/arcscript` in your project, you can use npm:
 
 ```sh
 $ npm install -S @arcweave/arcscript
-```
-
-Or if you prefer using Yarn:
-
-```sh
-$ yarn add --dev @arcweave/arcscript
 ```
 
 ## Usage
@@ -65,17 +34,19 @@ $ yarn add --dev @arcweave/arcscript
 ### Building the app
 
 ```sh
-$ npm run build
-```
-
-### Running the tests
-
-```sh
-$ npm test
+$ pnpm install
+$ pnpm run build
 ```
 
 This task will create a distribution version of the project
 inside your local `dist/` folder
+
+### Running the tests
+
+```sh
+$ pnpm test
+```
+
 
 ## API
 

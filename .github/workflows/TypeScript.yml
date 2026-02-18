@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI Javascript
+name: CI TypeScript
 
 # Controls when the workflow will run
 on:
@@ -8,12 +8,12 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "JavaScript/**"
+      - "TypeScript/**"
       - "grammar/*.g4"
   pull_request:
     branches: ["main"]
     paths:
-      - "JavaScript/**"
+      - "TypeScript/**"
       - "grammar/*.g4"
 
   # Allows you to run this workflow manually from the Actions tab
@@ -29,21 +29,29 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache-dependency-path: ./TypeScript/pnpm-lock.yaml
+          cache: "pnpm"
 
       # Runs a single command using the runners shell
       - name: Download Antlr4 tool
         run: sh generate.sh
 
       - name: Install dependencies
-        working-directory: ./JavaScript
-        run: npm install
+        working-directory: ./TypeScript
+        run: pnpm install
 
-      - name: Build JS
-        working-directory: ./JavaScript
-        run: npm run build
+      - name: Build TS
+        working-directory: ./TypeScript
+        run: pnpm run build
 
       # Runs a set of commands using the runners shell
       - name: Run tests
-        working-directory: ./JavaScript
-        run: npm test
+        working-directory: ./TypeScript
+        run: pnpm test

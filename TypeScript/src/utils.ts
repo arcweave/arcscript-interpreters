@@ -4,7 +4,7 @@
  * @param {string} str2 Requires str2 to have at least one html paragraph
  * @returns {string}
  */
-function joinParagraphs(str1, str2) {
+function joinParagraphs(str1: string, str2: string): string {
   if (!str1) return str2;
   if (!str2) return str1;
   const doc1 = new DOMParser().parseFromString(str1, 'text/html');
@@ -15,8 +15,10 @@ function joinParagraphs(str1, str2) {
   if (lastParagraph.innerHTML) {
     lastParagraph.innerHTML += ' ';
   }
-  lastParagraph.innerHTML += firstParagraph.innerHTML;
-  firstParagraph.remove();
+  if (firstParagraph) {
+    lastParagraph.innerHTML += firstParagraph.innerHTML;
+    firstParagraph.remove();
+  }
   const result = doc1.body.innerHTML + doc2.body.innerHTML;
   return result;
 }
@@ -25,15 +27,18 @@ function joinParagraphs(str1, str2) {
  * Joins the last paragraph of str1 with the first paragraph of str2 only if they
  * are of the same type ('BLOCKQUOTE' or 'P'). If they are not, it concatenates the
  * two strings
- * @param {*} str1
- * @param {*} str2
+ * @param {string} str1
+ * @param {string} str2
  * @returns {string}
  */
-function joinSameTypes(str1, str2) {
+function joinSameTypes(str1: string, str2: string): string {
   if (!str1) return str2;
   if (!str2) return str1;
   const doc1 = new DOMParser().parseFromString(str1, 'text/html');
   const doc2 = new DOMParser().parseFromString(str2, 'text/html');
+  if (!doc1.body.lastChild || !doc2.body.firstChild) {
+    return str1 + str2;
+  }
   const { nodeName } = doc1.body.lastChild;
   if (nodeName === doc2.body.firstChild.nodeName) {
     let node1;
@@ -45,6 +50,9 @@ function joinSameTypes(str1, str2) {
       node1 = doc1.querySelector('body > p:last-child');
       node2 = doc2.querySelector('body > p');
     }
+    if (!node1 || !node2) {
+      return str1 + str2;
+    }
     if (node2.innerHTML) {
       node1.innerHTML += ' ';
     }
@@ -52,11 +60,15 @@ function joinSameTypes(str1, str2) {
     node1.innerHTML += node2.innerHTML;
     if (nodeName === 'BLOCKQUOTE') {
       // Remove paragraph node2 from it's blockquote parent
-      const parent = node2.parentNode;
-      parent.removeChild(node2);
-      // Insert the rest of the paragraphs of node2 parent after node1
-      node1.parentNode.innerHTML += parent.innerHTML;
-      parent.remove();
+      const parent = node2.parentElement;
+      if (parent) {
+        parent.removeChild(node2);
+        // Insert the rest of the paragraphs of node2 parent after node1
+        if (node1.parentElement) {
+          node1.parentElement.innerHTML += parent.innerHTML;
+        }
+        parent.remove();
+      }
     } else {
       node2.remove();
     }
@@ -70,7 +82,7 @@ function joinSameTypes(str1, str2) {
  * @param {string} str
  * @returns {string}
  */
-function clearBlockStyle(str) {
+function clearBlockStyle(str: string): string {
   if (!str) return str;
   const doc = new DOMParser().parseFromString(str, 'text/html');
   const paragraphs = doc.querySelectorAll('body p, body blockquote');

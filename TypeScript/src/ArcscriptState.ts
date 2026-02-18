@@ -1,8 +1,35 @@
 import cloneDeep from 'lodash.clonedeep';
-import { joinParagraphs, joinSameTypes } from './utils.js';
+import { VarObject, VarValue } from './types.js';
+
+type OutputObject = {
+  output?: string;
+  index?: number;
+  fromScript?: boolean;
+  inBlockquote?: boolean;
+  isScript: boolean;
+};
 
 export default class ArcscriptState {
-  constructor(varValues, varObjects, elementVisits, currentElement, emit) {
+  varValues: Record<string, VarValue>;
+  varObjects: Record<string, VarObject>;
+  elementVisits: Record<string, number>;
+  currentElement: string;
+  outputs: OutputObject[];
+  conditionDepth: number;
+  changes: Record<string, VarValue>;
+  emit: (event: string, data?: unknown) => void;
+  outputDoc: Document;
+  rootElement: HTMLElement;
+  inBlockquote: boolean;
+  insertBlockquote: boolean;
+
+  constructor(
+    varValues: Record<string, VarValue>,
+    varObjects: Record<string, VarObject>,
+    elementVisits: Record<string, number>,
+    currentElement: string,
+    emit: (event: string, data?: unknown) => void
+  ) {
     this.varValues = varValues;
     this.varObjects = varObjects;
     this.elementVisits = elementVisits;
@@ -19,16 +46,16 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
-  getVar(name) {
+  getVar(name: string) {
     return Object.values(this.varObjects).find(v => v.name === name);
   }
 
-  getVarValue(id) {
+  getVarValue(id: string) {
     if (id in this.changes) return this.changes[id];
     return this.varValues[id];
   }
 
-  setVarValues(ids, values) {
+  setVarValues(ids: string[], values: VarValue[]) {
     ids.forEach((id, index) => {
       this.changes[id] = values[index];
     });
@@ -37,12 +64,12 @@ export default class ArcscriptState {
   getInitialVarValues() {
     return Object.fromEntries(
       Object.entries(this.varObjects)
-        .filter(([k, v]) => !v.children)
+        .filter(([, v]) => !v.children)
         .map(([k, v]) => [k, v.value])
     );
   }
 
-  resetVarValues(ids) {
+  resetVarValues(ids: string[]) {
     const initial = cloneDeep(this.getInitialVarValues());
     const values = ids.map(id => initial[id]);
     this.setVarValues(ids, values);
@@ -55,10 +82,16 @@ export default class ArcscriptState {
    * @param {string} output The output
    * @param {boolean} fromScript If the output comes from a script
    */
-  pushOutput(output, fromScript) {
+  pushOutput(output: string, fromScript: boolean = false) {
     let previousOutput = null;
     if (this.outputs.length > 0) {
       previousOutput = this.outputs[this.outputs.length - 1];
+    }
+
+    let outputNode = new DOMParser().parseFromString(output, 'text/html').body
+      .firstElementChild;
+    if (!outputNode) {
+      return;
     }
 
     this.outputs.push({
@@ -68,9 +101,6 @@ export default class ArcscriptState {
       inBlockquote: this.inBlockquote,
       isScript: false,
     });
-
-    let outputNode = new DOMParser().parseFromString(output, 'text/html').body
-      .firstChild;
 
     // If this is the first output to be inserted
     if (!this.rootElement.innerHTML) {
@@ -103,22 +133,22 @@ export default class ArcscriptState {
     // If the previous output was from a script, the node was a script or
     // the condition depth is different, merge if the nodes are of the same type
     else if (
-      previousOutput.fromScript ||
-      previousOutput.isScript ||
-      previousOutput.index !== this.conditionDepth
+      previousOutput &&
+      (previousOutput.fromScript ||
+        previousOutput.isScript ||
+        previousOutput.index !== this.conditionDepth)
     ) {
       const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
-      const previousNode = this.rootElement.lastChild;
-      if (previousNode.nodeName === nodeName) {
+      const previousNode = this.rootElement.lastElementChild;
+      if (previousNode && previousNode.nodeName === nodeName) {
         if (outputNode.innerHTML) {
           const children =
             this.rootElement.querySelectorAll('div p:last-child');
           if (children[children.length - 1].innerHTML === '') {
             children[children.length - 1].innerHTML = outputNode.innerHTML;
           } else {
-            children[
-              children.length - 1
-            ].innerHTML += ` ${outputNode.innerHTML}`;
+            children[children.length - 1].innerHTML +=
+              ` ${outputNode.innerHTML}`;
           }
         }
       } else {
@@ -140,7 +170,7 @@ export default class ArcscriptState {
       } else {
         this.outputDoc
           .querySelector('blockquote:last-child')
-          .appendChild(outputNode);
+          ?.appendChild(outputNode);
       }
     } else {
       this.rootElement.appendChild(outputNode);

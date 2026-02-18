@@ -1,5 +1,0 @@
-*
-!.gitignore
-!__tests__
-!__tests__/**
-!ArcscriptParserBase.js
