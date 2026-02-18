@@ -5,11 +5,11 @@ if (-Not (Test-Path "./antlr4.jar")) {
 
 Set-Location "grammar"
 
-# JavaScript generation
-java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=JavaScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./JavaScript
-New-Item -ItemType Directory -Force -Path ../JavaScript/src/Generated | Out-Null
-Copy-Item JavaScript\*.js ../JavaScript/src/Generated\
-Remove-Item -Recurse -Force ./JavaScript
+# TypeScript generation
+java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=TypeScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./TypeScript
+New-Item -ItemType Directory -Force -Path ../TypeScript/src/Generated | Out-Null
+Copy-Item TypeScript\*.ts ../TypeScript/src/Generated\
+Remove-Item -Recurse -Force ./TypeScript
 
 # Copy grammar files for Cpp
 Copy-Item Arcscript*.g4 ./Cpp/

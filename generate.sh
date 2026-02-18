@@ -6,12 +6,6 @@ then
   curl https://www.antlr.org/download/antlr-4.13.1-complete.jar -o antlr4.jar
 fi
 cd grammar
-java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=JavaScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./JavaScript
-
-mkdir -p ../JavaScript/src/Generated
-cp JavaScript/*.js ../JavaScript/src/Generated/.
-rm -rf ./JavaScript
-
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=TypeScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./TypeScript
 mkdir -p ../TypeScript/src/Generated
 cp TypeScript/*.ts ../TypeScript/src/Generated/.
