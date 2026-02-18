@@ -1,0 +1,36 @@
+name: pkg.pr.new on PR
+on:
+  pull_request:
+    paths:
+      - "TypeScript/**"
+      - "grammar/*.g4"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      # Runs a single command using the runners shell
+      - name: Download Antlr4 tool
+        run: sh generate.sh
+
+      - name: Install dependencies
+        working-directory: ./TypeScript
+        run: pnpm install
+
+      - name: Build TS
+        working-directory: ./TypeScript
+        run: pnpm run build
+
+      - name: Publish on pkg.pr.new
+        working-directory: ./TypeScript
+        run: pnpm dlx pkg-pr-new publish --compact

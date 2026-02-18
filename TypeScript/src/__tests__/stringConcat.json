@@ -1,0 +1,132 @@
+{
+	"initialVars": {
+		"var1": {
+			"id": "var1",
+			"name": "x",
+			"type": "integer",
+			"value": 14
+		},
+		"var2": {
+			"id": "var2",
+			"name": "y",
+			"type": "integer",
+			"value": 15
+		},
+		"var3": {
+			"id": "var3",
+			"name": "z",
+			"type": "integer",
+			"value": 0
+		},
+		"var4": {
+			"id": "var4",
+			"name": "w",
+			"type": "string",
+			"value": "Dummy text"
+		},
+		"var5": {
+			"id": "var5",
+			"name": "$c5",
+			"type": "integer",
+			"value": 0
+		},
+		"var6": {
+			"id": "var6",
+			"name": "_a",
+			"type": "boolean",
+			"value": false
+		},
+		"var7": {
+			"id": "var7",
+			"name": "xy",
+			"type": "integer",
+			"value": -1
+		},
+		"var8": {
+			"id": "var8",
+			"name": "man",
+			"type": "string",
+			"value": "Different Text"
+		}
+	},
+	"cases": [
+		{
+			"code": "<pre><code>w = \"test\"</code></pre><pre><code>w = w + \"ing\"</code></pre>",
+			"changes": {
+				"var4": "testing"
+			}
+		},
+		{
+			"code": "<pre><code>w = \"test\" + \"ing\"</code></pre>",
+			"changes": {
+				"var4": "testing"
+			}
+		},
+		{
+			"code": "<pre><code>w = 0.42 + \"ing\"</code></pre>",
+			"changes": {
+				"var4": "0.42ing"
+			}
+		},
+		{
+			"code": "<pre><code>w = 0.42 + \"\"</code></pre>",
+			"changes": {
+				"var4": "0.42"
+			}
+		},
+		{
+			"code": "<pre><code>w = \"test\" + 44</code></pre>",
+			"changes": {
+				"var4": "test44"
+			}
+		},
+		{
+			"code": "<pre><code>w = \"test\" + false</code></pre>",
+			"changes": {
+				"var4": "testfalse"
+			}
+		},
+		{
+			"code": "<pre><code>w = \"test\" + true + true</code></pre>",
+			"changes": {
+				"var4": "testtruetrue"
+			}
+		},
+		{
+			"code": "<pre><code>w = true + true + \"test\"</code></pre>",
+			"changes": {
+				"var4": "2test"
+			}
+		},
+		{
+			"code": "<pre><code>w += \" test\"</code></pre>",
+			"changes": {
+				"var4": "Dummy text test"
+			}
+		},
+		{
+			"code": "<pre><code>x += \"test\"</code></pre>",
+			"changes": {
+				"var1": "14test"
+			}
+		},
+		{
+			"code": "<pre><code>w += 42</code></pre>",
+			"changes": {
+				"var4": "Dummy text42"
+			}
+		},
+		{
+			"code": "<pre><code>w += _a</code></pre>",
+			"changes": {
+				"var4": "Dummy textfalse"
+			}
+		},
+		{
+			"code": "<pre><code>w += man</code></pre>",
+			"changes": {
+				"var4": "Dummy textDifferent Text"
+			}
+		}
+	]
+}
