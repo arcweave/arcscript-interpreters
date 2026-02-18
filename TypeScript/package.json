@@ -2,13 +2,33 @@
 	"name": "@arcweave/arcscript",
 	"version": "1.2.0",
 	"description": "An interpreter for arcscript using antlr4",
-	"main": "index.js",
+	"main": "dist/arcscript.esm.js",
 	"scripts": {
 		"build": "rolldown -c rolldown.config.ts",
 		"test": "vitest"
 	},
-	"keywords": [],
-	"author": "",
+	"exports": {
+		".": {
+			"import": "./dist/arcscript.esm.js",
+			"types": "./dist/arcscript.esm.d.ts",
+			"require": "./dist/arcscript.cjs.js",
+			"default": "./dist/arcscript.esm.js"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/arcweave/arcscript-interpreters.git"
+	},
+	"keywords": [
+		"arcweave",
+		"arcscript",
+		"antlr4"
+	],
+	"bugs": {
+		"url": "https://github.com/arcweave/arcscript-interpreters/issues"
+	},
+	"homepage": "https://github.com/arcweave/arcscript-interpreters#readme",
+	"author": "Arcweave",
 	"license": "ISC",
 	"packageManager": "pnpm@10.12.2",
 	"devDependencies": {
