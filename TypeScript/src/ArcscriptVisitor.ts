@@ -40,7 +40,8 @@ import {
   Void_function_callContext,
 } from './Generated/ArcscriptParser.js';
 
-export default class ArcscriptVisitor extends ArcscriptParserVisitor<unknown> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   state: ArcscriptState;
   functions: ArcscriptFunctions;
 
