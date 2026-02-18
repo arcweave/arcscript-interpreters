@@ -2,8 +2,8 @@
 	"name": "@arcweave/arcscript",
 	"version": "1.2.0",
 	"description": "An interpreter for arcscript using antlr4",
-	"main": "dist/index.mjs",
-	"types": "dist/index.d.mts",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "tsc --build",
 		"clean": "rm -rf dist",
@@ -11,10 +11,9 @@
 	},
 	"exports": {
 		".": {
-			"import": "./dist/index.mjs",
-			"types": "./dist/index.d.mts",
-			"require": "./dist/index.js",
-			"default": "./dist/index.mjs"
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
 		}
 	},
 	"repository": {
