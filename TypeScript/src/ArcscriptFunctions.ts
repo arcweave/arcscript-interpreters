@@ -52,7 +52,7 @@ export default class ArcscriptFunctions {
     return Math.abs(n);
   }
 
-  random(...args: ArgumentTypes): number {
+  random(): number {
     return Math.random();
   }
 
@@ -176,7 +176,7 @@ export default class ArcscriptFunctions {
     return this.state.elementVisits[elementId];
   }
 
-  resetVisits(...args: ArgumentTypes): void {
+  resetVisits(): void {
     this.state.resetVisits();
   }
 

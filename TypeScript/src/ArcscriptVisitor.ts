@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
 import ArcscriptFunctions, {
@@ -41,7 +40,7 @@ import {
   Void_function_callContext,
 } from './Generated/ArcscriptParser.js';
 
-export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
+export default class ArcscriptVisitor extends ArcscriptParserVisitor<unknown> {
   state: ArcscriptState;
   functions: ArcscriptFunctions;
 
@@ -50,7 +49,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     varObjects: Record<string, VarObject>,
     elementVisits: Record<string, number>,
     currentElement: string,
-    emit: (event: string, data: any) => void
+    emit: (event: string, data: unknown) => void
   ) {
     super();
 
@@ -366,7 +365,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return exp0 === exp1;
     }
 
-    return this.visitChildren(ctx);
+    return this.visitChildren(ctx) as VarValue;
   };
 
   visitExpression = (ctx: ExpressionContext): VarValue => {

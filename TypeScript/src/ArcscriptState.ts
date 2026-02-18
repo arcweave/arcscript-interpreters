@@ -17,7 +17,7 @@ export default class ArcscriptState {
   outputs: OutputObject[];
   conditionDepth: number;
   changes: Record<string, VarValue>;
-  emit: (event: string, data?: any) => void;
+  emit: (event: string, data?: unknown) => void;
   outputDoc: Document;
   rootElement: HTMLElement;
   inBlockquote: boolean;
@@ -28,7 +28,7 @@ export default class ArcscriptState {
     varObjects: Record<string, VarObject>,
     elementVisits: Record<string, number>,
     currentElement: string,
-    emit: (event: string, data?: any) => void
+    emit: (event: string, data?: unknown) => void
   ) {
     this.varValues = varValues;
     this.varObjects = varObjects;
@@ -64,7 +64,7 @@ export default class ArcscriptState {
   getInitialVarValues() {
     return Object.fromEntries(
       Object.entries(this.varObjects)
-        .filter(([k, v]) => !v.children)
+        .filter(([, v]) => !v.children)
         .map(([k, v]) => [k, v.value])
     );
   }
