@@ -6,7 +6,7 @@ import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
 import stringTests from './stringConcat.json';
-import { VarObject, VarValue } from '../types.js';
+import { ArcscriptStateDef, VarValue } from '../types.js';
 
 type TestCase = {
   code: string;
@@ -19,17 +19,7 @@ type TestCase = {
   variableChanges?: Record<string, string>;
 };
 
-function setVarValues(vars: Record<string, VarObject>) {
-  return Object.fromEntries(
-    Object.entries(vars)
-      .filter(([, v]) => !v.children)
-      .map(([k, v]) => [k, v.value])
-  );
-}
-
 describe('Interprete valid scripts', () => {
-  const varObjects = validTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
   const cases = validTests.cases as TestCase[];
 
   test.each(cases)(
@@ -45,8 +35,7 @@ describe('Interprete valid scripts', () => {
       const eventHandler = vi.fn();
 
       const interpreter = new Interpreter(
-        varValues,
-        varObjects,
+        validTests.initialVars as ArcscriptStateDef,
         visits,
         elementId,
         eventHandler
@@ -67,9 +56,6 @@ describe('Interprete valid scripts', () => {
 });
 
 describe('Interprete string test scripts', () => {
-  const varObjects = stringTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(stringTests.cases as unknown as TestCase[])(
     'Tests script: $code',
     ({
@@ -80,8 +66,7 @@ describe('Interprete string test scripts', () => {
       elementId = '',
     }) => {
       const interpreter = new Interpreter(
-        varValues,
-        varObjects,
+        stringTests.initialVars as ArcscriptStateDef,
         visits,
         elementId
       );
@@ -93,15 +78,11 @@ describe('Interprete string test scripts', () => {
 });
 
 describe('Interprete script with parse errors', () => {
-  const varObjects = parseErrorTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(parseErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter(
-        varValues,
-        varObjects,
+        parseErrorTests.initialVars as ArcscriptStateDef,
         visits,
         elementId
       );
@@ -113,15 +94,11 @@ describe('Interprete script with parse errors', () => {
 });
 
 describe('Interprete script with runtime errors', () => {
-  const varObjects = runtimeErrorTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(runtimeErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter(
-        varValues,
-        varObjects,
+        runtimeErrorTests.initialVars as ArcscriptStateDef,
         visits,
         elementId
       );
@@ -133,15 +110,11 @@ describe('Interprete script with runtime errors', () => {
 });
 
 describe('Interprete condition', () => {
-  const varObjects = conditionTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(conditionTests.cases as TestCase[])(
     'Tests condition: $code',
     ({ code, visits, elementId = '', result: expectedResult }) => {
       const interpreter = new Interpreter(
-        varValues,
-        varObjects,
+        conditionTests.initialVars as ArcscriptStateDef,
         visits,
         elementId
       );
@@ -153,17 +126,13 @@ describe('Interprete condition', () => {
 });
 
 describe('Replace variables', () => {
-  const varObjects = replaceVariableTests.initialVars as Record<
-    string,
-    VarObject
-  >;
-  const varValues = setVarValues(varObjects);
-
   test.each(replaceVariableTests.cases as TestCase[])(
     'Tests replace: $code',
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition
-      const interpreter = new Interpreter(varValues, varObjects);
+      const interpreter = new Interpreter(
+        replaceVariableTests.initialVars as ArcscriptStateDef
+      );
       const result = interpreter.replaceVariables(code, variableChanges);
 
       // The given condition should match the expected evaluation

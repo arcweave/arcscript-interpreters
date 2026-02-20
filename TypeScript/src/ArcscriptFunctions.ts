@@ -133,7 +133,9 @@ export default class ArcscriptFunctions {
       }
       return v.id;
     });
-    const all = Object.keys(this.state.variables);
+    const all = Object.keys(this.state.scopedVariables).flatMap(scope =>
+      Object.keys(this.state.scopedVariables[scope])
+    );
     const resetIds = all.filter(id => !except.includes(id));
     this.state.resetVarValues(resetIds);
   }

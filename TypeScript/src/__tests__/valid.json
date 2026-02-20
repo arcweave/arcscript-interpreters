@@ -1,314 +1,402 @@
 {
 	"initialVars": {
-		"var1": {
-			"id": "var1",
-			"name": "x",
-			"type": "integer",
-			"value": 14
-		},
-		"var2": {
-			"id": "var2",
-			"name": "y",
-			"type": "integer",
-			"value": 15
-		},
-		"var3": {
-			"id": "var3",
-			"name": "z",
-			"type": "integer",
-			"value": 0
-		},
-		"var4": {
-			"id": "var4",
-			"name": "w",
-			"type": "string",
-			"value": "Dummy text"
-		},
-		"var5": {
-			"id": "var5",
-			"name": "$c5",
-			"type": "integer",
-			"value": 0
-		},
-		"var6": {
-			"id": "var6",
-			"name": "_a",
-			"type": "boolean",
-			"value": false
-		},
-		"var7": {
-			"id": "var7",
-			"name": "xy",
-			"type": "integer",
-			"value": -1
-		},
-		"var8": {
-			"id": "var8",
-			"name": "man",
-			"type": "string",
-			"value": "Different Text"
+		"global": {
+			"var1": {
+				"id": "var1",
+				"name": "x",
+				"type": "integer",
+				"defaultValue": 14
+			},
+			"var2": {
+				"id": "var2",
+				"name": "y",
+				"type": "integer",
+				"defaultValue": 15
+			},
+			"var3": {
+				"id": "var3",
+				"name": "z",
+				"type": "integer",
+				"defaultValue": 0
+			},
+			"var4": {
+				"id": "var4",
+				"name": "w",
+				"type": "string",
+				"defaultValue": "Dummy text"
+			},
+			"var5": {
+				"id": "var5",
+				"name": "$c5",
+				"type": "integer",
+				"defaultValue": 0
+			},
+			"var6": {
+				"id": "var6",
+				"name": "_a",
+				"type": "boolean",
+				"defaultValue": false
+			},
+			"var7": {
+				"id": "var7",
+				"name": "xy",
+				"type": "integer",
+				"defaultValue": -1
+			},
+			"var8": {
+				"id": "var8",
+				"name": "man",
+				"type": "string",
+				"defaultValue": "Different Text"
+			}
 		}
 	},
 	"cases": [
 		{
 			"code": "<pre><code>x=5</code></pre>",
 			"changes": {
-				"var1": 5
+				"global": {
+					"var1": 5
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x=-5</code></pre>",
 			"changes": {
-				"var1": -5
+				"global": {
+					"var1": -5
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x=5.23</code></pre>",
 			"changes": {
-				"var1": 5.23
+				"global": {
+					"var1": 5.23
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x=3</code></pre><pre><code>y=2</code></pre>",
 			"changes": {
-				"var1": 3,
-				"var2": 2
+				"global": {
+					"var1": 3,
+					"var2": 2
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x=\"test\"</code></pre>",
 			"changes": {
-				"var1": "test"
+				"global": {
+					"var1": "test"
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x=true</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = y</code></pre>",
 			"changes": {
-				"var1": 15
+				"global": {
+					"var1": 15
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 5 + 3</code></pre>",
 			"changes": {
-				"var1": 8
+				"global": {
+					"var1": 8
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 10 % 3</code></pre>",
 			"changes": {
-				"var1": 1
+				"global": {
+					"var1": 1
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 10 % 3 * 2</code></pre>",
 			"changes": {
-				"var1": 2
+				"global": {
+					"var1": 2
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 10 % (3 * 2)</code></pre>",
 			"changes": {
-				"var1": 4
+				"global": {
+					"var1": 4
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 5 + 6 % 3</code></pre>",
 			"changes": {
-				"var1": 5
+				"global": {
+					"var1": 5
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x %= 6</code></pre>",
 			"changes": {
-				"var1": 2
+				"global": {
+					"var1": 2
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 10 % 7 % 2</code></pre>",
 			"changes": {
-				"var1": 1
+				"global": {
+					"var1": 1
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 / 4 * 5</code></pre>",
 			"changes": {
-				"var1": 3.75
+				"global": {
+					"var1": 3.75
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 + 4 * 5</code></pre>",
 			"changes": {
-				"var1": 23
+				"global": {
+					"var1": 23
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 * 4 + 5</code></pre>",
 			"changes": {
-				"var1": 17
+				"global": {
+					"var1": 17
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 / 4 / 5</code></pre>",
 			"changes": {
-				"var1": 0.15
+				"global": {
+					"var1": 0.15
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = sqr(2)</code></pre>",
 			"changes": {
-				"var1": 4
+				"global": {
+					"var1": 4
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 > 2</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 >= 2</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 < 2</code></pre>",
 			"changes": {
-				"var1": false
+				"global": {
+					"var1": false
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 <= 2</code></pre>",
 			"changes": {
-				"var1": false
+				"global": {
+					"var1": false
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 == 2</code></pre>",
 			"changes": {
-				"var1": false
+				"global": {
+					"var1": false
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 3 != 2</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>_a = !(3 == 2)</code></pre>",
 			"changes": {
-				"var6": true
+				"global": {
+					"var6": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>_a = not (3 == 2)</code></pre>",
 			"changes": {
-				"var6": true
+				"global": {
+					"var6": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = !0</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = true || false</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = true && false</code></pre>",
 			"changes": {
-				"var1": false
+				"global": {
+					"var1": false
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = -3</code></pre><pre><code>y = y + 3</code></pre><pre><code>z = sqr(x)</code></pre>",
 			"changes": {
-				"var1": -3,
-				"var2": 18,
-				"var3": 9
+				"global": {
+					"var1": -3,
+					"var2": 18,
+					"var3": 9
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = sqrt(y + 2)</code></pre>",
 			"changes": {
-				"var1": 4.123105625617661
+				"global": {
+					"var1": 4.123105625617661
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = z + 12 == 4 * 3</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = y == 15 && !(z == 1)</code></pre>",
 			"changes": {
-				"var1": true
+				"global": {
+					"var1": true
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = (x*x + 3)/y</code></pre>",
 			"changes": {
-				"var1": 13.266666666666667
+				"global": {
+					"var1": 13.266666666666667
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = x*(x + 1)/y</code></pre>",
 			"changes": {
-				"var1": 14
+				"global": {
+					"var1": 14
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x += 2</code></pre>",
 			"changes": {
-				"var1": 16
+				"global": {
+					"var1": 16
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x -= 2</code></pre>",
 			"changes": {
-				"var1": 12
+				"global": {
+					"var1": 12
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x *= 2</code></pre>",
 			"changes": {
-				"var1": 28
+				"global": {
+					"var1": 28
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x /= 2</code></pre>",
 			"changes": {
-				"var1": 7
+				"global": {
+					"var1": 7
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = abs(-6)</code></pre>",
 			"changes": {
-				"var1": 6
+				"global": {
+					"var1": 6
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = min(5, -y, 2.3)</code></pre>",
 			"changes": {
-				"var1": -15
+				"global": {
+					"var1": -15
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = max(5, -y, 2.3)</code></pre>",
 			"changes": {
-				"var1": 5
+				"global": {
+					"var1": 5
+				}
 			}
 		},
 		{
@@ -330,7 +418,9 @@
 		{
 			"code": "<pre><code>x = round(2.65)</code></pre>",
 			"changes": {
-				"var1": 3
+				"global": {
+					"var1": 3
+				}
 			}
 		},
 		{
@@ -341,50 +431,64 @@
 		{
 			"code": "<pre><code>y = 33</code></pre><pre><code>reset(y)</code></pre>",
 			"changes": {
-				"var2": 15
+				"global": {
+					"var2": 15
+				}
 			}
 		},
 		{
 			"code": "<pre><code>x = 16</code></pre><pre><code>y = 33</code></pre><pre><code>resetAll(y)</code></pre>",
 			"changes": {
-				"var1": 14,
-				"var2": 33,
-				"var3": 0,
-				"var4": "Dummy text",
-				"var5": 0,
-				"var6": false,
-				"var7": -1,
-				"var8": "Different Text"
+				"global": {
+					"var1": 14,
+					"var2": 33,
+					"var3": 0,
+					"var4": "Dummy text",
+					"var5": 0,
+					"var6": false,
+					"var7": -1,
+					"var8": "Different Text"
+				}
 			}
 		},
 		{
 			"code": "<pre><code>$c5 = x</code></pre>",
 			"changes": {
-				"var5": 14
+				"global": {
+					"var5": 14
+				}
 			}
 		},
 		{
 			"code": "<pre><code>if (x==14) </code></pre><pre><code>x=5</code></pre><pre><code>endif</code></pre>",
 			"changes": {
-				"var1": 5
+				"global": {
+					"var1": 5
+				}
 			}
 		},
 		{
 			"code": "<pre><code>if (x==11)</code></pre><pre><code>x=5</code></pre><pre><code>else</code></pre><pre><code>x=7</code></pre><pre><code>endif</code></pre>",
 			"changes": {
-				"var1": 7
+				"global": {
+					"var1": 7
+				}
 			}
 		},
 		{
 			"code": "<pre><code>if x==3</code></pre><pre><code>x=5</code></pre><pre><code>elseif x==14</code></pre><pre><code>x=2</code></pre><pre><code>else</code></pre><pre><code>x = 0</code></pre><pre><code>endif</code></pre>",
 			"changes": {
-				"var1": 2
+				"global": {
+					"var1": 2
+				}
 			}
 		},
 		{
 			"code": "<p>Mein gott!</p><pre><code>x = 1</code></pre><p>What is that?</p>",
 			"changes": {
-				"var1": 1
+				"global": {
+					"var1": 1
+				}
 			},
 			"output": "<p>Mein gott! What is that?</p>"
 		},
@@ -411,8 +515,10 @@
 		{
 			"code": " <pre><code>_a = true</code></pre><pre><code>if (((_a)))</code></pre><pre><code>x = 1</code></pre><pre><code>endif</code></pre>",
 			"changes": {
-				"var1": 1,
-				"var6": true
+				"global": {
+					"var1": 1,
+					"var6": true
+				}
 			}
 		},
 		{
@@ -442,7 +548,9 @@
 			},
 			"elementId": "a",
 			"changes": {
-				"var1": 0
+				"global": {
+					"var1": 0
+				}
 			},
 			"events": [
 				{
@@ -507,7 +615,9 @@
 			"code": "<blockquote><p>Test</p><pre><code>_a = true</code></pre><p>this</p></blockquote>",
 			"output": "<blockquote><p>Test this</p></blockquote>",
 			"changes": {
-				"var6": true
+				"global": {
+					"var6": true
+				}
 			}
 		},
 		{

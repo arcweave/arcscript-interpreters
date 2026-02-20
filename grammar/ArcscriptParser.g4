@@ -67,14 +67,14 @@ statement_assignment:
 		| ASSIGN
 	) expression;
 
-assignable: IDENTIFIER {this.assertVariable($IDENTIFIER);};
+assignable: identifier {this.assertVariable($identifier.ctx);};
 
 statement_function_call:
 	function_call {this.assertFunctionReturnValue($function_call.ctx, false);};
 
 identifier_list:
-	IDENTIFIER {this.assertVariable($IDENTIFIER);} (
-		',' IDENTIFIER {this.assertVariable($IDENTIFIER);}
+	identifier {this.assertVariable($identifier.ctx);} (
+		',' identifier {this.assertVariable($identifier.ctx);}
 	)*;
 
 argument_list: argument (',' argument)*;
@@ -88,8 +88,7 @@ mention:
 mention_attributes: ATTR_NAME (TAG_EQUALS ATTR_VALUE)?;
 
 expression:
-	expression '.' IDENTIFIER												# MemberExpression
-	| (NEG | NOTKEYWORD) expression											# UnaryExpression
+	(NEG | NOTKEYWORD) expression											# UnaryExpression
 	| ADD expression														# UnaryExpression
 	| SUB expression														# UnaryExpression
 	| expression (MUL | DIV | MOD) expression								# MultiplicativeExpression
@@ -98,7 +97,7 @@ expression:
 	| expression (EQ | NE | (ISKEYWORD NOTKEYWORD) | ISKEYWORD) expression	# ComparisonExpression
 	| expression (AND | ANDKEYWORD) expression								# ComparisonExpression
 	| expression (OR | ORKEYWORD) expression								# ComparisonExpression
-	| IDENTIFIER {this.assertVariable($IDENTIFIER);}						# IdentifierExpression
+	| identifier {this.assertVariable($identifier.ctx);}					# IdentifierExpression
 	| '(' expression ')'													# ParenthesizedExpression
 	| function_call {this.assertFunctionReturnValue($function_call.ctx);}	# FunctionCallExpression
 	| literal																# LiteralExpression;
@@ -106,6 +105,8 @@ expression:
 literal: BOOLEAN | STRING | numeric_literal;
 
 numeric_literal: FLOAT | INTEGER;
+
+identifier: IDENTIFIER | IDENTIFIER '.' IDENTIFIER;
 
 function_call:
 	FNAME LPAREN identifier_list? RPAREN {this.assertFunctionArguments($FNAME, $identifier_list.ctx);

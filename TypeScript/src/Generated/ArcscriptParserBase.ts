@@ -3,12 +3,13 @@ import ArcscriptParser, {
   Argument_listContext,
   Function_callContext,
   Identifier_listContext,
+  IdentifierContext,
   Mention_attributesContext,
 } from './ArcscriptParser.js';
-import { VarObject } from '../types.js';
+import { ArcscriptStateDef } from '../types.js';
 
 type ArcscriptParserOptions = {
-  varObjects: Record<string, VarObject>;
+  arcscriptVariables: ArcscriptStateDef;
   elementVisits: Record<string, number>;
   currentElement: string;
 };
@@ -47,7 +48,7 @@ export default class ArcscriptParserBase extends Parser {
     resetVisits: { minArgs: 0, maxArgs: 0, returnType: 'void' },
   };
 
-  varObjects: Record<string, VarObject> = {};
+  arcscriptVariableNames: string[] = [];
   elementVisits: Record<string, number> = {};
   currentElement: string = '';
   currentLine: number = 0;
@@ -58,7 +59,16 @@ export default class ArcscriptParserBase extends Parser {
   }
 
   setOptions(options: ArcscriptParserOptions) {
-    this.varObjects = options.varObjects;
+    this.arcscriptVariableNames = Object.entries(
+      options.arcscriptVariables
+    ).flatMap(([scope, vars]) => {
+      return Object.values(vars).map(variable => {
+        if (scope === 'global') {
+          return variable.name;
+        }
+        return `${scope}.${variable.name}`;
+      });
+    });
     this.elementVisits = options.elementVisits;
     this.currentElement = options.currentElement;
   }
@@ -77,7 +87,7 @@ export default class ArcscriptParserBase extends Parser {
       if (argListCtx instanceof Argument_listContext) {
         argListLength = argListCtx.argument_list().length;
       } else if (argListCtx instanceof Identifier_listContext) {
-        argListLength = argListCtx.IDENTIFIER_list().length;
+        argListLength = argListCtx.identifier_list().length;
       }
     }
 
@@ -133,16 +143,12 @@ export default class ArcscriptParserBase extends Parser {
     }
   }
 
-  assertVariable(variableToken: Token) {
-    const variableName = variableToken.text;
-    if (
-      !Object.values(this.varObjects).find(
-        variable => variable.name === variableName
-      )
-    ) {
+  assertVariable(identifierCtx: IdentifierContext) {
+    const variableName = identifierCtx.getText();
+    if (!this.arcscriptVariableNames.includes(variableName)) {
       this.notifyErrorListeners(
         `The variable ${variableName} does not exist`,
-        variableToken,
+        identifierCtx.start,
         undefined
       );
     }

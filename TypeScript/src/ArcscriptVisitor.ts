@@ -5,7 +5,7 @@ import ArcscriptFunctions, {
 } from './ArcscriptFunctions.js';
 import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
-import { MentionResult, VarObject, VarValue } from './types.js';
+import { MentionResult, VarValue } from './types.js';
 import {
   AdditiveExpressionContext,
   Argument_listContext,
@@ -23,13 +23,13 @@ import {
   Function_callContext,
   FunctionCallExpressionContext,
   Identifier_listContext,
+  IdentifierContext,
   IdentifierExpressionContext,
   If_clauseContext,
   If_sectionContext,
   InputContext,
   LiteralContext,
   LiteralExpressionContext,
-  MemberExpressionContext,
   Mention_attributesContext,
   MentionContext,
   MultiplicativeExpressionContext,
@@ -48,22 +48,10 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   state: ArcscriptState;
   functions: ArcscriptFunctions;
 
-  constructor(
-    varValues: Record<string, VarValue>,
-    varObjects: Record<string, VarObject>,
-    elementVisits: Record<string, number>,
-    currentElement: string,
-    emit: (event: string, data: unknown) => void
-  ) {
+  constructor(state: ArcscriptState) {
     super();
 
-    this.state = new ArcscriptState(
-      varValues,
-      varObjects,
-      elementVisits,
-      currentElement,
-      emit
-    );
+    this.state = state;
 
     this.functions = new ArcscriptFunctions(this.state);
   }
@@ -197,7 +185,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   visitStatement_assignment = (ctx: Statement_assignmentContext) => {
     const assignable = this.visitAssignable(ctx.assignable());
 
-    let variableValue = this.state.getVarValue(assignable.id);
+    let variableValue = this.state.getVarValue(assignable.name);
     let expressionValue = this.visitExpression(ctx.expression());
 
     let result: VarValue = 0;
@@ -258,7 +246,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitAssignable = (ctx: AssignableContext): ArcscriptVariable => {
-    const identifier = ctx.IDENTIFIER().getText();
+    const identifier = ctx.identifier().getText();
     const variableObject = this.state.getVar(identifier);
     if (!variableObject) {
       throw new RuntimeError(`Variable ${identifier} not found`);
@@ -281,9 +269,6 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
     if (ctx.constructor === ParenthesizedExpressionContext) {
       return this.visitParenthesizedExpression(ctx);
-    }
-    if (ctx.constructor === MemberExpressionContext) {
-      return this.visitMemberExpression(ctx);
     }
     if (ctx.constructor === FunctionCallExpressionContext) {
       return this.visitFunctionCallExpression(ctx);
@@ -406,26 +391,10 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitExpression(ctx.expression());
   };
 
-  visitMemberExpression = (ctx: MemberExpressionContext) => {
-    throw new RuntimeError('Member expressions are not supported');
-  };
-
   visitIdentifierExpression = (ctx: IdentifierExpressionContext) => {
-    const identifier = ctx.IDENTIFIER().getText();
-    const variableObject = this.state.getVar(identifier);
-    if (!variableObject) {
-      throw new RuntimeError(`Variable ${identifier} not found`);
-    }
+    const identifier = this.visitIdentifier(ctx.identifier());
 
-    if (identifier === 'w') {
-      console.log(
-        'Getting variable',
-        identifier,
-        'with value',
-        variableObject.getValue()
-      ); // --- IGNORE ---
-    }
-    return variableObject.getValue();
+    return identifier.getValue();
   };
 
   visitLiteralExpression = (ctx: LiteralExpressionContext) => {
@@ -434,6 +403,15 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitFunctionCallExpression = (ctx: FunctionCallExpressionContext) => {
     return this.visitFunction_call(ctx.function_call());
+  };
+
+  visitIdentifier = (ctx: IdentifierContext): ArcscriptVariable => {
+    const name = ctx.getText();
+    const variableObject = this.state.getVar(name);
+    if (!variableObject) {
+      throw new RuntimeError(`Variable ${name} not found`);
+    }
+    return variableObject;
   };
 
   visitLiteral = (ctx: LiteralContext) => {
@@ -491,7 +469,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitIdentifier_list = (ctx: Identifier_listContext): ArcscriptVariable[] => {
-    return ctx.IDENTIFIER_list().map(identifier => {
+    return ctx.identifier_list().map(identifier => {
       const name = identifier.getText();
       const variableObject = this.state.getVar(name);
       if (!variableObject) {

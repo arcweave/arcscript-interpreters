@@ -1,4 +1,4 @@
-import { VarObject, VarValue } from './types.js';
+import { ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
 
 type OutputObject = {
@@ -10,7 +10,8 @@ type OutputObject = {
 };
 
 export default class ArcscriptState {
-  variables: Record<string, ArcscriptVariable>;
+  scopedVariables: Record<string, Record<string, ArcscriptVariable>>;
+
   elementVisits: Record<string, number>;
   currentElement: string;
   outputs: OutputObject[];
@@ -22,13 +23,12 @@ export default class ArcscriptState {
   insertBlockquote: boolean;
 
   constructor(
-    varValues: Record<string, VarValue>,
-    varObjects: Record<string, VarObject>,
+    arcscriptVariables: ArcscriptStateDef,
     elementVisits: Record<string, number>,
     currentElement: string,
     emit: (event: string, data?: unknown) => void
   ) {
-    this.variables = this.initializeVariables(varObjects, varValues);
+    this.scopedVariables = this.initializeVariables(arcscriptVariables);
 
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
@@ -46,59 +46,95 @@ export default class ArcscriptState {
 
   /**
    *
-   * @param {*} varObjects
-   * @param {*} varValues
+   * @param {*} arcscriptVariables
    * @returns {Record<string, ArcscriptVariable>} An object with the variables of the script, where the keys are the variable IDs and the values are ArcscriptVariable instances
    */
   initializeVariables(
-    varObjects: Record<string, VarObject>,
-    varValues: Record<string, VarValue>
-  ): Record<string, ArcscriptVariable> {
-    const variables: Record<string, ArcscriptVariable> = {};
-    Object.entries(varObjects).forEach(([, varObject]) => {
-      if (varObject.children) return;
+    arcscriptVariables: ArcscriptStateDef
+  ): Record<string, Record<string, ArcscriptVariable>> {
+    const variables: Record<string, Record<string, ArcscriptVariable>> = {};
 
-      const variable = new ArcscriptVariable({
-        id: varObject.id,
-        name: varObject.name,
-        type: varObject.type,
-        value: varValues[varObject.id],
-        defaultValue: varValues[varObject.id],
+    Object.entries(arcscriptVariables).forEach(([scope, vars]) => {
+      variables[scope] = {};
+      Object.entries(vars).forEach(([id, varDef]) => {
+        const variable = new ArcscriptVariable({
+          id,
+          name: varDef.name,
+          type: varDef.type,
+          defaultValue: varDef.defaultValue,
+        });
+        variables[scope][id] = variable;
       });
-      variables[varObject.id] = variable;
     });
     return variables;
   }
 
-  getVar(name: string) {
-    return Object.values(this.variables).find(v => v.name === name);
+  getVar(name: string): ArcscriptVariable {
+    const nameParts = name.split('.');
+    if (nameParts.length === 1) {
+      const variable = Object.values(this.scopedVariables.global).find(
+        v => v.name === name
+      );
+      if (!variable) {
+        throw new Error(`Variable ${name} not found`);
+      }
+      return variable;
+    }
+    if (nameParts.length > 2) {
+      throw new Error(`Invalid variable name: ${name}`);
+    }
+    const [scope, varName] = nameParts;
+    const variable = Object.values(this.scopedVariables[scope]).find(
+      v => v.name === varName
+    );
+    if (!variable) {
+      throw new Error(`Variable ${name} not found`);
+    }
+    return variable;
   }
 
-  getVarValue(id: string) {
-    return this.variables[id].getValue();
+  getVarValue(name: string) {
+    return this.getVar(name).getValue();
   }
 
   setVarValues(ids: string[], values: VarValue[]) {
     ids.forEach((id, index) => {
-      this.variables[id].setValue(values[index]);
+      Object.entries(this.scopedVariables).find(([, variables]) => {
+        if (variables[id]) {
+          variables[id].setValue(values[index]);
+          return true;
+        }
+        return false;
+      });
     });
   }
 
   resetVarValues(ids: string[]): void {
-    Object.entries(this.variables).forEach(([id, variable]) => {
-      if (ids.includes(id)) {
-        variable.reset();
-      }
+    Object.entries(this.scopedVariables).forEach(([, variables]) => {
+      ids.forEach(id => {
+        if (variables[id]) {
+          variables[id].reset();
+        }
+      });
     });
   }
 
-  getChanges(): Record<string, VarValue> {
-    const changes: Record<string, VarValue> = {};
-    Object.entries(this.variables).forEach(([id, variable]) => {
-      if (variable.changed) {
-        changes[id] = variable.getValue();
+  getChanges() {
+    const changes: Record<string, Record<string, VarValue>> = {};
+    Object.entries(this.scopedVariables).forEach(
+      ([scope, variables]: [string, Record<string, ArcscriptVariable>]) => {
+        Object.entries(variables).forEach(
+          ([id, variable]: [string, ArcscriptVariable]) => {
+            if (variable.changed) {
+              if (!changes[scope]) {
+                changes[scope] = {};
+              }
+              changes[scope][id] = variable.getValue();
+            }
+          }
+        );
       }
-    });
+    );
     return changes;
   }
 
