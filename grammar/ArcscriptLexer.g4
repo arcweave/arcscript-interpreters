@@ -62,6 +62,7 @@ OR: '||';
 ASSIGN: '=';
 NEG: '!';
 
+DOT: '.';
 COMMA: ',';
 LBRACE: '{';
 RBRACE: '}';
@@ -77,11 +78,11 @@ FNAME:
 	| 'round'
 	| 'sqr'
 	| 'sqrt'
-	| 'visits';
-
-VFNAME: 'show' | 'resetVisits';
-
-VFNAMEVARS: 'reset' | 'resetAll';
+	| 'visits'
+	| 'show'
+	| 'resetVisits'
+	| 'reset'
+	| 'resetAll';
 
 IFKEYWORD: 'if';
 
@@ -102,7 +103,10 @@ NOTKEYWORD: 'not';
 STRING: '"' STRING_CONTENT* '"' | '\'' STRING_CONTENT* '\'';
 fragment STRING_CONTENT: ~[\\\r\n'"] | '\\' [abfnrtv'"\\];
 
-VARIABLE: [A-Za-z$_][0-9A-Za-z$_]*;
+IDENTIFIER: IDENTIFIER_START IDENTIFIER_PART*;
+
+fragment IDENTIFIER_START: [A-Za-z$_];
+fragment IDENTIFIER_PART: [0-9A-Za-z$_];
 
 WHITESPACE: [ \t\r\n]+ -> skip;
 

@@ -99,7 +99,7 @@ export default class Interpreter {
     const tokenTypeNames = lexer.getSymbolicNames();
     const allTokens = lexer.getAllTokens();
     const variableTokens = allTokens.filter(
-      token => tokenTypeNames[token.type] === 'VARIABLE'
+      token => tokenTypeNames[token.type] === 'IDENTIFIER'
     );
 
     const tokenIdMap = new Map<object, string>();
