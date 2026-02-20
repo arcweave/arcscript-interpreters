@@ -1,8 +1,9 @@
 import { Parser, TerminalNode, Token, TokenStream } from 'antlr4';
 import ArcscriptParser, {
   Argument_listContext,
+  Function_callContext,
+  Identifier_listContext,
   Mention_attributesContext,
-  Variable_listContext,
 } from './ArcscriptParser.js';
 import { VarObject } from '../types.js';
 
@@ -16,6 +17,7 @@ type ArcscriptFunctionInfo = {
   minArgs: number;
   maxArgs: number | null;
   returnType?: 'number' | 'void';
+  argType?: 'number' | 'variable' | 'mention';
 };
 
 export default class ArcscriptParserBase extends Parser {
@@ -30,8 +32,18 @@ export default class ArcscriptParserBase extends Parser {
     sqrt: { minArgs: 1, maxArgs: 1, returnType: 'number' },
     visits: { minArgs: 0, maxArgs: 1, returnType: 'number' },
     show: { minArgs: 1, maxArgs: null, returnType: 'void' },
-    reset: { minArgs: 1, maxArgs: null, returnType: 'void' },
-    resetAll: { minArgs: 0, maxArgs: null, returnType: 'void' },
+    reset: {
+      minArgs: 1,
+      maxArgs: null,
+      returnType: 'void',
+      argType: 'variable',
+    },
+    resetAll: {
+      minArgs: 0,
+      maxArgs: null,
+      returnType: 'void',
+      argType: 'variable',
+    },
     resetVisits: { minArgs: 0, maxArgs: 0, returnType: 'void' },
   };
 
@@ -57,26 +69,64 @@ export default class ArcscriptParserBase extends Parser {
 
   assertFunctionArguments(
     token: Token,
-    argListCtx: Argument_listContext | Variable_listContext | null = null
+    argListCtx: Argument_listContext | Identifier_listContext | null = null
   ) {
     let argListLength = 0;
 
     if (argListCtx) {
       if (argListCtx instanceof Argument_listContext) {
         argListLength = argListCtx.argument_list().length;
-      } else if (argListCtx instanceof Variable_listContext) {
-        argListLength = argListCtx.VARIABLE_list().length;
+      } else if (argListCtx instanceof Identifier_listContext) {
+        argListLength = argListCtx.IDENTIFIER_list().length;
       }
     }
-    const min = ArcscriptParserBase.arcscriptFunctionsInfo[token.text].minArgs;
-    const max = ArcscriptParserBase.arcscriptFunctionsInfo[token.text].maxArgs;
+
+    const { minArgs, maxArgs, argType } =
+      ArcscriptParserBase.arcscriptFunctionsInfo[token.text];
 
     if (
-      (min !== null && argListLength < min) ||
-      (max !== null && argListLength > max)
+      (minArgs !== null && argListLength < minArgs) ||
+      (maxArgs !== null && argListLength > maxArgs)
     ) {
       this.notifyErrorListeners(
         `Invalid number of arguments for function ${token.text}`,
+        token,
+        undefined
+      );
+    }
+
+    if (argType && argListCtx) {
+      if (argType === 'variable') {
+        if (!(argListCtx instanceof Identifier_listContext)) {
+          this.notifyErrorListeners(
+            `Invalid argument type for function ${token.text}. Expected variables.`,
+            token,
+            undefined
+          );
+        }
+      }
+    }
+  }
+
+  assertFunctionReturnValue(
+    fncCtx: Function_callContext,
+    hasReturnValue = true
+  ) {
+    const functionName = fncCtx.FNAME().getText();
+    const token = fncCtx.FNAME().symbol;
+    const { returnType } =
+      ArcscriptParserBase.arcscriptFunctionsInfo[functionName];
+    if (hasReturnValue) {
+      if (returnType === 'void') {
+        this.notifyErrorListeners(
+          `The function ${functionName} does not return a value`,
+          token,
+          undefined
+        );
+      }
+    } else if (returnType !== 'void') {
+      this.notifyErrorListeners(
+        `The function ${functionName} returns a value that is not being used`,
         token,
         undefined
       );
