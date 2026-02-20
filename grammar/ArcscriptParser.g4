@@ -113,5 +113,3 @@ function_call:
 		}
 	| FNAME LPAREN argument_list? RPAREN {this.assertFunctionArguments($FNAME, $argument_list.ctx);}
 		;
-
-// expression: STRING | BOOLEAN | additive_numeric_expression;
