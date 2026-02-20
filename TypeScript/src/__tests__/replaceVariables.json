@@ -1,46 +1,48 @@
 {
   "initialVars": {
-    "var1": {
-      "id": "var1",
-      "name": "x",
-      "type": "integer",
-      "value": 14
-    },
-    "var2": {
-      "id": "var2",
-      "name": "y",
-      "type": "integer",
-      "value": 15
-    },
-    "var3": {
-      "id": "var3",
-      "name": "z",
-      "type": "integer",
-      "value": 0
-    },
-    "var4": {
-      "id": "var4",
-      "name": "w",
-      "type": "string",
-      "value": "Dummy text"
-    },
-    "var5": {
-      "id": "var5",
-      "name": "$c5",
-      "type": "integer",
-      "value": 0
-    },
-    "var6": {
-      "id": "var6",
-      "name": "_a",
-      "type": "boolean",
-      "value": false
-    },
-    "var7": {
-      "id": "var7",
-      "name": "xy",
-      "type": "integer",
-      "value": -1
+    "global": {
+      "var1": {
+        "id": "var1",
+        "name": "x",
+        "type": "integer",
+        "defaultValue": 14
+      },
+      "var2": {
+        "id": "var2",
+        "name": "y",
+        "type": "integer",
+        "defaultValue": 15
+      },
+      "var3": {
+        "id": "var3",
+        "name": "z",
+        "type": "integer",
+        "defaultValue": 0
+      },
+      "var4": {
+        "id": "var4",
+        "name": "w",
+        "type": "string",
+        "defaultValue": "Dummy text"
+      },
+      "var5": {
+        "id": "var5",
+        "name": "$c5",
+        "type": "integer",
+        "defaultValue": 0
+      },
+      "var6": {
+        "id": "var6",
+        "name": "_a",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      "var7": {
+        "id": "var7",
+        "name": "xy",
+        "type": "integer",
+        "defaultValue": -1
+      }
     }
   },
   "cases": [

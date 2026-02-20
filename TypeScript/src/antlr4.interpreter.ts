@@ -4,11 +4,12 @@ import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
-import { VarObject, VarValue } from './types.js';
+import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
+import ArcscriptState from './ArcscriptState.js';
 
 export default class Interpreter {
-  varValues: Record<string, VarValue>;
-  varObjects: Record<string, VarObject>;
+  arcscriptVariables: ArcscriptStateDef;
+  state: ArcscriptState | null = null;
   elementVisits: Record<string, number>;
   currentElement: string;
   variableOffsets: { start: number; end: number }[];
@@ -16,21 +17,18 @@ export default class Interpreter {
 
   /**
    * Interpreter constructor
-   * @param varValues
-   * @param varObjects
+   * @param arcscriptVariables
    * @param elementVisits     The current element visits
    * @param currentElement    The current element ID
    * @param eventHandler      The event callback
    */
   constructor(
-    varValues: Record<string, VarValue>,
-    varObjects: Record<string, VarObject>,
+    arcscriptVariables: ArcscriptStateDef,
     elementVisits: Record<string, number> = {},
     currentElement: string = '',
     eventHandler: (event: string, data?: unknown) => void = () => {}
   ) {
-    this.varValues = varValues;
-    this.varObjects = varObjects;
+    this.arcscriptVariables = arcscriptVariables;
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
     this.variableOffsets = [];
@@ -39,19 +37,25 @@ export default class Interpreter {
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
     this.variableOffsets = [];
-    const { tree } = this.parse(code);
 
-    const visitor = new ArcscriptVisitor(
-      this.varValues,
-      this.varObjects,
+    this.state = new ArcscriptState(
+      this.arcscriptVariables,
       this.elementVisits,
       this.currentElement,
       this.emit
     );
 
+    const { tree } = this.parse(code);
+
+    const visitor = new ArcscriptVisitor(this.state);
+
+    const varIds: string[] = [];
+    const varValuesList: VarValue[] = [];
     Object.entries(varValues).forEach(([id, value]) => {
-      visitor.state.variables[id].setValue(value);
+      varIds.push(id);
+      varValuesList.push(value);
     });
+    this.state.setVarValues(varIds, varValuesList);
 
     const result = tree.accept(visitor);
 
@@ -74,7 +78,7 @@ export default class Interpreter {
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
-      varObjects: this.varObjects,
+      arcscriptVariables: this.arcscriptVariables,
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
     });
@@ -108,10 +112,17 @@ export default class Interpreter {
 
     const tokenIdMap = new Map<object, string>();
     variableTokens.forEach(varToken => {
-      const targetVar = Object.values(this.varObjects).find(
-        variable => variable.name === varToken.text
-      );
-      if (targetVar?.id) {
+      let targetVar: VarDef | null = null;
+      for (const scopeVars of Object.values(this.arcscriptVariables)) {
+        const v = Object.values(scopeVars).find(
+          variable => variable.name === varToken.text
+        );
+        if (v) {
+          targetVar = v;
+          break;
+        }
+      }
+      if (targetVar !== null) {
         tokenIdMap.set(varToken, targetVar.id);
       }
     });
