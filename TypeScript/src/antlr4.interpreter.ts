@@ -49,6 +49,10 @@ export default class Interpreter {
       this.emit
     );
 
+    Object.entries(varValues).forEach(([id, value]) => {
+      visitor.state.variables[id].setValue(value);
+    });
+
     const result = tree.accept(visitor);
 
     let output = visitor.state.generateOutput();
