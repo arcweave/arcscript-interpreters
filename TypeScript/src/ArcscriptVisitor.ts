@@ -185,7 +185,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   visitStatement_assignment = (ctx: Statement_assignmentContext) => {
     const assignable = this.visitAssignable(ctx.assignable());
 
-    let variableValue = this.state.getVarValue(assignable.name);
+    let variableValue = assignable.getValue();
     let expressionValue = this.visitExpression(ctx.expression());
 
     let result: VarValue = 0;
@@ -201,7 +201,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
         throw new RuntimeError('Invalid operation with string');
       }
 
-      this.state.setVarValues([assignable.id], [result]);
+      assignable.setValue(result);
       return null;
     }
     if (
@@ -241,17 +241,12 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     } else if (ctx.ASSIGN()) {
       result = expressionValue;
     }
-    this.state.setVarValues([assignable.id], [result]);
+    assignable.setValue(result);
     return null;
   };
 
   visitAssignable = (ctx: AssignableContext): ArcscriptVariable => {
-    const identifier = ctx.identifier().getText();
-    const variableObject = this.state.getVar(identifier);
-    if (!variableObject) {
-      throw new RuntimeError(`Variable ${identifier} not found`);
-    }
-    return variableObject;
+    return this.visitIdentifier(ctx.identifier());
   };
 
   visitExpression(ctx: ExpressionContext): VarValue {
@@ -406,8 +401,16 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitIdentifier = (ctx: IdentifierContext): ArcscriptVariable => {
-    const name = ctx.getText();
-    const variableObject = this.state.getVar(name);
+    let name: string;
+    let scope: string;
+    if (ctx.IDENTIFIER_list().length === 1) {
+      scope = 'global';
+      name = ctx.IDENTIFIER(0).getText();
+    } else {
+      scope = ctx.IDENTIFIER(0).getText();
+      name = ctx.IDENTIFIER(1).getText();
+    }
+    const variableObject = this.state.getVar(name, scope);
     if (!variableObject) {
       throw new RuntimeError(`Variable ${name} not found`);
     }
@@ -450,7 +453,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       ) {
         argument_list = argument_list.map(variable => {
           if (variable instanceof ArcscriptVariable) {
-            return variable.name;
+            return variable;
           }
           throw new RuntimeError('Expected a variable');
         });
@@ -470,12 +473,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitIdentifier_list = (ctx: Identifier_listContext): ArcscriptVariable[] => {
     return ctx.identifier_list().map(identifier => {
-      const name = identifier.getText();
-      const variableObject = this.state.getVar(name);
-      if (!variableObject) {
-        throw new RuntimeError(`Variable ${name} not found`);
-      }
-      return variableObject;
+      return this.visitIdentifier(identifier);
     });
   };
 

@@ -6,11 +6,12 @@ import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
 import stringTests from './stringConcat.json';
+import memberTests from './member.json';
 import { ArcscriptStateDef, VarValue } from '../types.js';
 
 type TestCase = {
   code: string;
-  changes?: Record<string, VarValue>;
+  changes?: Record<string, VarValue> | Record<string, Record<string, VarValue>>;
   output?: string;
   events?: { name: string; args: unknown }[];
   visits?: Record<string, number>;
@@ -26,7 +27,7 @@ describe('Interprete valid scripts', () => {
     'Tests script: $code',
     ({
       code,
-      changes: expectedChanges = {},
+      changes: expectedChanges,
       output: expectedOutput = '',
       events = null,
       visits = {},
@@ -34,14 +35,16 @@ describe('Interprete valid scripts', () => {
     }) => {
       const eventHandler = vi.fn();
 
-      const interpreter = new Interpreter(
-        validTests.initialVars as ArcscriptStateDef,
-        visits,
-        elementId,
-        eventHandler
-      );
+      const interpreter = new Interpreter({
+        state: validTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+        eventHandler,
+      });
       const { changes, output } = interpreter.runScript(code);
-      expect(changes).toMatchObject(expectedChanges);
+      if (expectedChanges !== undefined) {
+        expect(changes).toEqual(expectedChanges);
+      }
       expect(output).toEqual(expectedOutput);
 
       if (events) {
@@ -51,6 +54,29 @@ describe('Interprete valid scripts', () => {
           expect(eventHandler.mock.calls[index][1]).toEqual(event.args);
         });
       }
+    }
+  );
+});
+
+describe('Object members variables', () => {
+  test.each(memberTests.cases as TestCase[])(
+    'Tests script: $code',
+    ({
+      code,
+      changes: expectedChanges = {},
+      output: expectedOutput = '',
+      visits,
+      elementId = '',
+    }) => {
+      const interpreter = new Interpreter({
+        state: memberTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
+      const { changes, output } = interpreter.runScript(code);
+
+      expect(changes).toEqual(expectedChanges);
+      expect(output).toEqual(expectedOutput);
     }
   );
 });
@@ -65,13 +91,13 @@ describe('Interprete string test scripts', () => {
       visits,
       elementId = '',
     }) => {
-      const interpreter = new Interpreter(
-        stringTests.initialVars as ArcscriptStateDef,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: stringTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       const { changes, output } = interpreter.runScript(code);
-      expect(changes).toMatchObject(expectedChanges);
+      expect(changes).toEqual(expectedChanges);
       expect(output).toEqual(expectedOutput);
     }
   );
@@ -81,11 +107,11 @@ describe('Interprete script with parse errors', () => {
   test.each(parseErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
-      const interpreter = new Interpreter(
-        parseErrorTests.initialVars as ArcscriptStateDef,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: parseErrorTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       expect(() => {
         interpreter.parse(code);
       }).toThrow(ParseError);
@@ -97,11 +123,11 @@ describe('Interprete script with runtime errors', () => {
   test.each(runtimeErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
-      const interpreter = new Interpreter(
-        runtimeErrorTests.initialVars as ArcscriptStateDef,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: runtimeErrorTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       expect(() => {
         interpreter.runScript(code);
       }).toThrow(RuntimeError);
@@ -113,11 +139,11 @@ describe('Interprete condition', () => {
   test.each(conditionTests.cases as TestCase[])(
     'Tests condition: $code',
     ({ code, visits, elementId = '', result: expectedResult }) => {
-      const interpreter = new Interpreter(
-        conditionTests.initialVars as ArcscriptStateDef,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: conditionTests.initialVars as ArcscriptStateDef,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       const { result } = interpreter.runScript(code);
 
       expect(result.condition).toStrictEqual(expectedResult);
@@ -130,9 +156,9 @@ describe('Replace variables', () => {
     'Tests replace: $code',
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition
-      const interpreter = new Interpreter(
-        replaceVariableTests.initialVars as ArcscriptStateDef
-      );
+      const interpreter = new Interpreter({
+        state: replaceVariableTests.initialVars as ArcscriptStateDef,
+      });
       const result = interpreter.replaceVariables(code, variableChanges);
 
       // The given condition should match the expected evaluation

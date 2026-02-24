@@ -400,20 +400,16 @@
 			}
 		},
 		{
-			"code": "<pre><code>x = random()</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = random()</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(6)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(6)</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(6, 5)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(6, 5)</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(y)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(y)</code></pre>"
 		},
 		{
 			"code": "<pre><code>x = round(2.65)</code></pre>",
@@ -516,7 +512,11 @@
 		},
 		{
 			"code": "<p>How are you?</p><pre><code>x = 1</code></pre><p></p><p>I am fine, thank you.</p>",
-			"changes": {},
+			"changes": {
+				"global": {
+					"var1": 1
+				}
+			},
 			"output": "<p>How are you?</p><p>I am fine, thank you.</p>"
 		},
 		{
@@ -646,7 +646,12 @@
 		},
 		{
 			"code": "<pre><code>w = \"String with \\\"quotes\\\" \\t tabs and \\n new lines\"</code></pre><pre><code>show(w)</code></pre>",
-			"output": "<p>String with \"quotes\" \t tabs and \n new lines</p>"
+			"output": "<p>String with \"quotes\" \t tabs and \n new lines</p>",
+			"changes": {
+				"global": {
+					"var4": "String with \\\"quotes\\\" \\t tabs and \\n new lines"
+				}
+			}
 		}
 	]
 }
