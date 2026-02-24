@@ -1,0 +1,135 @@
+{
+  "initialVars": {
+    "global": {
+      "var1": {
+        "id": "var1",
+        "name": "x",
+        "type": "integer",
+        "defaultValue": 14
+      },
+      "var2": {
+        "id": "var2",
+        "name": "y",
+        "type": "integer",
+        "defaultValue": 15
+      },
+      "var3": {
+        "id": "var3",
+        "name": "z",
+        "type": "integer",
+        "defaultValue": 0
+      },
+      "var4": {
+        "id": "var4",
+        "name": "w",
+        "type": "string",
+        "defaultValue": "Dummy text"
+      },
+      "var5": {
+        "id": "var5",
+        "name": "$c5",
+        "type": "integer",
+        "defaultValue": 0
+      },
+      "var6": {
+        "id": "var6",
+        "name": "_a",
+        "type": "boolean",
+        "defaultValue": false
+      },
+      "var7": {
+        "id": "var7",
+        "name": "xy",
+        "type": "integer",
+        "defaultValue": -1
+      },
+      "var8": {
+        "id": "var8",
+        "name": "man",
+        "type": "string",
+        "defaultValue": "Different Text"
+      }
+    },
+    "components": {
+      "comp1": {
+        "var9": {
+          "id": "var9",
+          "name": "a",
+          "type": "integer",
+          "defaultValue": 12
+        },
+        "var10": {
+          "id": "var10",
+          "name": "b",
+          "type": "integer",
+          "defaultValue": 0
+        }
+      },
+      "comp2": {
+        "var11": {
+          "id": "var11",
+          "name": "a",
+          "type": "string",
+          "defaultValue": "Component Text"
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "code": "<pre><code>comp1.a = 42</code></pre>",
+      "changes": {
+        "comp1": {
+          "var9": 42
+        }
+      }
+    },
+    {
+      "code": "<pre><code>show(comp1.a)</code></pre>",
+      "output": "<p>12</p>"
+    },
+    {
+      "code": "<pre><code>comp1.a = 99</code></pre><pre><code>reset(comp1.a, comp1.b)</code></pre>",
+      "changes": {
+        "comp1": {
+          "var9": 12,
+          "var10": 0
+        }
+      }
+    },
+    {
+      "code": "<pre><code>x = comp1.a</code></pre>",
+      "changes": {
+        "global": {
+          "var1": 12
+        }
+      }
+    },
+    {
+      "code": "<pre><code>comp1.a = 55</code></pre><pre><code>comp1.b = comp1.a</code></pre>",
+      "changes": {
+        "comp1": {
+          "var9": 55,
+          "var10": 55
+        }
+      }
+    },
+    {
+      "code": "<pre><code>comp1.a = 77</code></pre><pre><code>comp1.b = comp1.a</code></pre><pre><code>reset(comp1.a, comp1.b)</code></pre>",
+      "changes": {
+        "comp1": {
+          "var9": 12,
+          "var10": 0
+        }
+      }
+    },
+    {
+      "code": "<pre><code>comp2.a = \"Hello World\"</code></pre>",
+      "changes": {
+        "comp2": {
+          "var11": "Hello World"
+        }
+      }
+    }
+  ]
+}

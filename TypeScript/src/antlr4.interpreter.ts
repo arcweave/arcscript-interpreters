@@ -7,6 +7,13 @@ import ErrorListener from './ErrorListener.js';
 import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
 import ArcscriptState from './ArcscriptState.js';
 
+type ArcscriptInterpreterOptions = {
+  state: ArcscriptStateDef;
+  elementVisits?: Record<string, number>;
+  currentElement?: string;
+  eventHandler?: (event: string, data?: unknown) => void;
+};
+
 export default class Interpreter {
   arcscriptVariables: ArcscriptStateDef;
   state: ArcscriptState | null = null;
@@ -15,24 +22,12 @@ export default class Interpreter {
   variableOffsets: { start: number; end: number }[];
   emit: (event: string, data?: unknown) => void;
 
-  /**
-   * Interpreter constructor
-   * @param arcscriptVariables
-   * @param elementVisits     The current element visits
-   * @param currentElement    The current element ID
-   * @param eventHandler      The event callback
-   */
-  constructor(
-    arcscriptVariables: ArcscriptStateDef,
-    elementVisits: Record<string, number> = {},
-    currentElement: string = '',
-    eventHandler: (event: string, data?: unknown) => void = () => {}
-  ) {
-    this.arcscriptVariables = arcscriptVariables;
-    this.elementVisits = elementVisits;
-    this.currentElement = currentElement;
+  constructor(options = {} as ArcscriptInterpreterOptions) {
+    this.arcscriptVariables = options.state;
+    this.elementVisits = options.elementVisits || {};
+    this.currentElement = options.currentElement || '';
     this.variableOffsets = [];
-    this.emit = eventHandler;
+    this.emit = options.eventHandler || (() => {});
   }
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
@@ -55,7 +50,7 @@ export default class Interpreter {
       varIds.push(id);
       varValuesList.push(value);
     });
-    this.state.setVarValues(varIds, varValuesList);
+    // this.state.setVarValues(varIds, varValuesList);
 
     const result = tree.accept(visitor);
 

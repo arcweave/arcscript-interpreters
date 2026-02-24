@@ -15,6 +15,10 @@ export type MentionResult = {
 
 export type VariableScope = 'global' | 'components' | 'elements';
 
+export type ScopedVariableDef = Record<string, VarDef>;
+
 export type ArcscriptStateDef = {
-  [key in VariableScope]?: Record<string, VarDef>;
+  global?: Record<string, VarDef>;
+  components?: Record<string, ScopedVariableDef>;
+  elements?: Record<string, ScopedVariableDef>;
 };

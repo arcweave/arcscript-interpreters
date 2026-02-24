@@ -105,39 +105,29 @@ export default class ArcscriptFunctions {
   }
 
   reset(...args: ArgumentTypes): void {
-    const ids = args.map(name => {
-      if (typeof name !== 'string' || !this.state.getVar(name)) {
+    args.forEach(variable => {
+      if (!(variable instanceof ArcscriptVariable)) {
         throw new RuntimeError(
-          `Invalid argument ${name} in function reset. Expected a variable`
+          `Invalid argument ${variable} in function reset. Expected a variable`
         );
       }
-      const v = this.state.getVar(name);
-      if (!v) {
-        throw new RuntimeError(`Variable ${name} not found`);
-      }
-      return v.id;
+      variable.reset();
     });
-    this.state.resetVarValues(ids);
   }
 
   resetAll(...args: ArgumentTypes): void {
-    const except = args.map(name => {
-      if (typeof name !== 'string' || !this.state.getVar(name)) {
+    const except = args.map(variable => {
+      if (!(variable instanceof ArcscriptVariable)) {
         throw new RuntimeError(
-          `Invalid argument ${name} in function resetAll. Expected a variable`
+          `Invalid argument ${variable} in function resetAll. Expected a variable`
         );
       }
-      const v = this.state.getVar(name);
-      if (!v) {
-        throw new RuntimeError(`Variable ${name} not found`);
-      }
-      return v.id;
+      return variable.id;
     });
-    const all = Object.keys(this.state.scopedVariables).flatMap(scope =>
-      Object.keys(this.state.scopedVariables[scope])
+    const variablesToReset = Object.values(this.state.globalVariables).filter(
+      v => !except.includes(v.id)
     );
-    const resetIds = all.filter(id => !except.includes(id));
-    this.state.resetVarValues(resetIds);
+    variablesToReset.forEach(variable => variable.reset());
   }
 
   round(...args: ArgumentTypes): number {
