@@ -13,12 +13,12 @@ export type MentionResult = {
   label: string;
 };
 
-export type VariableScope = 'global' | 'components' | 'elements';
+export type VariableScope = 'global' | 'components' | 'boards';
 
 export type ScopedVariableDef = Record<string, VarDef>;
 
 export type ArcscriptStateDef = {
   global?: Record<string, VarDef>;
   components?: Record<string, ScopedVariableDef>;
-  elements?: Record<string, ScopedVariableDef>;
+  boards?: Record<string, ScopedVariableDef>;
 };
