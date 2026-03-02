@@ -61,6 +61,7 @@ export default class ArcscriptState {
             name: varDef.name,
             type: varDef.type,
             defaultValue: varDef.defaultValue,
+            value: varDef.value,
             scope: scopeType,
           });
           globalScope[id] = variable;
@@ -77,6 +78,7 @@ export default class ArcscriptState {
                 name: varDef.name,
                 type: varDef.type,
                 defaultValue: varDef.defaultValue,
+                value: varDef.value,
                 scope: scopeType,
               });
               scopeVariables[parentId][id] = variable;
