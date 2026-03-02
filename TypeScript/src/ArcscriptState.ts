@@ -1,5 +1,50 @@
-import { ArcscriptStateDef, ScopedVariableDef, VarValue } from './types.js';
+import {
+  ArcscriptStateDef,
+  ScopedVariableDef,
+  VarDef,
+  VarValue,
+} from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
+
+function hasProperty<T extends object>(obj: T, prop: keyof T): boolean {
+  if (Object.hasOwn) {
+    return Object.hasOwn(obj, prop);
+  }
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+function validateVarDef(varDef: VarDef) {
+  if (!hasProperty(varDef, 'id')) {
+    throw new Error(`Variable ${varDef.name} is missing id property`);
+  }
+  if (!hasProperty(varDef, 'name')) {
+    throw new Error(`Variable ${varDef.id} is missing name property`);
+  }
+  if (!hasProperty(varDef, 'type')) {
+    throw new Error(`Variable ${varDef.id} is missing type property`);
+  }
+  if (!hasProperty(varDef, 'defaultValue')) {
+    throw new Error(`Variable ${varDef.id} is missing defaultValue property`);
+  }
+}
+
+function validateStateDef(stateDef: ArcscriptStateDef) {
+  if (stateDef.global) {
+    Object.values(stateDef.global).forEach(varDef => {
+      validateVarDef(varDef);
+    });
+  }
+  ['components', 'boards'].forEach(scopeType => {
+    const key = scopeType as keyof ArcscriptStateDef;
+    if (stateDef[key]) {
+      Object.values(stateDef[key]).forEach((scopedVars: ScopedVariableDef) => {
+        Object.values(scopedVars).forEach(varDef => {
+          validateVarDef(varDef);
+        });
+      });
+    }
+  });
+}
 
 type OutputObject = {
   output?: string;
@@ -48,6 +93,7 @@ export default class ArcscriptState {
   }
 
   initializeVariables(arcscriptVariables: ArcscriptStateDef) {
+    validateStateDef(arcscriptVariables);
     const globalScope: Record<string, ArcscriptVariable> = {};
     const scopeVariables: Record<
       string,
