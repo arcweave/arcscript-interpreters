@@ -6,6 +6,7 @@ export type VarDef = {
   name: string;
   type: VarType;
   defaultValue: VarValue;
+  value?: VarValue;
 };
 
 export type MentionResult = {

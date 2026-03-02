@@ -652,6 +652,22 @@
 					"var4": "String with \\\"quotes\\\" \\t tabs and \\n new lines"
 				}
 			}
+		},
+		{
+			"values": {
+				"global": {
+					"var1": 12,
+					"var2": 10
+				}
+			},
+			"code": "<pre><code>show(x,\" \", y)</code></pre><pre><code>reset(x, y)</code></pre>",
+			"output": "<p>12 10</p>",
+			"changes": {
+				"global": {
+					"var1": 14,
+					"var2": 15
+				}
+			}
 		}
 	]
 }

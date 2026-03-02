@@ -8,8 +8,10 @@ import replaceVariableTests from './replaceVariables.json';
 import stringTests from './stringConcat.json';
 import memberTests from './member.json';
 import { ArcscriptStateDef, VarValue } from '../types.js';
+import cloneDeep from 'lodash.clonedeep';
 
 type TestCase = {
+  values?: Record<string, Record<string, VarValue>>;
   code: string;
   changes?: Record<string, VarValue> | Record<string, Record<string, VarValue>>;
   output?: string;
@@ -20,12 +22,18 @@ type TestCase = {
   variableChanges?: Record<string, string>;
 };
 
+type TestSuite = {
+  initialVars: ArcscriptStateDef;
+  cases: TestCase[];
+};
+
 describe('Interprete valid scripts', () => {
-  const cases = validTests.cases as TestCase[];
+  const cases: TestCase[] = (validTests as TestSuite).cases;
 
   test.each(cases)(
     'Tests script: $code',
     ({
+      values,
       code,
       changes: expectedChanges,
       output: expectedOutput = '',
@@ -34,9 +42,20 @@ describe('Interprete valid scripts', () => {
       elementId = '',
     }) => {
       const eventHandler = vi.fn();
-
+      const initVars: ArcscriptStateDef = cloneDeep(
+        (validTests as TestSuite).initialVars
+      );
+      if (values?.global && initVars.global) {
+        Object.entries(values.global as Record<string, VarValue>).forEach(
+          ([id, value]) => {
+            if (initVars.global![id]) {
+              initVars.global![id].value = value;
+            }
+          }
+        );
+      }
       const interpreter = new Interpreter({
-        state: validTests.initialVars as ArcscriptStateDef,
+        state: initVars,
         elementVisits: visits,
         currentElement: elementId,
         eventHandler,
