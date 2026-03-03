@@ -1,9 +1,4 @@
-import {
-  ArcscriptStateDef,
-  ScopedVariableDef,
-  VarDef,
-  VarValue,
-} from './types.js';
+import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
 
 function hasProperty<T extends object>(obj: T, prop: keyof T): boolean {
@@ -13,9 +8,14 @@ function hasProperty<T extends object>(obj: T, prop: keyof T): boolean {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-function validateVarDef(varDef: VarDef) {
+function validateVarDef(variableId: string, varDef: VarDef) {
   if (!hasProperty(varDef, 'id')) {
     throw new Error(`Variable ${varDef.name} is missing id property`);
+  }
+  if (varDef.id !== variableId) {
+    throw new Error(
+      `Variable key ${variableId} does not match id property ${varDef.id}`
+    );
   }
   if (!hasProperty(varDef, 'name')) {
     throw new Error(`Variable ${varDef.id} is missing name property`);
@@ -26,23 +26,19 @@ function validateVarDef(varDef: VarDef) {
   if (!hasProperty(varDef, 'defaultValue')) {
     throw new Error(`Variable ${varDef.id} is missing defaultValue property`);
   }
+  if (
+    hasProperty(varDef, 'scope') &&
+    varDef.scope !== undefined &&
+    varDef.scope !== null &&
+    typeof varDef.scope !== 'string'
+  ) {
+    throw new Error(`Variable ${varDef.id} has invalid scope property`);
+  }
 }
 
 function validateStateDef(stateDef: ArcscriptStateDef) {
-  if (stateDef.global) {
-    Object.values(stateDef.global).forEach(varDef => {
-      validateVarDef(varDef);
-    });
-  }
-  ['components', 'boards'].forEach(scopeType => {
-    const key = scopeType as keyof ArcscriptStateDef;
-    if (stateDef[key]) {
-      Object.values(stateDef[key]).forEach((scopedVars: ScopedVariableDef) => {
-        Object.values(scopedVars).forEach(varDef => {
-          validateVarDef(varDef);
-        });
-      });
-    }
+  Object.entries(stateDef).forEach(([id, varDef]) => {
+    validateVarDef(id, varDef);
   });
 }
 
@@ -55,8 +51,7 @@ type OutputObject = {
 };
 
 export default class ArcscriptState {
-  globalVariables: Record<string, ArcscriptVariable>;
-  scopedVariables: Record<string, Record<string, ArcscriptVariable>>;
+  variables: Record<string, ArcscriptVariable>;
 
   elementVisits: Record<string, number>;
   currentElement: string;
@@ -74,9 +69,7 @@ export default class ArcscriptState {
     currentElement: string,
     emit: (event: string, data?: unknown) => void
   ) {
-    const { global, scoped } = this.initializeVariables(arcscriptVariables);
-    this.globalVariables = global;
-    this.scopedVariables = scoped;
+    this.variables = this.initializeVariables(arcscriptVariables);
 
     this.elementVisits = elementVisits;
     this.currentElement = currentElement;
@@ -94,64 +87,27 @@ export default class ArcscriptState {
 
   initializeVariables(arcscriptVariables: ArcscriptStateDef) {
     validateStateDef(arcscriptVariables);
-    const globalScope: Record<string, ArcscriptVariable> = {};
-    const scopeVariables: Record<
-      string,
-      Record<string, ArcscriptVariable>
-    > = {};
-    Object.entries(arcscriptVariables).forEach(([scopeType, vars]) => {
-      if (scopeType === 'global') {
-        Object.entries(vars).forEach(([id, varDef]) => {
-          const variable = new ArcscriptVariable({
-            id,
-            name: varDef.name,
-            type: varDef.type,
-            defaultValue: varDef.defaultValue,
-            value: varDef.value,
-            scope: scopeType,
-          });
-          globalScope[id] = variable;
-        });
-      } else {
-        Object.entries(vars).forEach(
-          ([parentId, scopedVars]: [string, ScopedVariableDef]) => {
-            if (!scopeVariables[parentId]) {
-              scopeVariables[parentId] = {};
-            }
-            Object.entries(scopedVars).forEach(([id, varDef]) => {
-              const variable = new ArcscriptVariable({
-                id,
-                name: varDef.name,
-                type: varDef.type,
-                defaultValue: varDef.defaultValue,
-                value: varDef.value,
-                scope: scopeType,
-              });
-              scopeVariables[parentId][id] = variable;
-            });
-          }
-        );
-      }
+    const variables: Record<string, ArcscriptVariable> = {};
+    Object.entries(arcscriptVariables).forEach(([id, varDef]) => {
+      variables[id] = new ArcscriptVariable({
+        id,
+        name: varDef.name,
+        type: varDef.type,
+        defaultValue: varDef.defaultValue,
+        value: varDef.value,
+        scope: varDef.scope,
+      });
     });
-    return {
-      global: globalScope,
-      scoped: scopeVariables,
-    };
+    return variables;
   }
 
-  getVar(name: string, scope: string = 'global'): ArcscriptVariable {
-    if (scope === 'global') {
-      const variable = Object.values(this.globalVariables).find(
-        v => v.name === name
-      );
-      if (!variable) {
-        throw new Error(`Variable ${name} not found`);
+  getVar(name: string, scope: string | null = null): ArcscriptVariable {
+    const variable = Object.values(this.variables).find(v => {
+      if (scope) {
+        return v.name === name && v.scope === scope;
       }
-      return variable;
-    }
-    const variable = Object.values(this.scopedVariables[scope]).find(
-      v => v.name === name
-    );
+      return v.name === name;
+    });
     if (!variable) {
       throw new Error(`Variable ${name} not found`);
     }
@@ -160,40 +116,19 @@ export default class ArcscriptState {
 
   setVarValues(ids: string[], values: VarValue[]) {
     ids.forEach((id, index) => {
-      Object.entries(this.scopedVariables).find(([, variables]) => {
-        if (variables[id]) {
-          variables[id].setValue(values[index]);
-          return true;
-        }
-        return false;
-      });
+      if (this.variables[id]) {
+        this.variables[id].setValue(values[index]);
+      }
     });
   }
 
   getChanges() {
-    const changes: Record<string, Record<string, VarValue>> = {};
-    Object.entries(this.globalVariables).forEach(
+    const changes: Record<string, VarValue> = {};
+    Object.entries(this.variables).forEach(
       ([id, variable]: [string, ArcscriptVariable]) => {
         if (variable.changed) {
-          if (!changes['global']) {
-            changes['global'] = {};
-          }
-          changes['global'][id] = variable.getValue();
+          changes[id] = variable.getValue();
         }
-      }
-    );
-    Object.entries(this.scopedVariables).forEach(
-      ([scope, variables]: [string, Record<string, ArcscriptVariable>]) => {
-        Object.entries(variables).forEach(
-          ([id, variable]: [string, ArcscriptVariable]) => {
-            if (variable.changed) {
-              if (!changes[scope]) {
-                changes[scope] = {};
-              }
-              changes[scope][id] = variable.getValue();
-            }
-          }
-        );
       }
     );
     return changes;

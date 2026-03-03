@@ -402,9 +402,8 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitIdentifier = (ctx: IdentifierContext): ArcscriptVariable => {
     let name: string;
-    let scope: string;
+    let scope: string | null = null;
     if (ctx.IDENTIFIER_list().length === 1) {
-      scope = 'global';
       name = ctx.IDENTIFIER(0).getText();
     } else {
       scope = ctx.IDENTIFIER(0).getText();

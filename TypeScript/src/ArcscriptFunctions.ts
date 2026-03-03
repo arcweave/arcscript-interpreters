@@ -124,7 +124,7 @@ export default class ArcscriptFunctions {
       }
       return variable.id;
     });
-    const variablesToReset = Object.values(this.state.globalVariables).filter(
+    const variablesToReset = Object.values(this.state.variables).filter(
       v => !except.includes(v.id)
     );
     variablesToReset.forEach(variable => variable.reset());

@@ -7,6 +7,7 @@ export type VarDef = {
   type: VarType;
   defaultValue: VarValue;
   value?: VarValue;
+  scope?: string | null;
 };
 
 export type MentionResult = {
@@ -14,12 +15,4 @@ export type MentionResult = {
   label: string;
 };
 
-export type VariableScope = 'global' | 'components' | 'boards';
-
-export type ScopedVariableDef = Record<string, VarDef>;
-
-export type ArcscriptStateDef = {
-  global?: Record<string, VarDef>;
-  components?: Record<string, ScopedVariableDef>;
-  boards?: Record<string, ScopedVariableDef>;
-};
+export type ArcscriptStateDef = Record<string, VarDef>;

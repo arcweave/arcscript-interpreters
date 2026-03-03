@@ -6,7 +6,7 @@ import ArcscriptParser, {
   IdentifierContext,
   Mention_attributesContext,
 } from './ArcscriptParser.js';
-import { ArcscriptStateDef, ScopedVariableDef, VarDef } from '../types.js';
+import { ArcscriptStateDef } from '../types.js';
 
 type ArcscriptParserOptions = {
   arcscriptVariables: ArcscriptStateDef;
@@ -59,25 +59,14 @@ export default class ArcscriptParserBase extends Parser {
   }
 
   setOptions(options: ArcscriptParserOptions) {
-    const variableNames: string[] = [];
-    Object.entries(options.arcscriptVariables).forEach(([scope, vars]) => {
-      if (scope === 'global') {
-        const globalVarNames = Object.values(
-          vars as Record<string, VarDef>
-        ).map(variable => variable.name);
-        variableNames.push(...globalVarNames);
-      } else {
-        Object.entries(vars as Record<string, ScopedVariableDef>).forEach(
-          ([parentId, scopedVars]) => {
-            variableNames.push(
-              ...Object.values(scopedVars).map(
-                variable => `${parentId}.${variable.name}`
-              )
-            );
-          }
-        );
+    const variableNames = Object.values(options.arcscriptVariables).map(
+      variable => {
+        if (variable.scope) {
+          return `${variable.scope}.${variable.name}`;
+        }
+        return variable.name;
       }
-    });
+    );
     this.arcscriptVariableNames = variableNames;
     this.elementVisits = options.elementVisits;
     this.currentElement = options.currentElement;
