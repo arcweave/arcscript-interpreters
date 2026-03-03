@@ -114,10 +114,10 @@ export default class ArcscriptState {
     return variable;
   }
 
-  setVarValues(ids: string[], values: VarValue[]) {
-    ids.forEach((id, index) => {
+  setVarValues(values: Record<string, VarValue>) {
+    Object.entries(values).forEach(([id, value]) => {
       if (this.variables[id]) {
-        this.variables[id].setValue(values[index]);
+        this.variables[id].setValue(value);
       }
     });
   }

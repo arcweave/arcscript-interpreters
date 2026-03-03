@@ -246,3 +246,38 @@ describe('Scope inference', () => {
     expect(result).toBe('<pre><code>a=b+comp1.c</code></pre>');
   });
 });
+
+describe('runScript overrides on subsequent calls', () => {
+  test('reuses the same interpreter instance with override changes', () => {
+    const initialVars: ArcscriptStateDef = {
+      var1: {
+        id: 'var1',
+        name: 'x',
+        type: 'integer',
+        defaultValue: 1,
+      },
+      var2: {
+        id: 'var2',
+        name: 'y',
+        type: 'integer',
+        defaultValue: 0,
+      },
+    };
+
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+
+    const { changes: firstChanges } = interpreter.runScript(
+      '<pre><code>x = x + 1</code></pre>'
+    );
+    expect(firstChanges).toEqual({ var1: 2 });
+
+    const { changes: secondChanges } = interpreter.runScript(
+      '<pre><code>y = x + 5</code></pre>',
+      firstChanges
+    );
+
+    expect(secondChanges).toStrictEqual({ var1: 2, var2: 7 });
+  });
+});
