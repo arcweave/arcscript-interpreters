@@ -44,13 +44,7 @@ export default class Interpreter {
 
     const visitor = new ArcscriptVisitor(this.state);
 
-    const varIds: string[] = [];
-    const varValuesList: VarValue[] = [];
-    Object.entries(varValues).forEach(([id, value]) => {
-      varIds.push(id);
-      varValuesList.push(value);
-    });
-    // this.state.setVarValues(varIds, varValuesList);
+    this.state.setVarValues(varValues);
 
     const result = tree.accept(visitor);
 
