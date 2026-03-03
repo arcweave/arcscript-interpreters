@@ -13,7 +13,7 @@ import cloneDeep from 'lodash.clonedeep';
 type TestCase = {
   values?: Record<string, Record<string, VarValue>>;
   code: string;
-  changes?: Record<string, VarValue> | Record<string, Record<string, VarValue>>;
+  changes?: Record<string, VarValue>;
   output?: string;
   events?: { name: string; args: unknown }[];
   visits?: Record<string, number>;
@@ -28,7 +28,7 @@ type TestSuite = {
 };
 
 describe('Interprete valid scripts', () => {
-  const cases: TestCase[] = (validTests as TestSuite).cases;
+  const cases: TestCase[] = (validTests as unknown as TestSuite).cases;
 
   test.each(cases)(
     'Tests script: $code',
@@ -43,13 +43,18 @@ describe('Interprete valid scripts', () => {
     }) => {
       const eventHandler = vi.fn();
       const initVars: ArcscriptStateDef = cloneDeep(
-        (validTests as TestSuite).initialVars
+        (validTests as unknown as TestSuite).initialVars
       );
-      if (values?.global && initVars.global) {
+      if (values?.global) {
         Object.entries(values.global as Record<string, VarValue>).forEach(
           ([id, value]) => {
-            if (initVars.global![id]) {
-              initVars.global![id].value = value;
+            if (
+              initVars[id] &&
+              (initVars[id].scope === 'global' ||
+                initVars[id].scope === undefined ||
+                initVars[id].scope === null)
+            ) {
+              initVars[id].value = value;
             }
           }
         );
@@ -88,7 +93,7 @@ describe('Object members variables', () => {
       elementId = '',
     }) => {
       const interpreter = new Interpreter({
-        state: memberTests.initialVars as ArcscriptStateDef,
+        state: (memberTests as unknown as TestSuite).initialVars,
         elementVisits: visits,
         currentElement: elementId,
       });
@@ -111,7 +116,7 @@ describe('Interprete string test scripts', () => {
       elementId = '',
     }) => {
       const interpreter = new Interpreter({
-        state: stringTests.initialVars as ArcscriptStateDef,
+        state: (stringTests as unknown as TestSuite).initialVars,
         elementVisits: visits,
         currentElement: elementId,
       });
@@ -127,7 +132,7 @@ describe('Interprete script with parse errors', () => {
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter({
-        state: parseErrorTests.initialVars as ArcscriptStateDef,
+        state: (parseErrorTests as unknown as TestSuite).initialVars,
         elementVisits: visits,
         currentElement: elementId,
       });
@@ -143,7 +148,7 @@ describe('Interprete script with runtime errors', () => {
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
       const interpreter = new Interpreter({
-        state: runtimeErrorTests.initialVars as ArcscriptStateDef,
+        state: (runtimeErrorTests as unknown as TestSuite).initialVars,
         elementVisits: visits,
         currentElement: elementId,
       });
@@ -159,7 +164,7 @@ describe('Interprete condition', () => {
     'Tests condition: $code',
     ({ code, visits, elementId = '', result: expectedResult }) => {
       const interpreter = new Interpreter({
-        state: conditionTests.initialVars as ArcscriptStateDef,
+        state: (conditionTests as unknown as TestSuite).initialVars,
         elementVisits: visits,
         currentElement: elementId,
       });
@@ -176,7 +181,7 @@ describe('Replace variables', () => {
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition
       const interpreter = new Interpreter({
-        state: replaceVariableTests.initialVars as ArcscriptStateDef,
+        state: (replaceVariableTests as unknown as TestSuite).initialVars,
       });
       const result = interpreter.replaceVariables(code, variableChanges);
 
@@ -184,4 +189,60 @@ describe('Replace variables', () => {
       expect(result).toStrictEqual(expectedResult);
     }
   );
+});
+
+describe('Scope inference', () => {
+  const initialVars: ArcscriptStateDef = {
+    var1: {
+      id: 'var1',
+      name: 'x',
+      type: 'integer',
+      defaultValue: 1,
+    },
+    var2: {
+      id: 'var2',
+      name: 'y',
+      type: 'integer',
+      defaultValue: 2,
+      scope: null,
+    },
+    var3: {
+      id: 'var3',
+      name: 'z',
+      type: 'integer',
+      defaultValue: 3,
+      scope: 'comp1',
+    },
+  };
+
+  test('infers global for missing and null scope', () => {
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+    const { changes } = interpreter.runScript(
+      '<pre><code>x=5</code></pre><pre><code>y=6</code></pre><pre><code>comp1.z=7</code></pre>'
+    );
+
+    expect(changes).toEqual({
+      var1: 5,
+      var2: 6,
+      var3: 7,
+    });
+  });
+
+  test('replaceVariables infers global for missing and null scope', () => {
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+    const result = interpreter.replaceVariables(
+      '<pre><code>x=y+comp1.z</code></pre>',
+      {
+        var1: 'a',
+        var2: 'b',
+        var3: 'c',
+      }
+    );
+
+    expect(result).toBe('<pre><code>a=b+comp1.c</code></pre>');
+  });
 });

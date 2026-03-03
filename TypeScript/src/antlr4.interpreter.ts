@@ -4,7 +4,7 @@ import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
-import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
+import { ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptState from './ArcscriptState.js';
 
 type ArcscriptInterpreterOptions = {
@@ -101,27 +101,43 @@ export default class Interpreter {
 
     const tokenTypeNames = lexer.getSymbolicNames();
     const allTokens = lexer.getAllTokens();
-    const variableTokens = allTokens.filter(
-      token => tokenTypeNames[token.type] === 'IDENTIFIER'
-    );
-
     const tokenIdMap = new Map<object, string>();
-    variableTokens.forEach(varToken => {
-      let targetVar: VarDef | null = null;
-      for (const scopeVars of Object.values(this.arcscriptVariables)) {
-        const v = Object.values(scopeVars).find(
-          variable => variable.name === varToken.text
-        );
-        if (v) {
-          targetVar = v;
-          break;
-        }
+    const stateVars = Object.values(this.arcscriptVariables);
+
+    allTokens.forEach((token, index) => {
+      if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
+        return;
       }
-      if (targetVar !== null) {
-        tokenIdMap.set(varToken, targetVar.id);
+
+      // Identifier followed by dot is a scope qualifier (e.g. comp1.a).
+      const nextToken = allTokens[index + 1];
+      if (nextToken && tokenTypeNames[nextToken.type] === 'DOT') {
+        return;
+      }
+
+      let targetVar: (typeof stateVars)[number] | null = null;
+      const previousToken = allTokens[index - 1];
+      if (previousToken && tokenTypeNames[previousToken.type] === 'DOT') {
+        const scopeToken = allTokens[index - 2];
+        if (scopeToken && tokenTypeNames[scopeToken.type] === 'IDENTIFIER') {
+          targetVar =
+            stateVars.find(
+              variable =>
+                variable.scope === scopeToken.text &&
+                variable.name === token.text
+            ) ?? null;
+        }
+      } else {
+        targetVar =
+          stateVars.find(variable => variable.name === token.text) ?? null;
+      }
+
+      if (targetVar) {
+        tokenIdMap.set(token, targetVar.id);
       }
     });
 
+    const variableTokens = allTokens.filter(token => tokenIdMap.has(token));
     const f = variableTokens
       .filter(varToken =>
         tokenIdMap.has(varToken)

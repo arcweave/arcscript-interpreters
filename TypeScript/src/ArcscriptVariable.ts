@@ -6,7 +6,7 @@ type ArcscriptVariableParams = {
   type: string;
   defaultValue: VarValue;
   value?: VarValue;
-  scope: string;
+  scope?: string | null;
 };
 
 export default class ArcscriptVariable {
@@ -16,7 +16,7 @@ export default class ArcscriptVariable {
   value: VarValue;
   defaultValue: VarValue;
   changed = false;
-  scope: string;
+  scope: string | null;
 
   constructor({
     id,
@@ -30,7 +30,7 @@ export default class ArcscriptVariable {
     this.name = name;
     this.type = type;
     this.defaultValue = defaultValue;
-    this.scope = scope;
+    this.scope = scope || null;
 
     if (value !== undefined) {
       this.value = value;
