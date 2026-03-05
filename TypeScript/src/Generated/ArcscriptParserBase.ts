@@ -1,7 +1,6 @@
 import { Parser, TerminalNode, Token, TokenStream } from 'antlr4';
 import ArcscriptParser, {
   Argument_listContext,
-  Function_callContext,
   Identifier_listContext,
   IdentifierContext,
   Mention_attributesContext,
@@ -114,31 +113,6 @@ export default class ArcscriptParserBase extends Parser {
           );
         }
       }
-    }
-  }
-
-  assertFunctionReturnValue(
-    fncCtx: Function_callContext,
-    hasReturnValue = true
-  ) {
-    const functionName = fncCtx.FNAME().getText();
-    const token = fncCtx.FNAME().symbol;
-    const { returnType } =
-      ArcscriptParserBase.arcscriptFunctionsInfo[functionName];
-    if (hasReturnValue) {
-      if (returnType === 'void') {
-        this.notifyErrorListeners(
-          `The function ${functionName} does not return a value`,
-          token,
-          undefined
-        );
-      }
-    } else if (returnType !== 'void') {
-      this.notifyErrorListeners(
-        `The function ${functionName} returns a value that is not being used`,
-        token,
-        undefined
-      );
     }
   }
 

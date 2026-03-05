@@ -7,7 +7,9 @@ options {
 	superClass = ArcscriptParserBase;
 }
 
-input: script EOF | codestart expression codeend EOF;
+input: condition EOF | script EOF;
+
+condition: codestart expression codeend;
 
 script: script_section+;
 
@@ -39,8 +41,7 @@ codeend: CODEEND;
 
 assignment_segment: codestart statement_assignment codeend;
 
-function_call_segment:
-	codestart statement_function_call codeend;
+function_call_segment: codestart function_call codeend;
 
 conditional_section:
 	if_section else_if_section* else_section? endif_segment;
@@ -69,9 +70,6 @@ statement_assignment:
 
 assignable: identifier {this.assertVariable($identifier.ctx);};
 
-statement_function_call:
-	function_call {this.assertFunctionReturnValue($function_call.ctx, false);};
-
 identifier_list:
 	identifier {this.assertVariable($identifier.ctx);} (
 		',' identifier {this.assertVariable($identifier.ctx);}
@@ -99,7 +97,7 @@ expression:
 	| expression (OR | ORKEYWORD) expression								# ComparisonExpression
 	| identifier {this.assertVariable($identifier.ctx);}					# IdentifierExpression
 	| '(' expression ')'													# ParenthesizedExpression
-	| function_call {this.assertFunctionReturnValue($function_call.ctx);}	# FunctionCallExpression
+	| function_call															# FunctionCallExpression
 	| literal																# LiteralExpression;
 
 literal: BOOLEAN | STRING | numeric_literal;
