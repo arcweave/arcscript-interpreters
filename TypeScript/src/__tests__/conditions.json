@@ -95,6 +95,13 @@
     {
       "code": "<pre><code>x is not \"Dummy text\"</code></pre>",
       "result": true
+    },
+    {
+      "code": "<pre><code>visits(<span class=\"mention mention-element\" data-type=\"element\" data-id=\"b\">test_elem</span>)</code></pre>",
+      "visits": {
+        "b": 0
+      },
+      "result": false
     }
   ]
 }

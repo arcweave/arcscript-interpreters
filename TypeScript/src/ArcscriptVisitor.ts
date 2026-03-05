@@ -15,6 +15,7 @@ import {
   BlockquoteContext,
   ComparisonExpressionContext,
   Conditional_sectionContext,
+  ConditionContext,
   Else_if_clauseContext,
   Else_if_sectionContext,
   Else_sectionContext,
@@ -61,10 +62,12 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return { script: this.visitChildren(ctx.script()) };
     }
 
+    return this.visitCondition(ctx.condition());
+  };
+
+  visitCondition = (ctx: ConditionContext) => {
     return {
-      condition: this.visitComparisonExpression(
-        ctx.expression() as ComparisonExpressionContext
-      ),
+      condition: !!this.visitExpression(ctx.expression()),
     };
   };
 
@@ -116,7 +119,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitFunction_call_segment = (ctx: Function_call_segmentContext) => {
     this.state.addScript();
-    return this.visitChildren(ctx.statement_function_call());
+    return this.visitFunction_call(ctx.function_call());
   };
 
   visitConditional_section = (ctx: Conditional_sectionContext) => {
@@ -187,7 +190,9 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
     let variableValue = assignable.getValue();
     let expressionValue = this.visitExpression(ctx.expression());
-
+    if (expressionValue === undefined) {
+      throw new RuntimeError('The right part of the assigment has no value');
+    }
     let result: VarValue = 0;
     if (
       typeof variableValue === 'string' ||
