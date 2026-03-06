@@ -97,6 +97,9 @@ export default class Interpreter {
     const allTokens = lexer.getAllTokens();
     const tokenIdMap = new Map<object, string>();
     const stateVars = Object.values(this.arcscriptVariables);
+    const isGlobalScope = (scope: string | null | undefined) => {
+      return scope === undefined || scope === null || scope === 'global';
+    };
 
     allTokens.forEach((token, index) => {
       if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
@@ -123,7 +126,10 @@ export default class Interpreter {
         }
       } else {
         targetVar =
-          stateVars.find(variable => variable.name === token.text) ?? null;
+          stateVars.find(
+            variable =>
+              variable.name === token.text && isGlobalScope(variable.scope)
+          ) ?? null;
       }
 
       if (targetVar) {

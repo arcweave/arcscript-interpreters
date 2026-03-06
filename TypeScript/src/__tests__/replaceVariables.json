@@ -48,6 +48,19 @@
       "type": "string",
       "defaultValue": "Different Text",
       "scope": "comp1"
+    },
+    "var9": {
+      "id": "var9",
+      "name": "xyz",
+      "type": "string",
+      "defaultValue": "hihi",
+      "scope": "boardOne"
+    },
+    "var10": {
+      "id": "var10",
+      "name": "xyz",
+      "type": "integer",
+      "defaultValue": 0
     }
   },
   "cases": [
@@ -85,6 +98,27 @@
         "var8": "zed"
       },
       "result": "<pre><code>x = comp1.zed + 2 * sqrt(x)</code></pre><pre><code>y = 5 + comp1.zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>comp1.x = 'test'</code></pre><pre><code>x = 'test'</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>comp1.x = 'test'</code></pre><pre><code>zed = 'test'</code></pre>"
+    },
+    {
+      "code": "<pre><code>comp1.x = 'test'</code></pre><pre><code>x = 'test'</code></pre>",
+      "variableChanges": {
+        "var8": "zed"
+      },
+      "result": "<pre><code>comp1.zed = 'test'</code></pre><pre><code>x = 'test'</code></pre>"
+    },
+    {
+      "code": "<pre><code>boardOne.xyz = 'fourtytwo'</code></pre><pre><code>xyz = 42</code></pre>",
+      "variableChanges": {
+        "var9": "hohoho"
+      },
+      "result": "<pre><code>boardOne.hohoho = 'fourtytwo'</code></pre><pre><code>xyz = 42</code></pre>"
     },
     {
       "code": "<pre><code>x = comp1.x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + comp1.x</code></pre>",
