@@ -191,6 +191,40 @@ describe('Replace variables', () => {
   );
 });
 
+describe('Replace scopes', () => {
+  test('replaces only scope qualifiers and keeps global variables untouched', () => {
+    const interpreter = new Interpreter({
+      state: (replaceVariableTests as unknown as TestSuite).initialVars,
+    });
+    const result = interpreter.replaceScope(
+      `<pre><code>boardOne.xyz = 'fourtytwo'</code></pre><pre><code>xyz = boardOne.xyz</code></pre><pre><code>w = "boardOne.xyz"</code></pre>`,
+      'boardOne',
+      'boardTwo'
+    );
+
+    expect(result).toBe(
+      `<pre><code>boardTwo.xyz = 'fourtytwo'</code></pre><pre><code>xyz = boardTwo.xyz</code></pre><pre><code>w = "boardOne.xyz"</code></pre>`
+    );
+  });
+
+  test('supports replacing multiple scopes in one pass', () => {
+    const interpreter = new Interpreter({
+      state: (replaceVariableTests as unknown as TestSuite).initialVars,
+    });
+    const result = interpreter.replaceScopes(
+      '<pre><code>comp1.x = boardOne.xyz + x</code></pre>',
+      {
+        comp1: 'comp2',
+        boardOne: 'boardTwo',
+      }
+    );
+
+    expect(result).toBe(
+      '<pre><code>comp2.x = boardTwo.xyz + x</code></pre>'
+    );
+  });
+});
+
 describe('Scope inference', () => {
   const initialVars: ArcscriptStateDef = {
     var1: {
