@@ -86,15 +86,21 @@ export default class Interpreter {
     };
   }
 
-  replaceVariables(code: string, variables: Record<string, string>) {
+  private parseTokens(code: string) {
     const chars = new CharStream(code);
     const lexer = new ArcscriptLexer(chars);
     const errorListener = new ErrorListener();
     lexer.removeErrorListeners();
     lexer.addErrorListener(errorListener);
 
-    const tokenTypeNames = lexer.getSymbolicNames();
-    const allTokens = lexer.getAllTokens();
+    return {
+      tokenTypeNames: lexer.getSymbolicNames(),
+      allTokens: lexer.getAllTokens(),
+    };
+  }
+
+  replaceVariables(code: string, variables: Record<string, string>) {
+    const { tokenTypeNames, allTokens } = this.parseTokens(code);
     const tokenIdMap = new Map<object, string>();
     const stateVars = Object.values(this.arcscriptVariables);
     const isGlobalScope = (scope: string | null | undefined) => {
@@ -153,5 +159,53 @@ export default class Interpreter {
       newCode = newCode.slice(0, start) + replace + newCode.slice(end);
     });
     return newCode;
+  }
+
+  replaceScopes(code: string, scopes: Record<string, string>) {
+    const { tokenTypeNames, allTokens } = this.parseTokens(code);
+    const stateVars = Object.values(this.arcscriptVariables);
+
+    const targetScopeTokens = allTokens
+      .filter((token, index) => {
+        if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
+          return false;
+        }
+
+        const dotToken = allTokens[index + 1];
+        const variableToken = allTokens[index + 2];
+        if (
+          !dotToken ||
+          tokenTypeNames[dotToken.type] !== 'DOT' ||
+          !variableToken ||
+          tokenTypeNames[variableToken.type] !== 'IDENTIFIER'
+        ) {
+          return false;
+        }
+
+        return stateVars.some(
+          variable =>
+            variable.scope === token.text && variable.name === variableToken.text
+        );
+      })
+      .filter(scopeToken =>
+        Object.prototype.hasOwnProperty.call(scopes, scopeToken.text)
+      )
+      .sort((a, b) => b.start - a.start);
+
+    let newCode = code;
+    targetScopeTokens.forEach(scopeToken => {
+      const start = scopeToken.start;
+      const end = start + scopeToken.text.length;
+      const replace = scopes[scopeToken.text];
+      newCode = newCode.slice(0, start) + replace + newCode.slice(end);
+    });
+
+    return newCode;
+  }
+
+  replaceScope(code: string, scope: string, replacement: string) {
+    return this.replaceScopes(code, {
+      [scope]: replacement,
+    });
   }
 }
