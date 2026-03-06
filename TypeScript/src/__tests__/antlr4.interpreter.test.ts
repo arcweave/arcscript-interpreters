@@ -176,7 +176,7 @@ describe('Interprete condition', () => {
 });
 
 describe('Replace variables', () => {
-  test.each(replaceVariableTests.cases as TestCase[])(
+  test.each(replaceVariableTests.cases as unknown as TestCase[])(
     'Tests replace: $code',
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition
