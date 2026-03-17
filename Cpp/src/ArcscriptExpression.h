@@ -43,6 +43,10 @@ public:
     value = _value;
   }
 
+  bool isTruthy() {
+    return valueToBool(value);
+  }
+
   const std::type_info& type() {
     return value.type();
   }

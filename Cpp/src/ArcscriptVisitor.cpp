@@ -13,7 +13,7 @@ std::any ArcscriptVisitor::visitInput(ArcscriptParser::InputContext * ctx)
   }
   // Condition
   Expression comp_cond = std::any_cast<Expression>(visitCompound_condition_or(ctx->compound_condition_or()));
-  return comp_cond.value;
+  return comp_cond.isTruthy();
 }
 
 std::any ArcscriptVisitor::visitScript_section(ArcscriptParser::Script_sectionContext *ctx) {

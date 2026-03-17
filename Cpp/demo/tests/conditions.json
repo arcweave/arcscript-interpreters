@@ -95,6 +95,36 @@
     {
       "code": "<pre><code>x is not \"Dummy text\"</code></pre>",
       "result": true
+    },
+    {
+      "code": "<pre><code>visits()</code></pre>",
+      "visits": {
+        "b": 5
+      },
+      "elementId": "b",
+      "result": true
+    },
+    {
+      "code": "<pre><code>visits()</code></pre>",
+      "visits": {
+        "b": 0
+      },
+      "elementId": "b",
+      "result": false
+    },
+    {
+      "code": "<pre><code>visits(<span class=\"mention mention-element\" data-type=\"element\" data-id=\"b\">Untitled Comp</span>)</code></pre>",
+      "visits": {
+        "b": 0
+      },
+      "result": false
+    },
+    {
+      "code": "<pre><code>visits(<span class=\"mention mention-element\" data-type=\"element\" data-id=\"b\">Untitled Comp</span>)</code></pre>",
+      "visits": {
+        "b": 5
+      },
+      "result": true
     }
   ]
 }
