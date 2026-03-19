@@ -4,43 +4,64 @@
       "id": "var1",
       "name": "x",
       "type": "integer",
-      "value": 14
+      "defaultValue": 14
     },
     "var2": {
       "id": "var2",
       "name": "y",
       "type": "integer",
-      "value": 15
+      "defaultValue": 15
     },
     "var3": {
       "id": "var3",
       "name": "z",
       "type": "integer",
-      "value": 0
+      "defaultValue": 0
     },
     "var4": {
       "id": "var4",
       "name": "w",
       "type": "string",
-      "value": "Dummy text"
+      "defaultValue": "Dummy text"
     },
     "var5": {
       "id": "var5",
       "name": "$c5",
       "type": "integer",
-      "value": 0
+      "defaultValue": 0
     },
     "var6": {
       "id": "var6",
       "name": "_a",
       "type": "boolean",
-      "value": false
+      "defaultValue": false
     },
     "var7": {
       "id": "var7",
       "name": "xy",
       "type": "integer",
-      "value": -1
+      "defaultValue": -1
+    },
+    "var8": {
+      "id": "var8",
+      "name": "x",
+      "type": "string",
+      "defaultValue": "Different Text",
+      "scope": "comp1"
+    },
+    "var9": {
+      "id": "var9",
+      "name": "xyz",
+      "type": "string",
+      "defaultValue": "hihi",
+      "cType": "boards",
+      "scope": "boardOne"
+    },
+    "var10": {
+      "id": "var10",
+      "name": "xyz",
+      "type": "integer",
+      "defaultValue": 0
     }
   },
   "cases": [
@@ -64,6 +85,49 @@
         "var1": "zed"
       },
       "result": "<pre><code>b = \"x marks the spot\"</code></pre><pre><code>xy = 5 + zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>x = x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + x</code></pre>",
+      "variableChanges": {
+        "var8": "zed"
+      },
+      "result": "<pre><code>x = x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + x</code></pre>"
+    },
+    {
+      "code": "<pre><code>x = comp1.x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + comp1.x</code></pre>",
+      "variableChanges": {
+        "var8": "zed"
+      },
+      "result": "<pre><code>x = comp1.zed + 2 * sqrt(x)</code></pre><pre><code>y = 5 + comp1.zed</code></pre>"
+    },
+    {
+      "code": "<pre><code>comp1.x = 'test'</code></pre><pre><code>x = 'test'</code></pre>",
+      "variableChanges": {
+        "var1": "zed"
+      },
+      "result": "<pre><code>comp1.x = 'test'</code></pre><pre><code>zed = 'test'</code></pre>"
+    },
+    {
+      "code": "<pre><code>comp1.x = 'test'</code></pre><pre><code>x = 'test'</code></pre>",
+      "variableChanges": {
+        "var8": "zed"
+      },
+      "result": "<pre><code>comp1.zed = 'test'</code></pre><pre><code>x = 'test'</code></pre>"
+    },
+    {
+      "code": "<pre><code>boardOne.xyz = 'fourtytwo'</code></pre><pre><code>xyz = 42</code></pre>",
+      "variableChanges": {
+        "var9": "hohoho"
+      },
+      "result": "<pre><code>boardOne.hohoho = 'fourtytwo'</code></pre><pre><code>xyz = 42</code></pre>"
+    },
+    {
+      "code": "<pre><code>x = comp1.x + 2 * sqrt(x)</code></pre><pre><code>y = 5 + comp1.x</code></pre>",
+      "variableChanges": {
+        "var1": "zed",
+        "var8": "zed"
+      },
+      "result": "<pre><code>zed = comp1.zed + 2 * sqrt(zed)</code></pre><pre><code>y = 5 + comp1.zed</code></pre>"
     }
   ]
 }

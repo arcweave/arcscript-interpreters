@@ -6,9 +6,12 @@ import runtimeErrorTests from './runtimeErrors.json';
 import conditionTests from './conditions.json';
 import replaceVariableTests from './replaceVariables.json';
 import stringTests from './stringConcat.json';
-import { VarObject, VarValue } from '../types.js';
+import memberTests from './member.json';
+import { ArcscriptStateDef, VarValue } from '../types.js';
+import cloneDeep from 'lodash.clonedeep';
 
 type TestCase = {
+  values?: Record<string, Record<string, VarValue>>;
   code: string;
   changes?: Record<string, VarValue>;
   output?: string;
@@ -19,40 +22,53 @@ type TestCase = {
   variableChanges?: Record<string, string>;
 };
 
-function setVarValues(vars: Record<string, VarObject>) {
-  return Object.fromEntries(
-    Object.entries(vars)
-      .filter(([, v]) => !v.children)
-      .map(([k, v]) => [k, v.value])
-  );
-}
+type TestSuite = {
+  initialVars: ArcscriptStateDef;
+  cases: TestCase[];
+};
 
 describe('Interprete valid scripts', () => {
-  const varObjects = validTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-  const cases = validTests.cases as TestCase[];
+  const cases: TestCase[] = (validTests as unknown as TestSuite).cases;
 
   test.each(cases)(
     'Tests script: $code',
     ({
+      values,
       code,
-      changes: expectedChanges = {},
+      changes: expectedChanges,
       output: expectedOutput = '',
       events = null,
       visits = {},
       elementId = '',
     }) => {
       const eventHandler = vi.fn();
-
-      const interpreter = new Interpreter(
-        varValues,
-        varObjects,
-        visits,
-        elementId,
-        eventHandler
+      const initVars: ArcscriptStateDef = cloneDeep(
+        (validTests as unknown as TestSuite).initialVars
       );
+      if (values?.global) {
+        Object.entries(values.global as Record<string, VarValue>).forEach(
+          ([id, value]) => {
+            if (
+              initVars[id] &&
+              (initVars[id].scope === 'global' ||
+                initVars[id].scope === undefined ||
+                initVars[id].scope === null)
+            ) {
+              initVars[id].value = value;
+            }
+          }
+        );
+      }
+      const interpreter = new Interpreter({
+        state: initVars,
+        elementVisits: visits,
+        currentElement: elementId,
+        eventHandler,
+      });
       const { changes, output } = interpreter.runScript(code);
-      expect(changes).toMatchObject(expectedChanges);
+      if (expectedChanges !== undefined) {
+        expect(changes).toEqual(expectedChanges);
+      }
       expect(output).toEqual(expectedOutput);
 
       if (events) {
@@ -66,10 +82,30 @@ describe('Interprete valid scripts', () => {
   );
 });
 
-describe('Interprete string test scripts', () => {
-  const varObjects = stringTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
+describe('Object members variables', () => {
+  test.each(memberTests.cases as TestCase[])(
+    'Tests script: $code',
+    ({
+      code,
+      changes: expectedChanges = {},
+      output: expectedOutput = '',
+      visits,
+      elementId = '',
+    }) => {
+      const interpreter = new Interpreter({
+        state: (memberTests as unknown as TestSuite).initialVars,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
+      const { changes, output } = interpreter.runScript(code);
 
+      expect(changes).toEqual(expectedChanges);
+      expect(output).toEqual(expectedOutput);
+    }
+  );
+});
+
+describe('Interprete string test scripts', () => {
   test.each(stringTests.cases as unknown as TestCase[])(
     'Tests script: $code',
     ({
@@ -79,32 +115,27 @@ describe('Interprete string test scripts', () => {
       visits,
       elementId = '',
     }) => {
-      const interpreter = new Interpreter(
-        varValues,
-        varObjects,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: (stringTests as unknown as TestSuite).initialVars,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       const { changes, output } = interpreter.runScript(code);
-      expect(changes).toMatchObject(expectedChanges);
+      expect(changes).toEqual(expectedChanges);
       expect(output).toEqual(expectedOutput);
     }
   );
 });
 
 describe('Interprete script with parse errors', () => {
-  const varObjects = parseErrorTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(parseErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
-      const interpreter = new Interpreter(
-        varValues,
-        varObjects,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: (parseErrorTests as unknown as TestSuite).initialVars,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       expect(() => {
         interpreter.parse(code);
       }).toThrow(ParseError);
@@ -113,18 +144,14 @@ describe('Interprete script with parse errors', () => {
 });
 
 describe('Interprete script with runtime errors', () => {
-  const varObjects = runtimeErrorTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(runtimeErrorTests.cases as TestCase[])(
     'Test error script: $code',
     ({ code, visits, elementId = '' }) => {
-      const interpreter = new Interpreter(
-        varValues,
-        varObjects,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: (runtimeErrorTests as unknown as TestSuite).initialVars,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       expect(() => {
         interpreter.runScript(code);
       }).toThrow(RuntimeError);
@@ -133,18 +160,14 @@ describe('Interprete script with runtime errors', () => {
 });
 
 describe('Interprete condition', () => {
-  const varObjects = conditionTests.initialVars as Record<string, VarObject>;
-  const varValues = setVarValues(varObjects);
-
   test.each(conditionTests.cases as TestCase[])(
     'Tests condition: $code',
     ({ code, visits, elementId = '', result: expectedResult }) => {
-      const interpreter = new Interpreter(
-        varValues,
-        varObjects,
-        visits,
-        elementId
-      );
+      const interpreter = new Interpreter({
+        state: (conditionTests as unknown as TestSuite).initialVars,
+        elementVisits: visits,
+        currentElement: elementId,
+      });
       const { result } = interpreter.runScript(code);
 
       expect(result.condition).toStrictEqual(expectedResult);
@@ -153,21 +176,142 @@ describe('Interprete condition', () => {
 });
 
 describe('Replace variables', () => {
-  const varObjects = replaceVariableTests.initialVars as Record<
-    string,
-    VarObject
-  >;
-  const varValues = setVarValues(varObjects);
-
-  test.each(replaceVariableTests.cases as TestCase[])(
+  test.each(replaceVariableTests.cases as unknown as TestCase[])(
     'Tests replace: $code',
     ({ code, variableChanges = {}, result: expectedResult }) => {
       // Parse and check the condition
-      const interpreter = new Interpreter(varValues, varObjects);
+      const interpreter = new Interpreter({
+        state: (replaceVariableTests as unknown as TestSuite).initialVars,
+      });
       const result = interpreter.replaceVariables(code, variableChanges);
 
       // The given condition should match the expected evaluation
       expect(result).toStrictEqual(expectedResult);
     }
   );
+});
+
+describe('Replace scopes', () => {
+  test('replaces only scope qualifiers and keeps global variables untouched', () => {
+    const interpreter = new Interpreter({
+      state: (replaceVariableTests as unknown as TestSuite).initialVars,
+    });
+    const result = interpreter.replaceScope(
+      `<pre><code>boardOne.xyz = 'fourtytwo'</code></pre><pre><code>xyz = boardOne.xyz</code></pre><pre><code>w = "boardOne.xyz"</code></pre>`,
+      'boardOne',
+      'boardTwo'
+    );
+
+    expect(result).toBe(
+      `<pre><code>boardTwo.xyz = 'fourtytwo'</code></pre><pre><code>xyz = boardTwo.xyz</code></pre><pre><code>w = "boardOne.xyz"</code></pre>`
+    );
+  });
+
+  test('supports replacing multiple scopes in one pass', () => {
+    const interpreter = new Interpreter({
+      state: (replaceVariableTests as unknown as TestSuite).initialVars,
+    });
+    const result = interpreter.replaceScopes(
+      '<pre><code>comp1.x = boardOne.xyz + x</code></pre>',
+      {
+        comp1: 'comp2',
+        boardOne: 'boardTwo',
+      }
+    );
+
+    expect(result).toBe(
+      '<pre><code>comp2.x = boardTwo.xyz + x</code></pre>'
+    );
+  });
+});
+
+describe('Scope inference', () => {
+  const initialVars: ArcscriptStateDef = {
+    var1: {
+      id: 'var1',
+      name: 'x',
+      type: 'integer',
+      defaultValue: 1,
+    },
+    var2: {
+      id: 'var2',
+      name: 'y',
+      type: 'integer',
+      defaultValue: 2,
+      scope: null,
+    },
+    var3: {
+      id: 'var3',
+      name: 'z',
+      type: 'integer',
+      defaultValue: 3,
+      scope: 'comp1',
+    },
+  };
+
+  test('infers global for missing and null scope', () => {
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+    const { changes } = interpreter.runScript(
+      '<pre><code>x=5</code></pre><pre><code>y=6</code></pre><pre><code>comp1.z=7</code></pre>'
+    );
+
+    expect(changes).toEqual({
+      var1: 5,
+      var2: 6,
+      var3: 7,
+    });
+  });
+
+  test('replaceVariables infers global for missing and null scope', () => {
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+    const result = interpreter.replaceVariables(
+      '<pre><code>x=y+comp1.z</code></pre>',
+      {
+        var1: 'a',
+        var2: 'b',
+        var3: 'c',
+      }
+    );
+
+    expect(result).toBe('<pre><code>a=b+comp1.c</code></pre>');
+  });
+});
+
+describe('runScript overrides on subsequent calls', () => {
+  test('reuses the same interpreter instance with override changes', () => {
+    const initialVars: ArcscriptStateDef = {
+      var1: {
+        id: 'var1',
+        name: 'x',
+        type: 'integer',
+        defaultValue: 1,
+      },
+      var2: {
+        id: 'var2',
+        name: 'y',
+        type: 'integer',
+        defaultValue: 0,
+      },
+    };
+
+    const interpreter = new Interpreter({
+      state: initialVars,
+    });
+
+    const { changes: firstChanges } = interpreter.runScript(
+      '<pre><code>x = x + 1</code></pre>'
+    );
+    expect(firstChanges).toEqual({ var1: 2 });
+
+    const { changes: secondChanges } = interpreter.runScript(
+      '<pre><code>y = x + 5</code></pre>',
+      firstChanges
+    );
+
+    expect(secondChanges).toStrictEqual({ var1: 2, var2: 7 });
+  });
 });

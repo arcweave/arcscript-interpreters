@@ -8,17 +8,21 @@ using namespace Arcweave;
 
 std::any ArcscriptVisitor::visitInput(ArcscriptParser::InputContext * ctx)
 {
-  if (ctx->script() != NULL) {
+  if (ctx->script() != nullptr) {
     return visitScript(ctx->script());
   }
   // Condition
-  Expression comp_cond = std::any_cast<Expression>(visitCompound_condition_or(ctx->compound_condition_or()));
+  auto comp_cond = std::any_cast<Expression>(visitCondition(ctx->condition()));
   return comp_cond.isTruthy();
 }
 
+std::any ArcscriptVisitor::visitCondition(ArcscriptParser::ConditionContext * ctx) {
+  return visit(ctx->expression());
+}
+
 std::any ArcscriptVisitor::visitScript_section(ArcscriptParser::Script_sectionContext *ctx) {
-  if (ctx == NULL) {
-    return std::any();
+  if (ctx == nullptr) {
+    return {};
   }
 
   if (const auto blockquote_contexts = ctx->blockquote(); !blockquote_contexts.empty())
@@ -54,8 +58,8 @@ std::any ArcscriptVisitor::visitBlockquote(ArcscriptParser::BlockquoteContext* c
 
 std::any ArcscriptVisitor::visitParagraph(ArcscriptParser::ParagraphContext* context)
 {
-  auto paragraph_end = context->PARAGRAPHEND()->getText();
-  auto paragraph_content = paragraph_end.substr(0, paragraph_end.size() - 4); // size of "</p>"
+  const auto paragraph_end = context->PARAGRAPHEND()->getText();
+  const auto paragraph_content = paragraph_end.substr(0, paragraph_end.size() - 4); // size of "</p>"
   state->outputs.AddParagraph(paragraph_content);
   return context->getText();
 }
@@ -68,33 +72,33 @@ std::any ArcscriptVisitor::visitAssignment_segment(ArcscriptParser::Assignment_s
 
 std::any ArcscriptVisitor::visitFunction_call_segment(ArcscriptParser::Function_call_segmentContext *ctx) {
   state->outputs.AddScript();
-  return visitStatement_function_call(ctx->statement_function_call());
+  return visitFunction_call(ctx->function_call());
 }
 
 std::any ArcscriptVisitor::visitConditional_section(ArcscriptParser::Conditional_sectionContext *ctx) {
   state->outputs.AddScript();
-  ConditionalSection ifSection = std::any_cast<ConditionalSection>(visitIf_section(ctx->if_section()));
+  auto ifSection = std::any_cast<ConditionalSection>(visitIf_section(ctx->if_section()));
   if (ifSection.clause) {
     state->outputs.AddScript();
     return ifSection.script;
   }
   for (ArcscriptParser::Else_if_sectionContext *else_if_section : ctx->else_if_section()) {
-    ConditionalSection elif_section = std::any_cast<ConditionalSection>(visitElse_if_section(else_if_section));
+    auto elif_section = std::any_cast<ConditionalSection>(visitElse_if_section(else_if_section));
     if (elif_section.clause) {
       return elif_section.script;
     }
   }
-  if (ctx->else_section() != NULL) {
-    ConditionalSection elseSection = std::any_cast<ConditionalSection>(visitElse_section(ctx->else_section()));
+  if (ctx->else_section() != nullptr) {
+    const auto elseSection = std::any_cast<ConditionalSection>(visitElse_section(ctx->else_section()));
     state->outputs.AddScript();
     return elseSection.script;
   }
   state->outputs.AddScript();
-  return std::any();
+  return {};
 }
 
 std::any ArcscriptVisitor::visitIf_section(ArcscriptParser::If_sectionContext *ctx) {
-  Expression result = std::any_cast<Expression>(visitIf_clause(ctx->if_clause()));
+  const auto result = std::any_cast<Expression>(visitIf_clause(ctx->if_clause()));
   ConditionalSection ifSection;
   ifSection.clause = false;
   if (result == true) {
@@ -105,7 +109,7 @@ std::any ArcscriptVisitor::visitIf_section(ArcscriptParser::If_sectionContext *c
 }
 
 std::any ArcscriptVisitor::visitElse_if_section(ArcscriptParser::Else_if_sectionContext *ctx) {
-  Expression result = std::any_cast<Expression>(visitElse_if_clause(ctx->else_if_clause()));
+  const auto result = std::any_cast<Expression>(visitElse_if_clause(ctx->else_if_clause()));
   ConditionalSection elseSection;
   elseSection.clause = false;
   if (result == true) {
@@ -124,290 +128,203 @@ std::any ArcscriptVisitor::visitElse_section(ArcscriptParser::Else_sectionContex
 }
 
 std::any ArcscriptVisitor::visitIf_clause(ArcscriptParser::If_clauseContext *ctx) {
-  return visitCompound_condition_or(ctx->compound_condition_or());
+  return visit(ctx->expression());
 }
 
 std::any ArcscriptVisitor::visitElse_if_clause(ArcscriptParser::Else_if_clauseContext *ctx) {
-  return visitCompound_condition_or(ctx->compound_condition_or());
+  return visit(ctx->expression());
 }
 
 std::any ArcscriptVisitor::visitStatement_assignment(ArcscriptParser::Statement_assignmentContext *ctx) {
-  std::string variableName = ctx->VARIABLE()->getText();
-  Expression compound_condition_or = std::any_cast<Expression>(visitCompound_condition_or(ctx->compound_condition_or()));
-  if (ctx->ASSIGN() != NULL) {
-    state->setVarValue(variableName, compound_condition_or.value);
-    return std::any();
+  auto identifier = std::any_cast<IdentifierDef>(visitAssignable(ctx->assignable()));
+  auto identifierExpr = Expression();
+  identifierExpr.setValue(state->getVarValue(identifier));
+
+  auto re = std::any_cast<Expression>(visit(ctx->expression()));
+
+  if (ctx->ASSIGN() != nullptr) {
+    state->setVarValue(identifier, re.value);
+    return {};
   }
 
   Expression varValue;
-  varValue.setValue(state->getVarValue(variableName));
+  varValue.setValue(state->getVarValue(identifier));
 
-  if (ctx->ASSIGNADD() != NULL) {
-    varValue += compound_condition_or;
-  }
-  if (ctx->ASSIGNSUB() != NULL) {
-    varValue -= compound_condition_or;
-  }
-  if (ctx->ASSIGNMUL() != NULL) {
-    varValue *= compound_condition_or;
-  }
-  if (ctx->ASSIGNDIV() != NULL) {
-    varValue /= compound_condition_or;
-  }
-  if (ctx->ASSIGNMOD() != NULL) {
-    varValue %= compound_condition_or;
+  if (ctx->ASSIGNADD() != nullptr) {
+    varValue += re;
+  } else if (ctx->ASSIGNSUB() != nullptr) {
+    varValue -= re;
+  } else if (ctx->ASSIGNMUL() != nullptr) {
+    varValue *= re;
+  } else if (ctx->ASSIGNDIV() != nullptr) {
+    varValue /= re;
+  } else if (ctx->ASSIGNMOD() != nullptr) {
+    varValue %= re;
   }
 
-  state->setVarValue(variableName, varValue.value);
-  return std::any();
+  state->setVarValue(identifier, varValue.value);
+  return {};
 }
 
-std::any ArcscriptVisitor::visitCompound_condition_or(ArcscriptParser::Compound_condition_orContext *ctx) {
-  std::any cond_any = visitCompound_condition_and(ctx->compound_condition_and());
-  Expression compound_condition_and = std::any_cast<Expression>(cond_any);
-  if (ctx->compound_condition_or() != NULL) {
-    Expression compound_condition_or = std::any_cast<Expression>(visitCompound_condition_or(ctx->compound_condition_or()));
-    Expression result(compound_condition_and || compound_condition_or);
-    return result;
-  }
-  return compound_condition_and;
+std::any ArcscriptVisitor::visitAssignable(ArcscriptParser::AssignableContext *ctx) {
+  return visitIdentifier(ctx->identifier());
 }
 
-std::any ArcscriptVisitor::visitCompound_condition_and(ArcscriptParser::Compound_condition_andContext *ctx) {
-  std::any cond_any = visitNegated_unary_condition(ctx->negated_unary_condition());
-  Expression negated_unary_condition = std::any_cast<Expression>(cond_any);
-  if (ctx->compound_condition_and() != NULL) {
-    Expression compound_condition_and = std::any_cast<Expression>(visitCompound_condition_and(ctx->compound_condition_and()));
-    Expression result(negated_unary_condition && compound_condition_and);
-    return result;
+std::any ArcscriptVisitor::visitComparisonExpression(ArcscriptParser::ComparisonExpressionContext *ctx) {
+  auto left = std::any_cast<Expression>(visit(ctx->expression(0)));
+  if (ctx->AND() != nullptr || ctx->ANDKEYWORD() != nullptr) {
+    if (!left.isTruthy()) {
+      return Expression(false);
+    }
+    auto right = std::any_cast<Expression>(visit(ctx->expression(1)));
+    return Expression(right.isTruthy());
   }
-  return negated_unary_condition;
+
+  if (ctx->OR() != nullptr || ctx->ORKEYWORD() != nullptr) {
+    if (left.isTruthy()) {
+      return Expression(true);
+    }
+    auto right = std::any_cast<Expression>(visit(ctx->expression(1)));
+    return right;
+  }
+
+  auto right = std::any_cast<Expression>(visit(ctx->expression(1)));
+
+  if (ctx->EQ() != nullptr || (ctx->ISKEYWORD() != nullptr && ctx->NOTKEYWORD() == nullptr)) {
+    return Expression(left == right);
+  }
+
+  if (ctx->NE() != nullptr || (ctx->ISKEYWORD() != nullptr && ctx->NOTKEYWORD() != nullptr)) {
+    return Expression(left != right);
+  }
+
+  if (ctx->LT() != nullptr) {
+    return Expression(left < right);
+  }
+
+  if (ctx->GT() != nullptr) {
+    return Expression(left > right);
+  }
+
+  if (ctx->LE() != nullptr) {
+    return Expression(left <= right);
+  }
+
+  if (ctx->GE() != nullptr) {
+    return Expression(left >= right);
+  }
+
+  throw RuntimeErrorException("Invalid comparison operator");
 }
 
-std::any ArcscriptVisitor::visitNegated_unary_condition(ArcscriptParser::Negated_unary_conditionContext *ctx) {
-  Expression unary_condition = std::any_cast<Expression>(visitUnary_condition(ctx->unary_condition()));
-  if (ctx->NEG() != NULL || ctx->NOTKEYWORD() != NULL) {
-    return Expression(!unary_condition);
+std::any ArcscriptVisitor::visitUnaryExpression(ArcscriptParser::UnaryExpressionContext *ctx) {
+  if (ctx->NOTKEYWORD() != nullptr || ctx->NEG() != nullptr) {
+    auto operand = std::any_cast<Expression>(visit(ctx->expression()));
+    return Expression(!operand);
   }
-  return unary_condition;
+  if (ctx->ADD() != nullptr) {
+    return visit(ctx->expression());
+  }
+  if (ctx->SUB() != nullptr) {
+    auto operand = std::any_cast<Expression>(visit(ctx->expression()));
+    return -operand;
+  }
+  throw RuntimeErrorException("Invalid unary operator");
 }
 
-std::any ArcscriptVisitor::visitCondition(ArcscriptParser::ConditionContext *ctx) {
-  if (ctx->expression().size() == 1) {
-    return visitExpression(ctx->expression()[0]);
-
-    // Expression expr = std::any_cast<Expression>(exprAny);
-    // if (expr.type() == typeid(double)) {
-    //   return expr > 0.0;
-    // }
-    // else if (expr.type() == typeid(int)) {
-    //   return expr > 0;
-    // }
-    // else if (expr.type() == typeid(std::string)) {
-    //   return expr != "";
-    // }
-    // return std::any_cast<bool>(expr.value);
+std::any ArcscriptVisitor::visitMultiplicativeExpression(ArcscriptParser::MultiplicativeExpressionContext *ctx) {
+  auto left = std::any_cast<Expression>(visit(ctx->expression(0)));
+  auto right = std::any_cast<Expression>(visit(ctx->expression(1)));
+  if (ctx->MUL() != nullptr) {
+    return left * right;
   }
-
-  ArcscriptParser::Conditional_operatorContext *cond_operator_ctx = ctx->conditional_operator();
-  Expression exp0 = std::any_cast<Expression>(visitExpression(ctx->expression()[0]));
-  Expression exp1 = std::any_cast<Expression>(visitExpression(ctx->expression()[1]));
-  bool result = false;
-  if (cond_operator_ctx->GT() != NULL) {
-    result = exp0 > exp1;
+  if (ctx->DIV() != nullptr) {
+    return left / right;
   }
-  else if (cond_operator_ctx->GE() != NULL) {
-    result = exp0 >= exp1;
+  if (ctx->MOD() != nullptr) {
+    return left % right;
   }
-  else if (cond_operator_ctx->LT() != NULL) {
-    result = exp0 < exp1;
-  }
-  else if (cond_operator_ctx->LE() != NULL) {
-    result = exp0 <= exp1;
-  }
-  else if (cond_operator_ctx->EQ() != NULL) {
-    result = exp0 == exp1;
-  }
-  else if (cond_operator_ctx->NE() != NULL) {
-    result = exp0 != exp1;
-  }
-  else if (cond_operator_ctx->ISKEYWORD() != NULL) {
-    if (cond_operator_ctx->NOTKEYWORD() != NULL) {
-      result = exp0 != exp1;
-    } else {
-      result = exp0 == exp1;
-    }
-  }
-  return Expression(result);
+  throw RuntimeErrorException("Invalid multiplicative operator");
 }
 
-std::any ArcscriptVisitor::visitExpression(ArcscriptParser::ExpressionContext *ctx) {
-  if (ctx->STRING() != NULL) {
-    std::string result = ctx->STRING()->getText();
-    result = result.substr(1, result.size() - 2);
-    return Expression(result);
+std::any ArcscriptVisitor::visitAdditiveExpression(ArcscriptParser::AdditiveExpressionContext *ctx) {
+  auto left = std::any_cast<Expression>(visit(ctx->expression(0)));
+  auto right = std::any_cast<Expression>(visit(ctx->expression(1)));
+  if (ctx->ADD() != nullptr) {
+    return left + right;
   }
-  if (ctx->BOOLEAN() != NULL) {
-    return Expression(ctx->BOOLEAN()->getText() == "true");
+  if (ctx->SUB() != nullptr) {
+    return left - right;
   }
-
-  return visitAdditive_numeric_expression(ctx->additive_numeric_expression());
+  throw RuntimeErrorException("Invalid additive operator");
 }
 
-std::any ArcscriptVisitor::visitAdditive_numeric_expression(ArcscriptParser::Additive_numeric_expressionContext *ctx) {
-  if (ctx->additive_numeric_expression() != NULL) {
-    Expression result = std::any_cast<Expression>(visitAdditive_numeric_expression(ctx->additive_numeric_expression()));
-    Expression mult_num_expr = std::any_cast<Expression>(visitMultiplicative_numeric_expression(ctx->multiplicative_numeric_expression()));
-
-    if (ctx->ADD() != NULL) {
-      mult_num_expr = result + mult_num_expr;
-    }
-    else if (ctx->SUB() != NULL) {
-      mult_num_expr = result - mult_num_expr;
-    }
-    return mult_num_expr;
-  }
-  return std::any_cast<Expression>(visitMultiplicative_numeric_expression(ctx->multiplicative_numeric_expression()));
+std::any ArcscriptVisitor::visitParenthesizedExpression(ArcscriptParser::ParenthesizedExpressionContext *ctx) {
+  return visit(ctx->expression());
 }
 
-std::any ArcscriptVisitor::visitMultiplicative_numeric_expression(ArcscriptParser::Multiplicative_numeric_expressionContext *ctx) {
-  if (ctx->multiplicative_numeric_expression() != NULL) {
-    Expression result = std::any_cast<Expression>(visitMultiplicative_numeric_expression(ctx->multiplicative_numeric_expression()));
-    Expression signed_unary_num_expr = std::any_cast<Expression>(visitSigned_unary_numeric_expression(ctx->signed_unary_numeric_expression()));
-
-    if (ctx->MUL() != NULL) {
-      signed_unary_num_expr = result * signed_unary_num_expr;
-    }
-    else if (ctx->DIV() != NULL) {
-      signed_unary_num_expr = result / signed_unary_num_expr;
-    } else if (ctx->MOD() != NULL) {
-      signed_unary_num_expr = result % signed_unary_num_expr;
-    }
-    return signed_unary_num_expr;
-  }
-
-  return std::any_cast<Expression>(visitSigned_unary_numeric_expression(ctx->signed_unary_numeric_expression()));
-}
-
-std::any ArcscriptVisitor::visitSigned_unary_numeric_expression(ArcscriptParser::Signed_unary_numeric_expressionContext *ctx) {
-  std::any expr_any = visitUnary_numeric_expression(ctx->unary_numeric_expression());
-  Expression unary_num_expr = std::any_cast<Expression>(expr_any);
-  ArcscriptParser::SignContext *sign = ctx->sign();
-
-  if (sign != NULL) {
-    if (sign->ADD() != NULL) {
-      return unary_num_expr;
-    }
-    // Else MINUS
-    unary_num_expr = unary_num_expr * (-1);
-  }
-  return unary_num_expr;
-}
-
-std::any ArcscriptVisitor::visitUnary_numeric_expression(ArcscriptParser::Unary_numeric_expressionContext *ctx) {
-  if (ctx->FLOAT() != NULL) {
-    Expression result(std::stod(ctx->FLOAT()->getText()));
-    return result;
-  }
-  if (ctx->INTEGER() != NULL) {
-    Expression result(std::stoi(ctx->INTEGER()->getText()));
-    return result;
-  }
-  if (ctx->STRING() != NULL) {
-    std::string result = ctx->STRING()->getText();
-    result = result.substr(1, result.size() - 2);
-    return Expression(result);
-  }
-  if (ctx->BOOLEAN() != NULL) {
-    return Expression(ctx->BOOLEAN()->getText() == "true");
-  }
-  if (ctx->VARIABLE() != NULL) {
-    std::string variableName = ctx->VARIABLE()->getText();
-    std::any varValue = state->getVarValue(variableName);
-    if (varValue.type() == typeid(std::string)) {
-      Expression result(std::any_cast<std::string>(varValue));
-      return result;
-    }
-    if (varValue.type() == typeid(bool)) {
-      Expression result(std::any_cast<bool>(varValue));
-      return result;
-    }
-    if (varValue.type() == typeid(int)) {
-      Expression result(std::any_cast<int>(varValue));
-      return result;
-    }
-    if (varValue.type() == typeid(double)) {
-      Expression result(std::any_cast<double>(varValue));
-      return result;
-    }
-  }
-  if (ctx->function_call() != NULL) {
-    std::any resultValue = visitFunction_call(ctx->function_call());
-    if (resultValue.type() == typeid(std::string)) {
-      Expression result(std::any_cast<std::string>(resultValue));
-      return result;
-    }
-    if (resultValue.type() == typeid(bool)) {
-      Expression result(std::any_cast<bool>(resultValue));
-      return result;
-    }
-    if (resultValue.type() == typeid(int)) {
-      Expression result(std::any_cast<int>(resultValue));
-      return result;
-    }
-    if (resultValue.type() == typeid(double)) {
-      Expression result(std::any_cast<double>(resultValue));
-      return result;
-    }
-    throw Arcweave::RuntimeErrorException("Unknown result type from function call: " + ctx->function_call()->getText() + "\nType: " + resultValue.type().name());
-  }
-  return visitCompound_condition_or(ctx->compound_condition_or());
-}
-
-std::any ArcscriptVisitor::visitVoid_function_call(ArcscriptParser::Void_function_callContext *ctx) {
-  std::string fname = "";
-  std::any result;
-  if (ctx->VFNAME() != NULL) {
-    fname = ctx->VFNAME()->getText();
-    std::vector<std::any> argument_list_result;
-    if (ctx->argument_list() != NULL) {
-      argument_list_result = std::any_cast<std::vector<std::any>>(visitArgument_list(ctx->argument_list()));
-    }
-    result = functions->Call(fname, argument_list_result);
-  }
-
-  if (ctx->VFNAMEVARS() != NULL) {
-    fname = ctx->VFNAMEVARS()->getText();
-    std::vector<std::any> variable_list_result;
-
-    if (ctx->variable_list() != NULL) {
-      variable_list_result = std::any_cast<std::vector<std::any>>(visitVariable_list(ctx->variable_list()));
-    }
-    result = functions->Call(fname, variable_list_result);
-  }
-  // std::any result = std::invoke(functions->functions[fname], functions, argument_list_result);
-  
+std::any ArcscriptVisitor::visitIdentifierExpression(ArcscriptParser::IdentifierExpressionContext *ctx) {
+  auto idDef = std::any_cast<IdentifierDef>(visitIdentifier(ctx->identifier()));
+  auto result = Expression();
+  result.setValue(state->getVarValue(idDef));
   return result;
+}
+
+std::any ArcscriptVisitor::visitLiteralExpression(ArcscriptParser::LiteralExpressionContext *ctx) {
+  return visitLiteral(ctx->literal());
+}
+
+std::any ArcscriptVisitor::visitFunctionCallExpression(ArcscriptParser::FunctionCallExpressionContext *ctx) {
+  auto result = visitFunction_call(ctx->function_call());
+  Expression e;
+  e.setValue(result);
+  return e;
+}
+
+std::any ArcscriptVisitor::visitLiteral(ArcscriptParser::LiteralContext *ctx) {
+  if (ctx->STRING() != nullptr) {
+    std::string result = ctx->STRING()->getText();
+    result = result.substr(1, result.size() - 2);
+    return Expression(result);
+  }
+  if (ctx->BOOLEAN() != nullptr) {
+    return Expression(ctx->BOOLEAN()->getText() == "true");
+  }
+  return visitNumeric_literal(ctx->numeric_literal());
+}
+
+std::any ArcscriptVisitor::visitNumeric_literal(ArcscriptParser::Numeric_literalContext *ctx) {
+  if (ctx->FLOAT() != nullptr) {
+    return Expression(std::stod(ctx->FLOAT()->getText()));
+  }
+  return Expression(std::stoi(ctx->INTEGER()->getText()));;
 }
 
 std::any ArcscriptVisitor::visitFunction_call(ArcscriptParser::Function_callContext *ctx) {
   std::vector<std::any> argument_list_result;
-  if (ctx->argument_list() != NULL) {
-    argument_list_result = std::any_cast<std::vector<std::any>>(visitArgument_list(ctx->argument_list()));
-  }
   std::string fname = ctx->FNAME()->getText();
 
-  // std::any result = std::invoke(functions->functions[fname], functions, argument_list_result);
+  if (ctx->argument_list() != nullptr) {
+    argument_list_result = std::any_cast<std::vector<std::any>>(visitArgument_list(ctx->argument_list()));
+  }
+
+  if (ctx->identifier_list() != nullptr) {
+    auto identifierList = std::any_cast<std::vector<IdentifierDef>>(visitIdentifier_list(ctx->identifier_list()));
+    if (ArcscriptFunctions::functions[fname].argsType == "variable") {
+      for (size_t i = 0; i < identifierList.size(); i++) {
+        argument_list_result.push_back(state->getVar(identifierList[i]));
+      }
+    } else {
+      for (size_t i = 0; i < identifierList.size(); i++) {
+        auto e = Expression();
+        e.setValue(state->getVarValue(identifierList[i]));
+        argument_list_result.push_back(e);
+      }
+    }
+  }
+
   std::any result = functions->Call(fname, argument_list_result);
   return result;
-}
-
-std::any ArcscriptVisitor::visitVariable_list(ArcscriptParser::Variable_listContext *ctx) {
-  std::vector<std::any> variables;
-  for (antlr4::tree::TerminalNode *variable : ctx->VARIABLE()) {
-    variables.push_back(state->getVar(variable->getText()));
-  }
-  return variables;
 }
 
 std::any ArcscriptVisitor::visitArgument_list(ArcscriptParser::Argument_listContext *ctx) {
@@ -419,27 +336,48 @@ std::any ArcscriptVisitor::visitArgument_list(ArcscriptParser::Argument_listCont
 }
 
 std::any ArcscriptVisitor::visitArgument(ArcscriptParser::ArgumentContext *ctx) {
-  if (ctx->STRING() != NULL) {
-    std::string result = ctx->STRING()->getText();
-    result = result.substr(1, result.size() - 2);
-    return Expression(result);
+  if (ctx->expression() != nullptr) {
+    return visit(ctx->expression());
   }
-  if (ctx->mention() != NULL) {
-    Mention mention_result = std::any_cast<Mention>(visitMention(ctx->mention()));
+  if (ctx->mention() != nullptr) {
+    auto mention_result = std::any_cast<Mention>(visitMention(ctx->mention()));
     return mention_result;
   }
 
-  return visitAdditive_numeric_expression(ctx->additive_numeric_expression());
+  throw RuntimeErrorException("Invalid function argument");
+}
+
+std::any ArcscriptVisitor::visitIdentifier_list(ArcscriptParser::Identifier_listContext *ctx) {
+  std::vector<IdentifierDef> identifiers;
+  for (auto *id : ctx->identifier()) {
+    identifiers.push_back(std::any_cast<IdentifierDef>(visitIdentifier(id)));
+  }
+  return identifiers;
+}
+
+std::any ArcscriptVisitor::visitIdentifier(ArcscriptParser::IdentifierContext *ctx) {
+  std::string name;
+  std::string scope;
+  if (ctx->IDENTIFIER().size() == 1) {
+    name = ctx->IDENTIFIER(0)->getText();
+  } else {
+    scope = ctx->IDENTIFIER(0)->getText();
+    name = ctx->IDENTIFIER(1)->getText();
+  }
+  IdentifierDef def;
+  def.name = name;
+  def.scope = scope;
+  return def;
 }
 
 std::any ArcscriptVisitor::visitMention(ArcscriptParser::MentionContext *ctx) {
   std::map<std::string, std::string> attrs;
   for (ArcscriptParser::Mention_attributesContext *attr : ctx->mention_attributes()) {
-    std::map<std::string, std::string> res = std::any_cast<std::map<std::string, std::string>>(visitMention_attributes(attr));
+    auto res = std::any_cast<std::map<std::string, std::string>>(visitMention_attributes(attr));
     attrs[res["name"]] = res["value"];
   }
-  std::string label = "";
-  if (ctx->MENTION_LABEL() != NULL) {
+  std::string label;
+  if (ctx->MENTION_LABEL() != nullptr) {
     label = ctx->MENTION_LABEL()->getText();
   }
   Mention mention(label, attrs);
@@ -457,10 +395,10 @@ std::any ArcscriptVisitor::visitMention_attributes(ArcscriptParser::Mention_attr
   antlr4::tree::TerminalNode *valueNode = ctx->ATTR_VALUE();
   std::string value(name);
   
-  if (valueNode != NULL) {
+  if (valueNode != nullptr) {
     std::string strvalue = valueNode->getText();
-    if ((strvalue.rfind("\"", 0) == 0 && ends_with(strvalue, "\"")) ||
-         (strvalue.rfind("'", 0) == 0 && ends_with(strvalue, "'"))) {
+    if ((strvalue.rfind('\"', 0) == 0 && ends_with(strvalue, "\"")) ||
+         (strvalue.rfind('\'', 0) == 0 && ends_with(strvalue, "'"))) {
       
       strvalue = strvalue.substr(1, strvalue.size() - 2);
       

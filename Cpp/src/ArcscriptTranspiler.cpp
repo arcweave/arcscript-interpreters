@@ -75,6 +75,10 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         var.id = std::string(variables[i].id);
         var.name = std::string(variables[i].name);
         var.type = variables[i].type;
+
+        if (variables[i].scope != nullptr) {
+            var.scope = std::string(variables[i].scope);
+        }
         
         if (var.type == VariableType::AW_STRING) {
             var.value = std::string(variables[i].string_val);
@@ -104,7 +108,11 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
     uTranspilerOutput->type = transpilerOutput.type;
     
     if (transpilerOutput.type == InputType::CONDITION) {
-        uTranspilerOutput->conditionResult = std::any_cast<bool>(transpilerOutput.result);
+        if (!transpilerOutput.result.has_value()) {
+            uTranspilerOutput->conditionResult = false;
+        } else {
+            uTranspilerOutput->conditionResult = std::any_cast<bool>(transpilerOutput.result);
+        }
     }
 
     size_t changesLen = transpilerOutput.changes.size();

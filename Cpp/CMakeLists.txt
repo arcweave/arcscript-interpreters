@@ -123,7 +123,11 @@ if (WITH_TEST)
     add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
 
     include(FetchContent)
-    FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
+    FetchContent_Declare(
+            json
+            URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+            DOWNLOAD_EXTRACT_TIMESTAMP 1
+    )
     FetchContent_MakeAvailable(json)
 
     target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
