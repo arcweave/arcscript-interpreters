@@ -2,6 +2,7 @@
 
 #include "ArcscriptHelpers.h"
 #include <iostream>
+#include <typeindex>
 
 namespace Arcweave {
 class ArcscriptFunctions {
@@ -12,6 +13,7 @@ public:
   struct FunctionInfo {
     int minArgs;
     int maxArgs;
+    std::string argsType;
   };
 
   static std::map<std::string, FunctionInfo> functions;

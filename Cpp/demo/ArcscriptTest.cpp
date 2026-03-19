@@ -28,6 +28,9 @@ UVariable* getInitialVars(json initialVarsJson) {
 
         initVars[i].id = strdup(id.c_str());
         initVars[i].name = strdup(name.c_str());
+        if (it.value().contains("scope")) {
+            initVars[i].scope = strdup(it.value()["scope"].get<std::string>().c_str());
+        }
         initVars[i].type = VariableType::AW_ANY;
         if (type == "string") {
             initVars[i].type = VariableType::AW_STRING;
@@ -335,6 +338,7 @@ int main(int argc, char* argv[])
     // Create an array of the test path files
     std::vector<std::filesystem::path> testPaths = {
         "./tests/valid.json",
+        "./tests/member.json",
         "./tests/conditions.json",
         "./tests/stringConcat.json",
         "./tests/runtimeErrors.json",
