@@ -7,13 +7,12 @@
 
 using namespace antlr4;
 
-bool ArcscriptParserBase::assertVariable(antlr4::Token *variable) {
-  std::string variableName = variable->getText();
+bool ArcscriptParserBase::assertVariable(antlr4::ParserRuleContext *identifierContext) const {
+  std::string variableName = identifierContext->getText();
   if (_state->varNameToID.count(variableName) > 0) {
     return true;
   }
   throw Arcweave::ParseErrorException("Unknown variable \"" + variableName + "\"");
-  return false;
 }
 
 inline bool ends_with(std::string const & value, std::string const & ending)
@@ -57,11 +56,9 @@ bool ArcscriptParserBase::assertMention(std::any attrCtxList) {
   }
   if (!classFound) {
     throw Arcweave::ParseErrorException("Invalid mention type");
-    return false;
   }
   if (attrs["data-type"] != "element") {
     throw Arcweave::ParseErrorException("Invalid mention type");
-    return false;
   }
   if (_state->visits.count(attrs["data-id"]) == 0) {
     throw Arcweave::ParseErrorException("Invalid element mention");
@@ -70,27 +67,31 @@ bool ArcscriptParserBase::assertMention(std::any attrCtxList) {
   return true;
 }
 
-bool ArcscriptParserBase::assertFunctionArguments(Token *fname, std::any argumentList) {
+bool ArcscriptParserBase::assertFunctionArguments(Token *fname, std::any listContext) {
   int argListLength = 0;
   std::string functionName = fname->getText();
   int min = Arcweave::ArcscriptFunctions::functions[functionName].minArgs;
   int max = Arcweave::ArcscriptFunctions::functions[functionName].maxArgs;
-  if (argumentList.type() == typeid(Arcweave::ArcscriptParser::Argument_listContext*)) {
-    Arcweave::ArcscriptParser::Argument_listContext *argumentListCtx = std::any_cast<Arcweave::ArcscriptParser::Argument_listContext*>(argumentList);
+  std::string argsType = Arcweave::ArcscriptFunctions::functions[functionName].argsType;
+  if (listContext.type() == typeid(Arcweave::ArcscriptParser::Argument_listContext*)) {
+    auto *argumentListCtx = std::any_cast<Arcweave::ArcscriptParser::Argument_listContext*>(listContext);
     if (argumentListCtx != NULL) {
       argListLength = static_cast<int>(argumentListCtx->argument().size());
     }
   }
-  if (argumentList.type() == typeid(Arcweave::ArcscriptParser::Variable_listContext*)) {
-    Arcweave::ArcscriptParser::Variable_listContext *variableListCtx = std::any_cast<Arcweave::ArcscriptParser::Variable_listContext*>(argumentList);
+  if (listContext.type() == typeid(Arcweave::ArcscriptParser::Identifier_listContext*)) {
+    auto *variableListCtx = std::any_cast<Arcweave::ArcscriptParser::Identifier_listContext*>(listContext);
     if (variableListCtx != NULL) {
-      argListLength = static_cast<int>(variableListCtx->VARIABLE().size());
+      argListLength = static_cast<int>(variableListCtx->identifier().size());
     }
+  }
+
+  if (argsType == "variable" && listContext.type() == typeid(Arcweave::ArcscriptParser::Argument_listContext*)) {
+    throw Arcweave::ParseErrorException("Invalid arguments type");
   }
 
   if ((min != -1 && argListLength < min) || (max != -1 && argListLength > max)) {
     throw Arcweave::ParseErrorException("Wrong number of arguments in \""+ functionName + "\".");
-    return false;
   }
   
   return true;
