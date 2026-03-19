@@ -19,7 +19,6 @@ import {
   Else_if_clauseContext,
   Else_if_sectionContext,
   Else_sectionContext,
-  ExpressionContext,
   Function_call_segmentContext,
   Function_callContext,
   FunctionCallExpressionContext,
@@ -67,7 +66,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitCondition = (ctx: ConditionContext) => {
     return {
-      condition: !!this.visitExpression(ctx.expression()),
+      condition: !!this.visit(ctx.expression()),
     };
   };
 
@@ -178,18 +177,18 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitIf_clause = (ctx: If_clauseContext): boolean => {
-    return this.visitExpression(ctx.expression()) as boolean;
+    return this.visit(ctx.expression()) as boolean;
   };
 
   visitElse_if_clause = (ctx: Else_if_clauseContext): boolean => {
-    return this.visitExpression(ctx.expression()) as boolean;
+    return this.visit(ctx.expression()) as boolean;
   };
 
   visitStatement_assignment = (ctx: Statement_assignmentContext) => {
     const assignable = this.visitAssignable(ctx.assignable());
 
     let variableValue = assignable.getValue();
-    let expressionValue = this.visitExpression(ctx.expression());
+    let expressionValue = this.visit(ctx.expression());
     if (expressionValue === undefined) {
       throw new RuntimeError('The right part of the assigment has no value');
     }
@@ -254,53 +253,23 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitIdentifier(ctx.identifier());
   };
 
-  visitExpression(ctx: ExpressionContext): VarValue {
-    if (ctx.constructor === ComparisonExpressionContext) {
-      return this.visitComparisonExpression(ctx);
-    }
-    if (ctx.constructor === UnaryExpressionContext) {
-      return this.visitUnaryExpression(ctx);
-    }
-    if (ctx.constructor === MultiplicativeExpressionContext) {
-      return this.visitMultiplicativeExpression(ctx);
-    }
-    if (ctx.constructor === AdditiveExpressionContext) {
-      return this.visitAdditiveExpression(ctx);
-    }
-    if (ctx.constructor === ParenthesizedExpressionContext) {
-      return this.visitParenthesizedExpression(ctx);
-    }
-    if (ctx.constructor === FunctionCallExpressionContext) {
-      return this.visitFunctionCallExpression(ctx);
-    }
-    if (ctx.constructor === LiteralExpressionContext) {
-      return this.visitLiteralExpression(ctx);
-    }
-    if (ctx.constructor === IdentifierExpressionContext) {
-      return this.visitIdentifierExpression(ctx);
-    }
-    throw new RuntimeError(
-      'Invalid expression: Constructor = ' + ctx.constructor.name
-    );
-  }
-
   visitComparisonExpression = (ctx: ComparisonExpressionContext): boolean => {
-    const left = this.visitExpression(ctx.expression(0));
+    const left = this.visit(ctx.expression(0));
     if (ctx.AND() || ctx.ANDKEYWORD()) {
       if (!left) {
         return false;
       }
-      const right = this.visitExpression(ctx.expression(1));
+      const right = this.visit(ctx.expression(1));
       return Boolean(left) && Boolean(right);
     }
     if (ctx.OR() || ctx.ORKEYWORD()) {
       if (left) {
         return true;
       }
-      const right = this.visitExpression(ctx.expression(1));
+      const right = this.visit(ctx.expression(1));
       return Boolean(left) || Boolean(right);
     }
-    const right = this.visitExpression(ctx.expression(1));
+    const right = this.visit(ctx.expression(1));
 
     if (ctx.EQ() || (ctx.ISKEYWORD() && !ctx.NOTKEYWORD())) {
       return left === right;
@@ -325,20 +294,20 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitUnaryExpression = (ctx: UnaryExpressionContext) => {
     if (ctx.NOTKEYWORD() || ctx.NEG()) {
-      return !this.visitExpression(ctx.expression());
+      return !this.visit(ctx.expression());
     }
     if (ctx.ADD()) {
-      return this.visitExpression(ctx.expression());
+      return this.visit(ctx.expression());
     }
     if (ctx.SUB()) {
-      return -this.visitExpression(ctx.expression());
+      return -this.visit(ctx.expression());
     }
     throw new RuntimeError('Invalid unary operator');
   };
 
   visitMultiplicativeExpression = (ctx: MultiplicativeExpressionContext) => {
-    const left = this.visitExpression(ctx.expression(0));
-    const right = this.visitExpression(ctx.expression(1));
+    const left = this.visit(ctx.expression(0));
+    const right = this.visit(ctx.expression(1));
     if (typeof left === 'string' || typeof right === 'string') {
       throw new RuntimeError('Invalid operation with string');
     }
@@ -364,8 +333,8 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitAdditiveExpression = (ctx: AdditiveExpressionContext) => {
-    let left = this.visitExpression(ctx.expression(0));
-    let right = this.visitExpression(ctx.expression(1));
+    let left = this.visit(ctx.expression(0));
+    let right = this.visit(ctx.expression(1));
     if (typeof left === 'string' || typeof right === 'string') {
       if (ctx.ADD()) {
         return (left as string) + (right as string);
@@ -388,7 +357,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitParenthesizedExpression = (ctx: ParenthesizedExpressionContext) => {
-    return this.visitExpression(ctx.expression());
+    return this.visit(ctx.expression());
   };
 
   visitIdentifierExpression = (ctx: IdentifierExpressionContext) => {
@@ -487,7 +456,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitArgument = (ctx: ArgumentContext): VarValue | MentionResult => {
     if (ctx.expression()) {
-      return this.visitExpression(ctx.expression());
+      return this.visit(ctx.expression());
     }
     if (ctx.mention()) {
       return this.visitMention(ctx.mention());
