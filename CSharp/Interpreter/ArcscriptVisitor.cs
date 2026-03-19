@@ -195,22 +195,6 @@ namespace Arcweave.Interpreter
             return this.VisitIdentifier(context.identifier());
         }
 
-        public override object VisitIdentifier(ArcscriptParser.IdentifierContext context)
-        {
-            string name = "";
-            string? scope = null;
-            if (context.IDENTIFIER().Length == 1)
-            {
-                name = context.IDENTIFIER(0).GetText();
-            }
-            else
-            {
-                scope = context.IDENTIFIER(0).GetText();
-                name = context.IDENTIFIER(1).GetText();
-            }
-            return new IdentifierDef(name, scope);
-        }
-
         public override object VisitComparisonExpression(ArcscriptParser.ComparisonExpressionContext context)
         {
             var left = (Expression)Visit(context.expression(0))!;
@@ -432,6 +416,22 @@ namespace Arcweave.Interpreter
         public override object VisitIdentifier_list(ArcscriptParser.Identifier_listContext context)
         {
             return context.identifier().Select(this.VisitIdentifier).ToList();
+        }
+        
+        public override object VisitIdentifier(ArcscriptParser.IdentifierContext context)
+        {
+            string name = "";
+            string? scope = null;
+            if (context.IDENTIFIER().Length == 1)
+            {
+                name = context.IDENTIFIER(0).GetText();
+            }
+            else
+            {
+                scope = context.IDENTIFIER(0).GetText();
+                name = context.IDENTIFIER(1).GetText();
+            }
+            return new IdentifierDef(name, scope);
         }
 
         public override object VisitMention([NotNull] ArcscriptParser.MentionContext context) {
