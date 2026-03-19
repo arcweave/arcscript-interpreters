@@ -43,7 +43,7 @@ namespace Arcweave.Interpreter
 
         public override object VisitCondition(ArcscriptParser.ConditionContext context)
         {
-            return this.VisitExpression(context.expression());
+            return Visit(context.expression())!;
         }
 
         public override object VisitScript_section([NotNull] ArcscriptParser.Script_sectionContext context) {
@@ -154,11 +154,11 @@ namespace Arcweave.Interpreter
         }
 
         public override object VisitIf_clause([NotNull] ArcscriptParser.If_clauseContext context) {
-            return this.VisitExpression(context.expression());
+            return Visit(context.expression())!;
         }
 
         public override object VisitElse_if_clause([NotNull] ArcscriptParser.Else_if_clauseContext context) {
-            return this.VisitExpression(context.expression());
+            return Visit(context.expression())!;
         }
 
         public override object VisitStatement_assignment([NotNull] ArcscriptParser.Statement_assignmentContext context)
@@ -167,7 +167,7 @@ namespace Arcweave.Interpreter
 
             var identifierValue = new Expression(this.state.GetVarValue(identifier.Name, identifier.Scope));
 
-            var re = (Expression)this.VisitExpression(context.expression());
+            var re = (Expression)Visit(context.expression())!;
             
             if ( context.ASSIGN() != null ) {
                 this.state.SetVarValue(identifier, re.Value);
@@ -211,62 +211,16 @@ namespace Arcweave.Interpreter
             return new IdentifierDef(name, scope);
         }
 
-        public object VisitExpression([NotNull] ArcscriptParser.ExpressionContext context)
-        {
-            var contextType = context.GetType();
-            if (contextType == typeof(ArcscriptParser.ComparisonExpressionContext))
-            {
-                return (Expression)VisitComparisonExpression((ArcscriptParser.ComparisonExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.UnaryExpressionContext))
-            {
-                return (Expression)VisitUnaryExpression((ArcscriptParser.UnaryExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.MultiplicativeExpressionContext))
-            {
-                return (Expression)VisitMultiplicativeExpression((ArcscriptParser.MultiplicativeExpressionContext)context);
-            }
-            
-            if (contextType == typeof(ArcscriptParser.AdditiveExpressionContext))
-            {
-                return (Expression)VisitAdditiveExpression((ArcscriptParser.AdditiveExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.ParenthesizedExpressionContext))
-            {
-                return (Expression)VisitParenthesizedExpression((ArcscriptParser.ParenthesizedExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.FunctionCallExpressionContext))
-            {
-                return (Expression)VisitFunctionCallExpression((ArcscriptParser.FunctionCallExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.LiteralExpressionContext))
-            {
-                return (Expression)VisitLiteralExpression((ArcscriptParser.LiteralExpressionContext)context);
-            }
-
-            if (contextType == typeof(ArcscriptParser.IdentifierExpressionContext))
-            {
-                return (Expression)VisitIdentifierExpression((ArcscriptParser.IdentifierExpressionContext)context);
-            }
-            
-            throw new Exception("Unknown expression type: " + contextType.Name);
-        }
-
         public override object VisitComparisonExpression(ArcscriptParser.ComparisonExpressionContext context)
         {
-            var left =(Expression)VisitExpression(context.expression(0));
+            var left = (Expression)Visit(context.expression(0))!;
             if (context.AND() != null || context.ANDKEYWORD() != null)
             {
                 if (!Expression.GetBoolValue(left.Value))
                 {
                     return new Expression(false);
                 }
-                var rightComp = (Expression)VisitExpression(context.expression(1));
+                var rightComp = (Expression)Visit(context.expression(1))!;
                 return new Expression(Expression.GetBoolValue(rightComp.Value));
             }
 
@@ -276,11 +230,11 @@ namespace Arcweave.Interpreter
                 {
                     return left;
                 }
-                var rightComp = (Expression)VisitExpression(context.expression(1));
+                var rightComp = (Expression)Visit(context.expression(1))!;
                 return rightComp;
             }
             
-            var right = (Expression)this.VisitExpression(context.expression(1));
+            var right = (Expression)Visit(context.expression(1))!;
             
             if (context.EQ() != null || (context.ISKEYWORD() != null && context.NOTKEYWORD() == null))
             {
@@ -319,25 +273,25 @@ namespace Arcweave.Interpreter
         {
             if (context.NOTKEYWORD() != null || context.NEG() != null)
             {
-                return !(Expression)this.VisitExpression(context.expression());
+                return !(Expression)Visit(context.expression())!;
             }
 
             if (context.ADD() != null)
             {
-                return this.VisitExpression(context.expression());
+                return Visit(context.expression())!;
             }
 
             if (context.SUB() != null)
             {
-                return -(Expression)this.VisitExpression(context.expression());
+                return -(Expression)Visit(context.expression())!;
             }
             throw new Exception("Unknown unary operator");
         }
 
         public override object VisitMultiplicativeExpression(ArcscriptParser.MultiplicativeExpressionContext context)
         {
-            var left = (Expression)this.VisitExpression(context.expression(0));
-            var right = (Expression)this.VisitExpression(context.expression(1));
+            var left = (Expression)Visit(context.expression(0))!;
+            var right = (Expression)Visit(context.expression(1))!;
             if (context.MUL() != null)
             {
                 return left * right;
@@ -357,8 +311,8 @@ namespace Arcweave.Interpreter
 
         public override object VisitAdditiveExpression(ArcscriptParser.AdditiveExpressionContext context)
         {
-            var left = (Expression)this.VisitExpression(context.expression(0));
-            var right = (Expression)this.VisitExpression(context.expression(1));
+            var left = (Expression)Visit(context.expression(0))!;
+            var right = (Expression)Visit(context.expression(1))!;
             if (context.ADD() != null)
             {
                 return left + right;
@@ -373,7 +327,7 @@ namespace Arcweave.Interpreter
 
         public override object VisitParenthesizedExpression(ArcscriptParser.ParenthesizedExpressionContext context)
         {
-            return VisitExpression(context.expression());
+            return Visit(context.expression())!;
         }
 
         public override object VisitIdentifierExpression(ArcscriptParser.IdentifierExpressionContext context)
@@ -466,7 +420,7 @@ namespace Arcweave.Interpreter
         public override object VisitArgument([NotNull] ArcscriptParser.ArgumentContext context) {
             if (context.expression() != null)
             {
-                return VisitExpression(context.expression());
+                return Visit(context.expression())!;
             }
             if ( context.mention() != null ) {
                 Mention mention_result = (Mention)this.VisitMention(context.mention());
