@@ -372,7 +372,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   visitExpression = (ctx: ExpressionContext): VarValue => {
     if (ctx.STRING()) {
       let result = ctx.STRING().getText();
-      result = result.replace(/^"(.*)"$/, '$1');
+      result = result.replace(/^['"](.*)['"]$/, '$1');
       return result;
     }
     if (ctx.BOOLEAN()) {
@@ -530,7 +530,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     }
     if (ctx.STRING()) {
       let result = ctx.STRING().getText();
-      result = result.replace(/^"(.*)"$/, '$1');
+      result = result.replace(/^['"](.*)['"]$/, '$1');
       return result;
     }
     if (ctx.BOOLEAN()) {
@@ -562,7 +562,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   visitArgument = (ctx: ArgumentContext): VarValue | MentionResult => {
     if (ctx.STRING()) {
       let result = ctx.STRING().getText();
-      result = result.replace(/^"(.*)"$/, '$1');
+      result = result.replace(/^['"](.*)['"]$/, '$1');
       return result;
     }
     if (ctx.mention()) {

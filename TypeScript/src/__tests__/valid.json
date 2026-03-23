@@ -364,6 +364,18 @@
 			}
 		},
 		{
+			"code": "<pre><code>$c5 = \"hello\"</code></pre>",
+			"changes": {
+				"var5": "hello"
+			}
+		},
+		{
+			"code": "<pre><code>$c5 = 'hello'</code></pre>",
+			"changes": {
+				"var5": "hello"
+			}
+		},
+		{
 			"code": "<pre><code>if (x==14) </code></pre><pre><code>x=5</code></pre><pre><code>endif</code></pre>",
 			"changes": {
 				"var1": 5
