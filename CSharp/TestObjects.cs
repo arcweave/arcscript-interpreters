@@ -8,7 +8,9 @@ public struct TestVariable
     public string id;
     public string name;
     public string type;
-    public object value;
+    public object defaultValue;
+    public string cType;
+    public string scope;
 }
 
 public struct EventData
@@ -26,6 +28,7 @@ public struct TestCase
     public object result;
     public string? error;
     public Dictionary<string, int>? visits;
+    public Dictionary<string, Dictionary<string, object>>? values;
     public List<EventData>? events;
 }
 

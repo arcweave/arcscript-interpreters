@@ -15,9 +15,18 @@ public partial class Project
     }
     public Element ElementWithId(string id) => GetNodeWithID<Element>(id);
 
-    public Variable GetVariable(string name)
+    public Variable GetVariable(string name, string scope = null)
     {
-        return Variables.FirstOrDefault(variable => variable.Name == name);
+        if (scope == null)
+        {
+            return Variables.FirstOrDefault(variable => variable.Name == name);
+        }
+        var board = Boards.FirstOrDefault(board => board.Id == scope);
+        if (board != null)
+        {
+            return board.Variables.FirstOrDefault(variable => variable.Name == name);
+        }
+        return null;
     }
     
     public T GetNodeWithID<T>(string id) where T : INode {

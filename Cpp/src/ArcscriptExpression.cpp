@@ -80,7 +80,10 @@ bool Expression::valueToBool(std::any value) {
   if (value.type() == typeid(std::string))  {
     return (!std::any_cast<std::string>(value).empty());
   }
-  return (std::any_cast<bool>(value));
+  if (value.type() == typeid(bool)) {
+    return (std::any_cast<bool>(value));
+  }
+  return false;
 }
 
 Expression Expression::operator+ (const Expression &other) const {
@@ -243,6 +246,19 @@ Expression Expression::operator%= (const Expression &other) {
     value = modValue;
   }
   return *this;
+}
+
+Expression Expression::operator- () const {
+  if (value.type() == typeid(std::string)) {
+    throw RuntimeErrorException("Cannot negate a string");
+  }
+  if (value.type() == typeid(bool)) {
+    throw RuntimeErrorException("Cannot negate a boolean");
+  }
+  if (value.type() == typeid(int)) {
+    return Expression(-std::any_cast<int>(value));
+  }
+  return Expression(-std::any_cast<double>(value));
 }
 
 bool Expression::operator== (const Expression &other) const {

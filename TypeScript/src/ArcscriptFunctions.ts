@@ -1,6 +1,7 @@
 import { RuntimeError } from './errors/index.js';
 import ArcscriptState from './ArcscriptState.js';
 import { MentionResult, VarValue } from './types.js';
+import ArcscriptVariable from './ArcscriptVariable.js';
 
 export type FunctionName = keyof ArcscriptFunctions;
 
@@ -19,7 +20,7 @@ export type ArcscriptNonVoidFunctionKeys = Exclude<
   ArcscriptVoidFunctionKeys
 >;
 
-type ArgumentTypes = (VarValue | MentionResult)[];
+type ArgumentTypes = (VarValue | MentionResult | ArcscriptVariable)[];
 
 export default class ArcscriptFunctions {
   private state: ArcscriptState;
@@ -104,37 +105,29 @@ export default class ArcscriptFunctions {
   }
 
   reset(...args: ArgumentTypes): void {
-    const ids = args.map(name => {
-      if (typeof name !== 'string' || !this.state.getVar(name)) {
+    args.forEach(variable => {
+      if (!(variable instanceof ArcscriptVariable)) {
         throw new RuntimeError(
-          `Invalid argument ${name} in function resetAll. Expected a variable`
+          `Invalid argument ${variable} in function reset. Expected a variable`
         );
       }
-      const v = this.state.getVar(name);
-      if (!v) {
-        throw new RuntimeError(`Variable ${name} not found`);
-      }
-      return v.id;
+      variable.reset();
     });
-    this.state.resetVarValues(ids);
   }
 
   resetAll(...args: ArgumentTypes): void {
-    const except = args.map(name => {
-      if (typeof name !== 'string' || !this.state.getVar(name)) {
+    const except = args.map(variable => {
+      if (!(variable instanceof ArcscriptVariable)) {
         throw new RuntimeError(
-          `Invalid argument ${name} in function resetAll. Expected a variable`
+          `Invalid argument ${variable} in function resetAll. Expected a variable`
         );
       }
-      const v = this.state.getVar(name);
-      if (!v) {
-        throw new RuntimeError(`Variable ${name} not found`);
-      }
-      return v.id;
+      return variable.id;
     });
-    const all = Object.keys(this.state.getInitialVarValues());
-    const resetIds = all.filter(id => !except.includes(id));
-    this.state.resetVarValues(resetIds);
+    const variablesToReset = Object.values(this.state.variables).filter(
+      v => !except.includes(v.id)
+    );
+    variablesToReset.forEach(variable => variable.reset());
   }
 
   round(...args: ArgumentTypes): number {
@@ -157,7 +150,7 @@ export default class ArcscriptFunctions {
   visits(...args: ArgumentTypes): number {
     let elementId = this.state.currentElement;
     if (args.length > 0) {
-      const mention = args[0];
+      const mention = args[0] as MentionResult;
       if (
         typeof mention !== 'object' ||
         typeof mention.attrs['data-id'] !== 'string'
@@ -185,7 +178,10 @@ export default class ArcscriptFunctions {
    * @param {string} name         The function name
    * @param {VarValue}  arg          The argument to check
    */
-  private assertNumber(name: string, arg: VarValue | MentionResult) {
+  private assertNumber(
+    name: string,
+    arg: VarValue | MentionResult | ArcscriptVariable
+  ) {
     if (typeof arg !== 'number' || Number.isNaN(arg)) {
       throw new RuntimeError(
         `Invalid argument ${arg} in function ${name}. Expected number (integer or float)`
@@ -198,7 +194,10 @@ export default class ArcscriptFunctions {
    * @param {string} name         The function name
    * @param {VarValue}  arg       The argument to check
    */
-  private assertPositiveInteger(name: string, arg: VarValue | MentionResult) {
+  private assertPositiveInteger(
+    name: string,
+    arg: VarValue | MentionResult | ArcscriptVariable
+  ) {
     if (typeof arg !== 'number' || Number.isNaN(arg)) {
       throw new RuntimeError(
         `Invalid argument ${arg} in function ${name}. Expected number (integer)`

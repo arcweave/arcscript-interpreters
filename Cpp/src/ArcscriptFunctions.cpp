@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <algorithm>
+#include <typeindex>
 
 #include "ArcscriptErrorExceptions.h"
 
@@ -59,8 +60,8 @@ namespace Arcweave {
       { "max", { 2, -1 }},
       { "min", { 2, -1 }},
       { "random", { 0, 0 }},
-      { "reset", { 1, -1 }},
-      { "resetAll", { 0, -1} },
+      { "reset", { 1, -1, "variable" }},
+      { "resetAll", { 0, -1, "variable" }},
       { "roll", { 1, 2 } },
       { "round", { 1, 1} },
       { "show", { 1, -1 } },
@@ -243,6 +244,9 @@ namespace Arcweave {
     std::any ArcscriptFunctions::Reset(std::vector<std::any> args) {
         std::vector<Variable> variables;
         for (std::any arg : args) {
+            if (arg.type() != typeid(Variable)) {
+                throw RuntimeErrorException("The arguments of reset must be variables.");
+            }
             variables.push_back(std::any_cast<Variable>(arg));
         }
         _state->resetVars(variables);
@@ -252,6 +256,9 @@ namespace Arcweave {
     std::any ArcscriptFunctions::ResetAll(std::vector<std::any> args) {
         std::vector<Variable> except;
         for (std::any arg : args) {
+            if (arg.type() != typeid(Variable)) {
+                throw RuntimeErrorException("The arguments of reset must be variables.");
+            }
             except.push_back(std::any_cast<Variable>(arg));
         }
         _state->resetAllVars(except);

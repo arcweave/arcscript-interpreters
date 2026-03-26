@@ -18,6 +18,6 @@ namespace Arcweave.Interpreter.INodes
 #endif
         public Arcweave.Project.Element ElementWithId(string id);
 
-        public Arcweave.Project.Variable GetVariable(string name);
+        public Arcweave.Project.Variable GetVariable(string name, string scope = null);
     }
 }

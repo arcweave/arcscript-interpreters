@@ -63,6 +63,7 @@ public:
   Expression operator*= (const Expression &other);
   Expression operator/= (const Expression &other);
   Expression operator%= (const Expression &other);
+  Expression operator- () const;
 
   bool operator== (const Expression &other) const;
   bool operator== (double other) const;
@@ -83,6 +84,10 @@ public:
   bool operator! () const;
   bool operator&& (const Expression &other) const;
   bool operator|| (const Expression &other) const;
+
+  [[nodiscard]] bool isTruthy() const {
+    return valueToBool(value);
+  }
 };
 
 }

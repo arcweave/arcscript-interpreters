@@ -4,49 +4,49 @@
 			"id": "var1",
 			"name": "x",
 			"type": "integer",
-			"value": 14
+			"defaultValue": 14
 		},
 		"var2": {
 			"id": "var2",
 			"name": "y",
 			"type": "integer",
-			"value": 15
+			"defaultValue": 15
 		},
 		"var3": {
 			"id": "var3",
 			"name": "z",
 			"type": "integer",
-			"value": 0
+			"defaultValue": 0
 		},
 		"var4": {
 			"id": "var4",
 			"name": "w",
 			"type": "string",
-			"value": "Dummy text"
+			"defaultValue": "Dummy text"
 		},
 		"var5": {
 			"id": "var5",
 			"name": "$c5",
 			"type": "integer",
-			"value": 0
+			"defaultValue": 0
 		},
 		"var6": {
 			"id": "var6",
 			"name": "_a",
 			"type": "boolean",
-			"value": false
+			"defaultValue": false
 		},
 		"var7": {
 			"id": "var7",
 			"name": "xy",
 			"type": "integer",
-			"value": -1
+			"defaultValue": -1
 		},
 		"var8": {
 			"id": "var8",
 			"name": "man",
 			"type": "string",
-			"value": "Different Text"
+			"defaultValue": "Different Text"
 		}
 	},
 	"cases": [
@@ -312,20 +312,16 @@
 			}
 		},
 		{
-			"code": "<pre><code>x = random()</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = random()</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(6)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(6)</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(6, 5)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(6, 5)</code></pre>"
 		},
 		{
-			"code": "<pre><code>x = roll(y)</code></pre>",
-			"changes": {}
+			"code": "<pre><code>x = roll(y)</code></pre>"
 		},
 		{
 			"code": "<pre><code>x = round(2.65)</code></pre>",
@@ -412,7 +408,9 @@
 		},
 		{
 			"code": "<p>How are you?</p><pre><code>x = 1</code></pre><p></p><p>I am fine, thank you.</p>",
-			"changes": {},
+			"changes": {
+				"var1": 1
+			},
 			"output": "<p>How are you?</p><p>I am fine, thank you.</p>"
 		},
 		{
@@ -536,7 +534,24 @@
 		},
 		{
 			"code": "<pre><code>w = \"String with \\\"quotes\\\" \\t tabs and \\n new lines\"</code></pre><pre><code>show(w)</code></pre>",
-			"output": "<p>String with \"quotes\" \t tabs and \n new lines</p>"
+			"output": "<p>String with \"quotes\" \t tabs and \n new lines</p>",
+			"changes": {
+				"var4": "String with \\\"quotes\\\" \\t tabs and \\n new lines"
+			}
+		},
+		{
+			"values": {
+				"global": {
+					"var1": 12,
+					"var2": 10
+				}
+			},
+			"code": "<pre><code>show(x,\" \", y)</code></pre><pre><code>reset(x, y)</code></pre>",
+			"output": "<p>12 10</p>",
+			"changes": {
+				"var1": 14,
+				"var2": 15
+			}
 		}
 	]
 }

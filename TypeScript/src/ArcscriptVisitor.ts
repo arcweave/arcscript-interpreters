@@ -2,65 +2,56 @@ import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
 import ArcscriptFunctions, {
   ArcscriptNonVoidFunctionKeys,
-  ArcscriptVoidFunctionKeys,
 } from './ArcscriptFunctions.js';
 import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
-import { MentionResult, VarObject, VarValue } from './types.js';
+import { MentionResult, VarValue } from './types.js';
 import {
-  Additive_numeric_expressionContext,
+  AdditiveExpressionContext,
   Argument_listContext,
   ArgumentContext,
+  AssignableContext,
   Assignment_segmentContext,
   BlockquoteContext,
-  Compound_condition_andContext,
-  Compound_condition_orContext,
+  ComparisonExpressionContext,
   Conditional_sectionContext,
   ConditionContext,
   Else_if_clauseContext,
   Else_if_sectionContext,
   Else_sectionContext,
-  ExpressionContext,
   Function_call_segmentContext,
   Function_callContext,
+  FunctionCallExpressionContext,
+  Identifier_listContext,
+  IdentifierContext,
+  IdentifierExpressionContext,
   If_clauseContext,
   If_sectionContext,
   InputContext,
+  LiteralContext,
+  LiteralExpressionContext,
   Mention_attributesContext,
   MentionContext,
-  Multiplicative_numeric_expressionContext,
-  Negated_unary_conditionContext,
+  MultiplicativeExpressionContext,
+  Numeric_literalContext,
   ParagraphContext,
+  ParenthesizedExpressionContext,
   Script_sectionContext,
-  Signed_unary_numeric_expressionContext,
   Statement_assignmentContext,
-  Unary_conditionContext,
-  Unary_numeric_expressionContext,
-  Variable_listContext,
-  Void_function_callContext,
+  UnaryExpressionContext,
 } from './Generated/ArcscriptParser.js';
+import ArcscriptVariable from './ArcscriptVariable.js';
+import ArcscriptParserBase from './Generated/ArcscriptParserBase.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   state: ArcscriptState;
   functions: ArcscriptFunctions;
 
-  constructor(
-    varValues: Record<string, VarValue>,
-    varObjects: Record<string, VarObject>,
-    elementVisits: Record<string, number>,
-    currentElement: string,
-    emit: (event: string, data: unknown) => void
-  ) {
+  constructor(state: ArcscriptState) {
     super();
 
-    this.state = new ArcscriptState(
-      varValues,
-      varObjects,
-      elementVisits,
-      currentElement,
-      emit
-    );
+    this.state = state;
 
     this.functions = new ArcscriptFunctions(this.state);
   }
@@ -70,8 +61,12 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       return { script: this.visitChildren(ctx.script()) };
     }
 
+    return this.visitCondition(ctx.condition());
+  };
+
+  visitCondition = (ctx: ConditionContext) => {
     return {
-      condition: this.visitCompound_condition_or(ctx.compound_condition_or()),
+      condition: !!this.visit(ctx.expression()),
     };
   };
 
@@ -123,7 +118,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitFunction_call_segment = (ctx: Function_call_segmentContext) => {
     this.state.addScript();
-    return this.visitChildren(ctx.statement_function_call());
+    return this.visitFunction_call(ctx.function_call());
   };
 
   visitConditional_section = (ctx: Conditional_sectionContext) => {
@@ -181,38 +176,36 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitChildren(ctx.script());
   };
 
-  visitIf_clause = (ctx: If_clauseContext) => {
-    return this.visitCompound_condition_or(ctx.compound_condition_or());
+  visitIf_clause = (ctx: If_clauseContext): boolean => {
+    return this.visit(ctx.expression()) as boolean;
   };
 
-  visitElse_if_clause = (ctx: Else_if_clauseContext) => {
-    return this.visitCompound_condition_or(ctx.compound_condition_or());
+  visitElse_if_clause = (ctx: Else_if_clauseContext): boolean => {
+    return this.visit(ctx.expression()) as boolean;
   };
 
   visitStatement_assignment = (ctx: Statement_assignmentContext) => {
-    const variableName = ctx.VARIABLE().getText();
-    const variableObject = this.state.getVar(variableName);
-    if (!variableObject) {
-      throw new RuntimeError(`Variable ${variableName} not found`);
-    }
+    const assignable = this.visitAssignable(ctx.assignable());
 
-    let variableValue = this.state.getVarValue(variableObject.id);
-    let compound_condition_or = this.visitCompound_condition_or(
-      ctx.compound_condition_or()
-    );
+    let variableValue = assignable.getValue();
+    let expressionValue = this.visit(ctx.expression());
+    if (expressionValue === undefined) {
+      throw new RuntimeError('The right part of the assigment has no value');
+    }
     let result: VarValue = 0;
     if (
       typeof variableValue === 'string' ||
-      typeof compound_condition_or === 'string'
+      typeof expressionValue === 'string'
     ) {
       if (ctx.ASSIGNADD()) {
-        result = ((variableValue as string) + compound_condition_or) as string;
+        result = ((variableValue as string) + expressionValue) as string;
       } else if (ctx.ASSIGN()) {
-        result = compound_condition_or;
+        result = expressionValue;
       } else {
         throw new RuntimeError('Invalid operation with string');
       }
-      this.state.setVarValues([variableObject.id], [result]);
+
+      assignable.setValue(result);
       return null;
     }
     if (
@@ -225,334 +218,236 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       if (typeof variableValue === 'boolean') {
         variableValue = variableValue ? 1 : 0;
       }
-      if (typeof compound_condition_or === 'boolean') {
-        compound_condition_or = compound_condition_or ? 1 : 0;
+      if (typeof expressionValue === 'boolean') {
+        expressionValue = expressionValue ? 1 : 0;
       }
     }
+
+    const leftValue = new BigNumber(variableValue as number);
+    const rightValue = new BigNumber(expressionValue as number);
+
     if (ctx.ASSIGNADD()) {
-      result = new BigNumber(variableValue as number)
-        .plus(new BigNumber(compound_condition_or as number))
-        .toNumber();
+      result = leftValue.plus(rightValue).toNumber();
     } else if (ctx.ASSIGNSUB()) {
-      result = new BigNumber(variableValue as number)
-        .minus(new BigNumber(compound_condition_or as number))
-        .toNumber();
+      result = leftValue.minus(rightValue).toNumber();
     } else if (ctx.ASSIGNMUL()) {
-      result = new BigNumber(variableValue as number)
-        .multipliedBy(new BigNumber(compound_condition_or as number))
-        .toNumber();
+      result = leftValue.multipliedBy(rightValue).toNumber();
     } else if (ctx.ASSIGNDIV()) {
-      result = new BigNumber(variableValue as number)
-        .dividedBy(new BigNumber(compound_condition_or as number))
-        .toNumber();
+      result = leftValue.dividedBy(rightValue).toNumber();
       if (!Number.isFinite(result)) {
         throw new RuntimeError(`Invalid division by zero`);
       }
     } else if (ctx.ASSIGNMOD()) {
-      result = new BigNumber(variableValue as number)
-        .modulo(new BigNumber(compound_condition_or as number))
-        .toNumber();
+      result = leftValue.modulo(rightValue).toNumber();
       if (!Number.isFinite(result)) {
         throw new RuntimeError(`Invalid division by zero`);
       }
     } else if (ctx.ASSIGN()) {
-      result = compound_condition_or;
+      result = expressionValue;
     }
-    this.state.setVarValues([variableObject.id], [result]);
+    assignable.setValue(result);
     return null;
   };
 
-  visitVoid_function_call = (ctx: Void_function_callContext) => {
-    let argument_list: (VarValue | MentionResult)[] = [];
-    let fname: ArcscriptVoidFunctionKeys;
-    if (ctx.VFNAME()) {
-      fname = ctx.VFNAME().getText() as ArcscriptVoidFunctionKeys;
-      if (ctx.argument_list()) {
-        argument_list = this.visitArgument_list(ctx.argument_list());
+  visitAssignable = (ctx: AssignableContext): ArcscriptVariable => {
+    return this.visitIdentifier(ctx.identifier());
+  };
+
+  visitComparisonExpression = (ctx: ComparisonExpressionContext): boolean => {
+    const left = this.visit(ctx.expression(0));
+    if (ctx.AND() || ctx.ANDKEYWORD()) {
+      if (!left) {
+        return false;
       }
+      const right = this.visit(ctx.expression(1));
+      return Boolean(left) && Boolean(right);
     }
-    if (ctx.VFNAMEVARS()) {
-      fname = ctx.VFNAMEVARS().getText() as ArcscriptVoidFunctionKeys;
-      if (ctx.variable_list()) {
-        argument_list = this.visitVariable_list(ctx.variable_list());
+    if (ctx.OR() || ctx.ORKEYWORD()) {
+      if (left) {
+        return true;
       }
+      const right = this.visit(ctx.expression(1));
+      return Boolean(left) || Boolean(right);
     }
+    const right = this.visit(ctx.expression(1));
 
-    this.functions[fname!](...argument_list);
+    if (ctx.EQ() || (ctx.ISKEYWORD() && !ctx.NOTKEYWORD())) {
+      return left === right;
+    }
+    if (ctx.NE() || (ctx.ISKEYWORD() && ctx.NOTKEYWORD())) {
+      return left !== right;
+    }
+    if (ctx.LT()) {
+      return left < right;
+    }
+    if (ctx.GT()) {
+      return left > right;
+    }
+    if (ctx.LE()) {
+      return left <= right;
+    }
+    if (ctx.GE()) {
+      return left >= right;
+    }
+    throw new RuntimeError('Invalid comparison operator');
   };
 
-  visitVariable_list = (ctx: Variable_listContext): string[] => {
-    return ctx.VARIABLE_list().map(variable => variable.getText());
+  visitUnaryExpression = (ctx: UnaryExpressionContext) => {
+    if (ctx.NOTKEYWORD() || ctx.NEG()) {
+      return !this.visit(ctx.expression());
+    }
+    if (ctx.ADD()) {
+      return this.visit(ctx.expression());
+    }
+    if (ctx.SUB()) {
+      return -this.visit(ctx.expression());
+    }
+    throw new RuntimeError('Invalid unary operator');
   };
 
-  visitCompound_condition_or = (
-    ctx: Compound_condition_orContext
-  ): VarValue => {
-    const compound_condition_and = this.visitCompound_condition_and(
-      ctx.compound_condition_and()
-    );
-
-    if (ctx.compound_condition_or()) {
-      return (
-        compound_condition_and ||
-        this.visitCompound_condition_or(ctx.compound_condition_or())
-      );
+  visitMultiplicativeExpression = (ctx: MultiplicativeExpressionContext) => {
+    const left = this.visit(ctx.expression(0));
+    const right = this.visit(ctx.expression(1));
+    if (typeof left === 'string' || typeof right === 'string') {
+      throw new RuntimeError('Invalid operation with string');
     }
+    const leftValue = new BigNumber(left as number);
+    const rightValue = new BigNumber(right as number);
 
-    return compound_condition_and;
-  };
-
-  visitCompound_condition_and = (
-    ctx: Compound_condition_andContext
-  ): VarValue => {
-    const negated_unary_condition = this.visitNegated_unary_condition(
-      ctx.negated_unary_condition()
-    );
-
-    if (ctx.compound_condition_and()) {
-      return (
-        negated_unary_condition &&
-        this.visitCompound_condition_and(ctx.compound_condition_and())
-      );
+    if (ctx.MUL()) {
+      return leftValue.multipliedBy(rightValue).toNumber();
     }
-
-    return negated_unary_condition;
-  };
-
-  visitNegated_unary_condition = (ctx: Negated_unary_conditionContext) => {
-    const unary_condition = this.visitUnary_condition(ctx.unary_condition());
-
-    if (ctx.NEG() || ctx.NOTKEYWORD()) {
-      return !unary_condition;
-    }
-
-    return unary_condition;
-  };
-
-  visitUnary_condition = (ctx: Unary_conditionContext) => {
-    return this.visitCondition(ctx.condition());
-  };
-
-  visitCondition = (ctx: ConditionContext): VarValue => {
-    if (ctx.expression_list().length === 1) {
-      return this.visitExpression(ctx.expression(0));
-    }
-    const conditional_operator = ctx.conditional_operator();
-    const exp0 = this.visitExpression(ctx.expression(0));
-    const exp1 = this.visitExpression(ctx.expression(1));
-
-    if (conditional_operator.GT()) {
-      return exp0 > exp1;
-    }
-    if (conditional_operator.GE()) {
-      return exp0 >= exp1;
-    }
-    if (conditional_operator.LT()) {
-      return exp0 < exp1;
-    }
-    if (conditional_operator.LE()) {
-      return exp0 <= exp1;
-    }
-    if (conditional_operator.EQ()) {
-      return exp0 === exp1;
-    }
-    if (conditional_operator.NE()) {
-      return exp0 !== exp1;
-    }
-    if (conditional_operator.ISKEYWORD()) {
-      if (conditional_operator.NOTKEYWORD()) {
-        return exp0 !== exp1;
+    if (ctx.DIV()) {
+      if (rightValue.isZero()) {
+        throw new RuntimeError('Invalid division by zero');
       }
-      return exp0 === exp1;
+      return leftValue.dividedBy(rightValue).toNumber();
     }
-
-    return this.visitChildren(ctx) as VarValue;
+    if (ctx.MOD()) {
+      if (rightValue.isZero()) {
+        throw new RuntimeError('Invalid division by zero');
+      }
+      return leftValue.modulo(rightValue).toNumber();
+    }
+    throw new RuntimeError('Invalid multiplicative operator');
   };
 
-  visitExpression = (ctx: ExpressionContext): VarValue => {
-    if (ctx.STRING()) {
-      let result = ctx.STRING().getText();
-      result = result.replace(/^['"](.*)['"]$/, '$1');
-      return result;
+  visitAdditiveExpression = (ctx: AdditiveExpressionContext) => {
+    let left = this.visit(ctx.expression(0));
+    let right = this.visit(ctx.expression(1));
+    if (typeof left === 'string' || typeof right === 'string') {
+      if (ctx.ADD()) {
+        return (left as string) + (right as string);
+      }
+      throw new RuntimeError('Invalid operation with string');
     }
+    left = Number(left);
+    right = Number(right);
+
+    const leftValue = new BigNumber(left as number);
+    const rightValue = new BigNumber(right as number);
+
+    if (ctx.ADD()) {
+      return leftValue.plus(rightValue).toNumber();
+    }
+    if (ctx.SUB()) {
+      return leftValue.minus(rightValue).toNumber();
+    }
+    throw new RuntimeError('Invalid additive operator');
+  };
+
+  visitParenthesizedExpression = (ctx: ParenthesizedExpressionContext) => {
+    return this.visit(ctx.expression());
+  };
+
+  visitIdentifierExpression = (ctx: IdentifierExpressionContext) => {
+    const identifier = this.visitIdentifier(ctx.identifier());
+
+    return identifier.getValue();
+  };
+
+  visitLiteralExpression = (ctx: LiteralExpressionContext) => {
+    return this.visitLiteral(ctx.literal());
+  };
+
+  visitFunctionCallExpression = (ctx: FunctionCallExpressionContext) => {
+    return this.visitFunction_call(ctx.function_call());
+  };
+
+  visitIdentifier = (ctx: IdentifierContext): ArcscriptVariable => {
+    let name: string;
+    let scope: string | null = null;
+    if (ctx.IDENTIFIER_list().length === 1) {
+      name = ctx.IDENTIFIER(0).getText();
+    } else {
+      scope = ctx.IDENTIFIER(0).getText();
+      name = ctx.IDENTIFIER(1).getText();
+    }
+    const variableObject = this.state.getVar(name, scope);
+    if (!variableObject) {
+      throw new RuntimeError(`Variable ${name} not found`);
+    }
+    return variableObject;
+  };
+
+  visitLiteral = (ctx: LiteralContext) => {
     if (ctx.BOOLEAN()) {
       if (ctx.BOOLEAN().getText() === 'true') {
         return true;
       }
       return false;
     }
-
-    return this.visitAdditive_numeric_expression(
-      ctx.additive_numeric_expression()
-    );
-  };
-
-  visitAdditive_numeric_expression = (
-    ctx: Additive_numeric_expressionContext
-  ): VarValue => {
-    if (ctx.additive_numeric_expression()) {
-      let additive_numeric_expression = this.visitAdditive_numeric_expression(
-        ctx.additive_numeric_expression()
-      );
-
-      let multiplicative_numeric_expression =
-        this.visitMultiplicative_numeric_expression(
-          ctx.multiplicative_numeric_expression()
-        );
-
-      let hasString = typeof multiplicative_numeric_expression === 'string';
-
-      hasString = hasString || typeof additive_numeric_expression === 'string';
-
-      if (!hasString) {
-        if (typeof multiplicative_numeric_expression === 'boolean') {
-          multiplicative_numeric_expression = multiplicative_numeric_expression
-            ? 1
-            : 0;
-        }
-        if (typeof additive_numeric_expression === 'boolean') {
-          additive_numeric_expression = additive_numeric_expression ? 1 : 0;
-        }
-      }
-
-      if (ctx.ADD()) {
-        if (hasString) {
-          return ((additive_numeric_expression as string) +
-            multiplicative_numeric_expression) as string;
-        }
-        return new BigNumber(additive_numeric_expression as number)
-          .plus(new BigNumber(multiplicative_numeric_expression as number))
-          .toNumber();
-      }
-      if (hasString) {
-        throw new RuntimeError('Invalid subtraction with string');
-      }
-      return new BigNumber(additive_numeric_expression as number)
-        .minus(new BigNumber(multiplicative_numeric_expression as number))
-        .toNumber();
-    }
-
-    const multiplicative_numeric_expression =
-      this.visitMultiplicative_numeric_expression(
-        ctx.multiplicative_numeric_expression()
-      );
-
-    return multiplicative_numeric_expression;
-  };
-
-  visitMultiplicative_numeric_expression = (
-    ctx: Multiplicative_numeric_expressionContext
-  ): VarValue => {
-    if (ctx.multiplicative_numeric_expression()) {
-      let multiplicative_numeric_expression =
-        this.visitMultiplicative_numeric_expression(
-          ctx.multiplicative_numeric_expression()
-        );
-      let signed_unary_numeric_expression =
-        this.visitSigned_unary_numeric_expression(
-          ctx.signed_unary_numeric_expression()
-        );
-      if (typeof signed_unary_numeric_expression === 'boolean') {
-        signed_unary_numeric_expression = signed_unary_numeric_expression
-          ? 1
-          : 0;
-      }
-      if (typeof multiplicative_numeric_expression === 'boolean') {
-        multiplicative_numeric_expression = multiplicative_numeric_expression
-          ? 1
-          : 0;
-      }
-      if (ctx.MUL()) {
-        return new BigNumber(multiplicative_numeric_expression)
-          .multipliedBy(new BigNumber(signed_unary_numeric_expression))
-          .toNumber();
-      }
-      if (ctx.DIV()) {
-        const result = new BigNumber(multiplicative_numeric_expression)
-          .dividedBy(new BigNumber(signed_unary_numeric_expression))
-          .toNumber();
-        if (!Number.isFinite(result)) {
-          throw new RuntimeError(`Invalid division by zero`);
-        }
-        return result;
-      }
-      // else MOD
-      const result = new BigNumber(multiplicative_numeric_expression)
-        .modulo(new BigNumber(signed_unary_numeric_expression))
-        .toNumber();
-      if (!Number.isFinite(result)) {
-        throw new RuntimeError(`Invalid division by zero`);
-      }
+    if (ctx.STRING()) {
+      let result = ctx.STRING().getText();
+      result = result.replace(/^['"](.*)['"]$/, '$1');
       return result;
     }
-
-    const signed_unary_numeric_expression =
-      this.visitSigned_unary_numeric_expression(
-        ctx.signed_unary_numeric_expression()
-      );
-
-    return signed_unary_numeric_expression;
+    return this.visitNumeric_literal(ctx.numeric_literal());
   };
 
-  visitSigned_unary_numeric_expression = (
-    ctx: Signed_unary_numeric_expressionContext
-  ): VarValue => {
-    const unary_numeric_expression = this.visitUnary_numeric_expression(
-      ctx.unary_numeric_expression()
-    );
-
-    const sign = ctx.sign();
-    if (sign) {
-      if (sign.ADD()) {
-        return +unary_numeric_expression;
-      }
-      return -unary_numeric_expression;
-    }
-    return unary_numeric_expression;
-  };
-
-  visitUnary_numeric_expression = (
-    ctx: Unary_numeric_expressionContext
-  ): VarValue => {
+  visitNumeric_literal = (ctx: Numeric_literalContext) => {
     if (ctx.FLOAT()) {
       return parseFloat(ctx.FLOAT().getText());
     }
-    if (ctx.INTEGER()) {
-      return parseInt(ctx.INTEGER().getText(), 10);
-    }
-    if (ctx.VARIABLE()) {
-      const variableName = ctx.VARIABLE().getText();
-      const variableObject = this.state.getVar(variableName);
-      if (!variableObject) {
-        throw new RuntimeError(`Variable ${variableName} not found`);
-      }
-      return this.state.getVarValue(variableObject.id);
-    }
-    if (ctx.STRING()) {
-      let result = ctx.STRING().getText();
-      result = result.replace(/^['"](.*)['"]$/, '$1');
-      return result;
-    }
-    if (ctx.BOOLEAN()) {
-      if (ctx.BOOLEAN().getText() === 'true') {
-        return true;
-      }
-      return false;
-    }
-    if (ctx.function_call()) {
-      return this.visitFunction_call(ctx.function_call());
-    }
-    return this.visitCompound_condition_or(ctx.compound_condition_or());
+    return parseInt(ctx.INTEGER().getText(), 10);
   };
 
   visitFunction_call = (ctx: Function_callContext) => {
-    let argument_list: (VarValue | MentionResult)[] = [];
+    let argument_list: (VarValue | MentionResult | ArcscriptVariable)[] = [];
+    const function_name = ctx.FNAME().getText() as ArcscriptNonVoidFunctionKeys;
     if (ctx.argument_list()) {
       argument_list = this.visitArgument_list(ctx.argument_list());
     }
+    if (ctx.identifier_list()) {
+      argument_list = this.visitIdentifier_list(ctx.identifier_list());
+      if (
+        ArcscriptParserBase.arcscriptFunctionsInfo[function_name].argType ===
+        'variable'
+      ) {
+        argument_list = argument_list.map(variable => {
+          if (variable instanceof ArcscriptVariable) {
+            return variable;
+          }
+          throw new RuntimeError('Expected a variable');
+        });
+      } else {
+        argument_list = argument_list.map(variable => {
+          if (variable instanceof ArcscriptVariable) {
+            return variable.getValue();
+          }
+          throw new RuntimeError('Expected a variable');
+        });
+      }
+    }
 
-    const function_name = ctx.FNAME().getText() as ArcscriptNonVoidFunctionKeys;
+    // TODO: remove non void function keys
     return this.functions[function_name](...argument_list);
+  };
+
+  visitIdentifier_list = (ctx: Identifier_listContext): ArcscriptVariable[] => {
+    return ctx.identifier_list().map(identifier => {
+      return this.visitIdentifier(identifier);
+    });
   };
 
   visitArgument_list = (ctx: Argument_listContext) => {
@@ -560,17 +455,14 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitArgument = (ctx: ArgumentContext): VarValue | MentionResult => {
-    if (ctx.STRING()) {
-      let result = ctx.STRING().getText();
-      result = result.replace(/^['"](.*)['"]$/, '$1');
-      return result;
+    if (ctx.expression()) {
+      return this.visit(ctx.expression());
     }
     if (ctx.mention()) {
       return this.visitMention(ctx.mention());
     }
-    return this.visitAdditive_numeric_expression(
-      ctx.additive_numeric_expression()
-    );
+
+    throw new RuntimeError('Invalid argument');
   };
 
   visitMention = (ctx: MentionContext): MentionResult => {

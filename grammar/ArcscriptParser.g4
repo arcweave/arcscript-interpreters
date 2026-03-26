@@ -7,7 +7,9 @@ options {
 	superClass = ArcscriptParserBase;
 }
 
-input: script EOF | codestart compound_condition_or codeend EOF;
+input: condition EOF | script EOF;
+
+condition: codestart expression codeend;
 
 script: script_section+;
 
@@ -39,8 +41,7 @@ codeend: CODEEND;
 
 assignment_segment: codestart statement_assignment codeend;
 
-function_call_segment:
-	codestart statement_function_call codeend;
+function_call_segment: codestart function_call codeend;
 
 conditional_section:
 	if_section else_if_section* else_section? endif_segment;
@@ -51,27 +52,32 @@ else_if_section: codestart else_if_clause codeend script;
 
 else_section: codestart ELSEKEYWORD codeend script;
 
-if_clause: IFKEYWORD compound_condition_or;
+if_clause: IFKEYWORD expression;
 
-else_if_clause: ELSEIFKEYWORD compound_condition_or;
+else_if_clause: ELSEIFKEYWORD expression;
 
 endif_segment: codestart ENDIFKEYWORD codeend;
 
 statement_assignment:
-	VARIABLE (
+	assignable (
 		ASSIGNADD
 		| ASSIGNSUB
 		| ASSIGNMUL
 		| ASSIGNDIV
 		| ASSIGNMOD
 		| ASSIGN
-	) compound_condition_or {this.assertVariable($VARIABLE);};
+	) expression;
 
-statement_function_call: void_function_call;
+assignable: identifier {this.assertVariable($identifier.ctx);};
+
+identifier_list:
+	identifier {this.assertVariable($identifier.ctx);} (
+		',' identifier {this.assertVariable($identifier.ctx);}
+	)*;
 
 argument_list: argument (',' argument)*;
 
-argument: additive_numeric_expression | STRING | mention;
+argument: expression | mention;
 
 mention:
 	MENTION_TAG_OPEN attr += mention_attributes* '>' MENTION_LABEL? TAG_OPEN MENTION_TAG_CLOSE {this.assertMention($attr)
@@ -79,64 +85,29 @@ mention:
 
 mention_attributes: ATTR_NAME (TAG_EQUALS ATTR_VALUE)?;
 
-additive_numeric_expression:
-	multiplicative_numeric_expression
-	| additive_numeric_expression (ADD | SUB) multiplicative_numeric_expression;
+expression:
+	(NEG | NOTKEYWORD) expression											# UnaryExpression
+	| ADD expression														# UnaryExpression
+	| SUB expression														# UnaryExpression
+	| expression (MUL | DIV | MOD) expression								# MultiplicativeExpression
+	| expression (ADD | SUB) expression										# AdditiveExpression
+	| expression (LT | GT | LE | GE) expression								# ComparisonExpression
+	| expression (EQ | NE | (ISKEYWORD NOTKEYWORD) | ISKEYWORD) expression	# ComparisonExpression
+	| expression (AND | ANDKEYWORD) expression								# ComparisonExpression
+	| expression (OR | ORKEYWORD) expression								# ComparisonExpression
+	| identifier {this.assertVariable($identifier.ctx);}					# IdentifierExpression
+	| '(' expression ')'													# ParenthesizedExpression
+	| function_call															# FunctionCallExpression
+	| literal																# LiteralExpression;
 
-multiplicative_numeric_expression:
-	signed_unary_numeric_expression
-	| multiplicative_numeric_expression (MUL | DIV | MOD) signed_unary_numeric_expression;
+literal: BOOLEAN | STRING | numeric_literal;
 
-signed_unary_numeric_expression:
-	sign unary_numeric_expression
-	| unary_numeric_expression;
+numeric_literal: FLOAT | INTEGER;
 
-unary_numeric_expression:
-	FLOAT
-	| VARIABLE {this.assertVariable($VARIABLE);}
-	| INTEGER
-	| STRING
-	| BOOLEAN
-	| function_call
-	| LPAREN compound_condition_or RPAREN;
+identifier: IDENTIFIER | IDENTIFIER '.' IDENTIFIER;
 
 function_call:
-	FNAME LPAREN argument_list? RPAREN {this.assertFunctionArguments($FNAME, $argument_list.ctx);};
-
-void_function_call:
-	VFNAME LPAREN argument_list? RPAREN {this.assertFunctionArguments($VFNAME, $argument_list.ctx);}
-	| VFNAMEVARS LPAREN variable_list? RPAREN {this.assertFunctionArguments($VFNAMEVARS, $variable_list.ctx);
-		};
-
-sign: ADD | SUB;
-
-variable_list:
-	VARIABLE (',' VARIABLE)* {this.assertVariable($VARIABLE);};
-
-compound_condition_or:
-	compound_condition_and (
-		( OR | ORKEYWORD) compound_condition_or
-	)?;
-
-compound_condition_and:
-	negated_unary_condition (
-		(AND | ANDKEYWORD) compound_condition_and
-	)?;
-
-negated_unary_condition: (NEG | NOTKEYWORD)? unary_condition;
-
-unary_condition: condition;
-
-condition: expression (conditional_operator expression)?;
-
-conditional_operator:
-	GT
-	| GE
-	| LT
-	| LE
-	| EQ
-	| NE
-	| ISKEYWORD
-	| ISKEYWORD NOTKEYWORD;
-
-expression: STRING | BOOLEAN | additive_numeric_expression;
+	FNAME LPAREN identifier_list? RPAREN {this.assertFunctionArguments($FNAME, $identifier_list.ctx);
+		}
+	| FNAME LPAREN argument_list? RPAREN {this.assertFunctionArguments($FNAME, $argument_list.ctx);}
+		;
