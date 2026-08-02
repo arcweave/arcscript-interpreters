@@ -6,6 +6,7 @@ import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 import { ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptState from './ArcscriptState.js';
+import { isGlobalScope } from './scope.js';
 
 type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
@@ -103,10 +104,6 @@ export default class Interpreter {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
     const tokenIdMap = new Map<object, string>();
     const stateVars = Object.values(this.arcscriptVariables);
-    const isGlobalScope = (scope: string | null | undefined) => {
-      return scope === undefined || scope === null || scope === 'global';
-    };
-
     allTokens.forEach((token, index) => {
       if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
         return;

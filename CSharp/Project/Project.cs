@@ -8,10 +8,12 @@ public partial class Project
 {
     public List<Variable> Variables { get; }
     public List<Board> Boards { get;  }
-    public Project(List<Board> boards, List<Variable> variables)
+    public List<Component> Components { get; }
+    public Project(List<Board> boards, List<Variable> variables, List<Component> components = null)
     {
         Variables = variables;
         Boards = boards;
+        Components = components ?? new List<Component>();
     }
     public Element ElementWithId(string id) => GetNodeWithID<Element>(id);
 
@@ -21,13 +23,17 @@ public partial class Project
         {
             return Variables.FirstOrDefault(variable => variable.Name == name);
         }
-        var board = Boards.FirstOrDefault(board => board.Id == scope);
-        if (board != null)
-        {
-            return board.Variables.FirstOrDefault(variable => variable.Name == name);
-        }
-        return null;
+        var container = Boards.Cast<IHasVariables>()
+            .Concat(Components)
+            .FirstOrDefault(container => container.CustomId == scope);
+        return container?.Variables.FirstOrDefault(variable => variable.Name == name);
     }
+
+    public IEnumerable<Variable> GetAllVariables() => Variables
+        .Concat(Boards.SelectMany(board =>
+            board.Variables ?? Enumerable.Empty<Variable>()))
+        .Concat(Components.SelectMany(component =>
+            component.Variables ?? Enumerable.Empty<Variable>()));
     
     public T GetNodeWithID<T>(string id) where T : INode {
         T result = default(T);
@@ -39,4 +45,3 @@ public partial class Project
     }
 }
 }
-

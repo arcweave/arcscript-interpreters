@@ -71,6 +71,21 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
 
     std::map<std::string, Variable> initVars;
     for (size_t i = 0; i < varLength; i++) {
+        if (!variables[i].has_default_value) {
+            throw RuntimeErrorException(
+                "Variable " + std::string(variables[i].id) + " is missing a default value."
+            );
+        }
+        if (
+            variables[i].type == VariableType::AW_STRING &&
+            (variables[i].string_val == nullptr || variables[i].default_string_val == nullptr)
+        ) {
+            throw RuntimeErrorException(
+                "String variable " + std::string(variables[i].id) +
+                " must have current and default values."
+            );
+        }
+
         Variable var;
         var.id = std::string(variables[i].id);
         var.name = std::string(variables[i].name);
@@ -82,15 +97,19 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         
         if (var.type == VariableType::AW_STRING) {
             var.value = std::string(variables[i].string_val);
+            var.defaultValue = std::string(variables[i].default_string_val);
         }
         else if (var.type == VariableType::AW_INTEGER) {
             var.value = variables[i].int_val;
+            var.defaultValue = variables[i].default_int_val;
         }
         else if (var.type == VariableType::AW_DOUBLE) {
             var.value = variables[i].double_val;
+            var.defaultValue = variables[i].default_double_val;
         }
         else if (var.type == VariableType::AW_BOOLEAN) {
             var.value = variables[i].bool_val;
+            var.defaultValue = variables[i].default_bool_val;
         }
         initVars[variables[i].id] = var;
     }

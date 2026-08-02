@@ -28,6 +28,7 @@ UVariable* getInitialVars(json initialVarsJson) {
 
         initVars[i].id = strdup(id.c_str());
         initVars[i].name = strdup(name.c_str());
+        initVars[i].has_default_value = true;
         if (it.value().contains("scope")) {
             initVars[i].scope = strdup(it.value()["scope"].get<std::string>().c_str());
         }
@@ -47,15 +48,19 @@ UVariable* getInitialVars(json initialVarsJson) {
 
         if (initVars[i].type == VariableType::AW_STRING) {
             initVars[i].string_val = strdup(it.value()["value"].get<std::string>().c_str());
+            initVars[i].default_string_val = strdup(it.value()["value"].get<std::string>().c_str());
         }
         else if (initVars[i].type == VariableType::AW_INTEGER) {
             initVars[i].int_val = it.value()["value"].get<int>();
+            initVars[i].default_int_val = it.value()["value"].get<int>();
         }
         else if (initVars[i].type == VariableType::AW_DOUBLE) {
             initVars[i].double_val= it.value()["value"].get<double>();
+            initVars[i].default_double_val = it.value()["value"].get<double>();
         }
         else if (initVars[i].type == VariableType::AW_BOOLEAN) {
             initVars[i].bool_val = it.value()["value"].get<bool>();
+            initVars[i].default_bool_val = it.value()["value"].get<bool>();
         }
         i += 1;
     }
@@ -320,6 +325,7 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
         free(const_cast<char *>(initVars[j].name));
         if (initVars[j].type == VariableType::AW_STRING) {
             free(const_cast<char *>(initVars[j].string_val));
+            free(const_cast<char *>(initVars[j].default_string_val));
         }
     }
     delete[] initVars;
@@ -329,6 +335,162 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
     }
 
     return 0;
+}
+
+int testResetAcrossInvocations(const char* resetScript) {
+    UVariable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.int_val = 10;
+    variable.default_int_val = 10;
+    variable.has_default_value = true;
+
+    UTranspilerOutput* assignment = runScriptExport(
+        "<pre><code>score = 25</code></pre>",
+        "TestElement",
+        &variable,
+        1,
+        nullptr,
+        0,
+        onEvent
+    );
+    variable.int_val = assignment->changes[0].int_result;
+    deallocateOutput(assignment);
+
+    UTranspilerOutput* reset = runScriptExport(
+        resetScript,
+        "TestElement",
+        &variable,
+        1,
+        nullptr,
+        0,
+        onEvent
+    );
+    const bool passed = reset->changesLen == 1 &&
+        reset->changes[0].type == VariableType::AW_INTEGER &&
+        reset->changes[0].int_result == 10;
+    deallocateOutput(reset);
+
+    if (!passed) {
+        std::cout << "Two-invocation reset failed for script: " << resetScript << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int testMissingDefaultRejected() {
+    UVariable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.int_val = 10;
+
+    try {
+        UTranspilerOutput* result = runScriptExport(
+            "<pre><code>show(score)</code></pre>",
+            "TestElement",
+            &variable,
+            1,
+            nullptr,
+            0,
+            onEvent
+        );
+        deallocateOutput(result);
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNullStringDefaultRejected() {
+    UVariable variable;
+    variable.id = "name-id";
+    variable.name = "name";
+    variable.type = VariableType::AW_STRING;
+    variable.string_val = "current";
+    variable.has_default_value = true;
+
+    try {
+        UTranspilerOutput* result = runScriptExport(
+            "<pre><code>show(name)</code></pre>",
+            "TestElement",
+            &variable,
+            1,
+            nullptr,
+            0,
+            onEvent
+        );
+        deallocateOutput(result);
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) ==
+            "String variable name-id must have current and default values." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNativeMissingCurrentRejected() {
+    Variable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.defaultValue = 10;
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a current value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNativeMissingDefaultRejected() {
+    Variable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.value = 10;
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testLegacyAggregatePreservesScopeAndRejectsMissingDefault() {
+    Variable variable{"score-id", "score", VariableType::AW_INTEGER, 10, "board"};
+    if (variable.scope != "board") {
+        return 1;
+    }
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
 }
 
 
@@ -355,6 +517,13 @@ int main(int argc, char* argv[])
             hasErrors = true;
         }
     }
+    hasErrors = testResetAcrossInvocations("<pre><code>reset(score)</code></pre>") != 0 || hasErrors;
+    hasErrors = testResetAcrossInvocations("<pre><code>resetAll()</code></pre>") != 0 || hasErrors;
+    hasErrors = testMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNullStringDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingCurrentRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testLegacyAggregatePreservesScopeAndRejectsMissingDefault() != 0 || hasErrors;
     if (hasErrors) {
         return 1;
     }

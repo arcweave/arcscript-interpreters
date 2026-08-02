@@ -1,5 +1,6 @@
 import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
+import { isGlobalScope } from './scope.js';
 
 function hasProperty<T extends object>(obj: T, prop: keyof T): boolean {
   if (Object.hasOwn) {
@@ -26,6 +27,12 @@ function validateVarDef(variableId: string, varDef: VarDef) {
   if (!hasProperty(varDef, 'defaultValue')) {
     throw new Error(`Variable ${varDef.id} is missing defaultValue property`);
   }
+  if (varDef.defaultValue === null) {
+    throw new Error(`Variable ${varDef.id} has null defaultValue property`);
+  }
+  if (hasProperty(varDef, 'value') && varDef.value === null) {
+    throw new Error(`Variable ${varDef.id} has null value property`);
+  }
   if (
     hasProperty(varDef, 'scope') &&
     varDef.scope !== undefined &&
@@ -33,6 +40,9 @@ function validateVarDef(variableId: string, varDef: VarDef) {
     typeof varDef.scope !== 'string'
   ) {
     throw new Error(`Variable ${varDef.id} has invalid scope property`);
+  }
+  if (varDef.scope === '') {
+    throw new Error(`Variable ${varDef.id} has empty scope property`);
   }
 }
 
@@ -103,10 +113,10 @@ export default class ArcscriptState {
 
   getVar(name: string, scope: string | null = null): ArcscriptVariable {
     const variable = Object.values(this.variables).find(v => {
-      if (scope) {
+      if (scope !== null) {
         return v.name === name && v.scope === scope;
       }
-      return v.name === name;
+      return v.name === name && isGlobalScope(v.scope);
     });
     if (!variable) {
       throw new Error(`Variable ${name} not found`);

@@ -105,6 +105,78 @@ describe('Object members variables', () => {
   );
 });
 
+describe('Global and scoped variables with matching names', () => {
+  const initialVars: ArcscriptStateDef = {
+    scopedHealth: {
+      id: 'scopedHealth',
+      name: 'health',
+      type: 'integer',
+      defaultValue: 10,
+      scope: 'component',
+    },
+    globalHealth: {
+      id: 'globalHealth',
+      name: 'health',
+      type: 'integer',
+      defaultValue: 20,
+      scope: 'global',
+    },
+  };
+
+  test('unqualified lookup ignores an earlier scoped variable', () => {
+    const interpreter = new Interpreter({ state: initialVars });
+    const { changes, output } = interpreter.runScript(
+      '<pre><code>show(health, " ", component.health)</code></pre><pre><code>health = 21</code></pre><pre><code>component.health = 11</code></pre>'
+    );
+
+    expect(output).toBe('<p>20 10</p>');
+    expect(changes).toEqual({
+      globalHealth: 21,
+      scopedHealth: 11,
+    });
+  });
+});
+
+describe('Variable state validation', () => {
+  test.each([
+    ['defaultValue', { defaultValue: null }],
+    ['value', { defaultValue: 1, value: null }],
+  ])('rejects a null %s', (_property, values) => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          ...values,
+        },
+      } as unknown as ArcscriptStateDef,
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow(`Variable variable has null ${_property} property`);
+  });
+
+  test('rejects an empty scope', () => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          defaultValue: 1,
+          scope: '',
+        },
+      },
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow('Variable variable has empty scope property');
+  });
+});
+
 describe('Interprete string test scripts', () => {
   test.each(stringTests.cases as unknown as TestCase[])(
     'Tests script: $code',
@@ -219,9 +291,7 @@ describe('Replace scopes', () => {
       }
     );
 
-    expect(result).toBe(
-      '<pre><code>comp2.x = boardTwo.xyz + x</code></pre>'
-    );
+    expect(result).toBe('<pre><code>comp2.x = boardTwo.xyz + x</code></pre>');
   });
 });
 

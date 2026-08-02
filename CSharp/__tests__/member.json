@@ -69,8 +69,8 @@
       "name": "a",
       "type": "string",
       "defaultValue": "Component Text",
-      "cType": "boards",
-      "scope": "board2"
+      "cType": "components",
+      "scope": "comp1"
     }
   },
   "cases": [
@@ -112,7 +112,7 @@
       }
     },
     {
-      "code": "<pre><code>board2.a = \"Hello World\"</code></pre>",
+      "code": "<pre><code>comp1.a = \"Hello World\"</code></pre>",
       "changes": {
         "var11": "Hello World"
       }

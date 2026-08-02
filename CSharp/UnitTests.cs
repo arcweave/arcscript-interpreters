@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using Newtonsoft.Json;
 using Arcweave.Interpreter;
@@ -17,6 +18,7 @@ public class Tests
     {
         var variables = new Dictionary<string, Variable>();
         var boards = new Dictionary<string, Board>();
+        var components = new Dictionary<string, Component>();
         foreach (var variable in testFile.initialVars.Values)
         {
             Variable v;
@@ -40,6 +42,14 @@ public class Tests
                     boards[variable.scope] = new Board(variable.scope, new List<INode>(), variable.scope);
                 }
                 boards[variable.scope].AddVariable(v);
+            }
+            else if (variable.cType == "components")
+            {
+                if (!components.ContainsKey(variable.scope))
+                {
+                    components[variable.scope] = new Component(variable.scope);
+                }
+                components[variable.scope].AddVariable(v);
             }
         }
         
@@ -79,7 +89,11 @@ public class Tests
         var board = new Board("testBoardId", nodes);
         boards["testBoardId"] = board;
 
-        var project = new Project.Project(boards.Values.ToList(), variables.Values.ToList());
+        var project = new Project.Project(
+            boards.Values.ToList(),
+            variables.Values.ToList(),
+            components.Values.ToList()
+        );
 
         return project;
     }
@@ -280,6 +294,115 @@ public class Tests
             Assert.That(output.Changes, Is.EqualTo(testCase.changes));
         }
     }
-}
-}
 
+    [Test]
+    public void GlobalBoardAndComponentVariablesRemainDistinct()
+    {
+        var global = new Variable("global-health", "health", 100);
+        var board = new Board("board-id", new List<INode>(), "board");
+        board.AddVariable(new Variable("board-health", "health", 50));
+        var component = new Component("component");
+        component.AddVariable(new Variable("component-health", "health", 25));
+        var project = new Project.Project(
+            new List<Board> { board },
+            new List<Variable> { global },
+            new List<Component> { component }
+        );
+
+        var output = new AwInterpreter(project).RunScript(
+            "<pre><code>show(health, \" \" , board.health, \" \" , component.health)</code></pre>" +
+            "<pre><code>health = 101</code></pre>" +
+            "<pre><code>board.health = 51</code></pre>" +
+            "<pre><code>component.health = 26</code></pre>"
+        );
+
+        Assert.That(output.Output, Is.EqualTo("<p>100 50 25</p>"));
+        Assert.That(output.Changes, Is.EqualTo(new Dictionary<string, object>
+        {
+            ["global-health"] = 101,
+            ["board-health"] = 51,
+            ["component-health"] = 26,
+        }));
+    }
+
+    [Test]
+    public void ResetAndResetAllCoverBoardAndComponentVariablesById()
+    {
+        var global = new Variable("global-health", "health", 100);
+        var board = new Board("board-id", new List<INode>(), "board");
+        board.AddVariable(new Variable("board-health", "health", 50));
+        var component = new Component("component");
+        component.AddVariable(new Variable("component-health", "health", 25));
+        var project = new Project.Project(
+            new List<Board> { board },
+            new List<Variable> { global },
+            new List<Component> { component }
+        );
+
+        var resetOutput = new AwInterpreter(project).RunScript(
+            "<pre><code>reset(board.health, component.health)</code></pre>"
+        );
+        Assert.That(resetOutput.Changes, Is.EqualTo(new Dictionary<string, object>
+        {
+            ["board-health"] = 50,
+            ["component-health"] = 25,
+        }));
+
+        var resetAllOutput = new AwInterpreter(project).RunScript(
+            "<pre><code>resetAll(component.health)</code></pre>"
+        );
+        Assert.That(resetAllOutput.Changes, Is.EqualTo(new Dictionary<string, object>
+        {
+            ["global-health"] = 100,
+            ["board-health"] = 50,
+        }));
+    }
+
+    [Test]
+    public void VariableRejectsNullValue()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Variable("id", "name", null));
+    }
+
+    [Test]
+    public void AttributeEnumValuesRemainSerializationCompatible()
+    {
+        Assert.That((int)IAttribute.DataType.Undefined, Is.EqualTo(0));
+        Assert.That((int)IAttribute.DataType.StringPlainText, Is.EqualTo(1));
+        Assert.That((int)IAttribute.DataType.StringRichText, Is.EqualTo(2));
+        Assert.That((int)IAttribute.DataType.ComponentList, Is.EqualTo(3));
+        Assert.That((int)IAttribute.DataType.AssetList, Is.EqualTo(4));
+        Assert.That((int)IAttribute.DataType.Boolean, Is.EqualTo(5));
+        Assert.That((int)IAttribute.DataType.Integer, Is.EqualTo(6));
+        Assert.That((int)IAttribute.DataType.Float, Is.EqualTo(7));
+
+        Assert.That((int)IAttribute.ContainerType.Undefined, Is.EqualTo(0));
+        Assert.That((int)IAttribute.ContainerType.Component, Is.EqualTo(1));
+        Assert.That((int)IAttribute.ContainerType.Element, Is.EqualTo(2));
+        Assert.That((int)IAttribute.ContainerType.Board, Is.EqualTo(3));
+    }
+
+    [Test]
+    public void NullContainerVariableCollectionsAreTreatedAsEmpty()
+    {
+        var global = new Variable("global", "global", 1);
+        var board = new Board("board-id", new List<INode>(), "board");
+        var component = new Component("component");
+
+        typeof(Board)
+            .GetField("<Variables>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(board, null);
+        typeof(Component)
+            .GetField("<Variables>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(component, null);
+
+        var project = new Project.Project(
+            new List<Board> { board },
+            new List<Variable> { global },
+            new List<Component> { component }
+        );
+
+        Assert.That(project.GetAllVariables(), Is.EqualTo(new[] { global }));
+    }
+}
+}
