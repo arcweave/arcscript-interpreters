@@ -24,7 +24,10 @@ function validateVarDef(variableId: string, varDef: VarDef) {
   if (!hasProperty(varDef, 'type')) {
     throw new Error(`Variable ${varDef.id} is missing type property`);
   }
-  if (!hasProperty(varDef, 'defaultValue')) {
+  if (
+    !hasProperty(varDef, 'defaultValue') ||
+    varDef.defaultValue === undefined
+  ) {
     throw new Error(`Variable ${varDef.id} is missing defaultValue property`);
   }
   if (varDef.defaultValue === null) {

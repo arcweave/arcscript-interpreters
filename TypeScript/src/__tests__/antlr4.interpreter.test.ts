@@ -112,21 +112,20 @@ describe('Global and scoped variables with matching names', () => {
       name: 'health',
       type: 'integer',
       defaultValue: 10,
-      scope: 'component',
+      scope: 'global',
     },
     globalHealth: {
       id: 'globalHealth',
       name: 'health',
       type: 'integer',
       defaultValue: 20,
-      scope: 'global',
     },
   };
 
-  test('unqualified lookup ignores an earlier scoped variable', () => {
+  test('unqualified lookup ignores an earlier variable scoped under the literal global', () => {
     const interpreter = new Interpreter({ state: initialVars });
     const { changes, output } = interpreter.runScript(
-      '<pre><code>show(health, " ", component.health)</code></pre><pre><code>health = 21</code></pre><pre><code>component.health = 11</code></pre>'
+      '<pre><code>show(health, " ", global.health)</code></pre><pre><code>health = 21</code></pre><pre><code>global.health = 11</code></pre>'
     );
 
     expect(output).toBe('<p>20 10</p>');
@@ -174,6 +173,23 @@ describe('Variable state validation', () => {
     expect(() =>
       interpreter.runScript('<pre><code>show(variable)</code></pre>')
     ).toThrow('Variable variable has empty scope property');
+  });
+
+  test('rejects an undefined defaultValue', () => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          defaultValue: undefined,
+        },
+      } as unknown as ArcscriptStateDef,
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow('Variable variable is missing defaultValue property');
   });
 });
 
@@ -261,6 +277,36 @@ describe('Replace variables', () => {
       expect(result).toStrictEqual(expectedResult);
     }
   );
+
+  test('distinguishes a scope named global from an unqualified global variable', () => {
+    const interpreter = new Interpreter({
+      state: {
+        scopedHealth: {
+          id: 'scopedHealth',
+          name: 'health',
+          type: 'integer',
+          defaultValue: 10,
+          scope: 'global',
+        },
+        globalHealth: {
+          id: 'globalHealth',
+          name: 'health',
+          type: 'integer',
+          defaultValue: 20,
+        },
+      },
+    });
+
+    const result = interpreter.replaceVariables(
+      '<pre><code>health = global.health</code></pre>',
+      {
+        scopedHealth: 'stamina',
+        globalHealth: 'energy',
+      }
+    );
+
+    expect(result).toBe('<pre><code>energy = global.stamina</code></pre>');
+  });
 });
 
 describe('Replace scopes', () => {
