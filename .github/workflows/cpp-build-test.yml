@@ -6,11 +6,13 @@ on:
     paths:
       - "Cpp/**"
       - "grammar/*.g4"
+      - ".github/workflows/cpp-build-test.yml"
   pull_request:
     branches: [main]
     paths:
       - "Cpp/**"
       - "grammar/*.g4"
+      - ".github/workflows/cpp-build-test.yml"
 
 jobs:
   build-and-test:
@@ -59,3 +61,11 @@ jobs:
           cd Cpp/build/${{ env.DEMO_DIR }}
           ls
           ./ArcscriptTest
+
+      - name: Upload native library artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcscript-cpp-${{ matrix.os }}-${{ github.sha }}
+          path: Cpp/build/lib/**
+          if-no-files-found: error
+          retention-days: 14
