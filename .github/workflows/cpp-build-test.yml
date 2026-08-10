@@ -22,7 +22,7 @@ jobs:
         os: [macos-latest, windows-2022]
       fail-fast: false
     env:
-      DEMO_DIR: demo/${{ matrix.os == 'windows-2022' && 'Win32/Debug' || 'Mac' }}
+      DEMO_DIR: demo/${{ matrix.os == 'windows-2022' && 'Win32/Release' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,10 +51,10 @@ jobs:
 
       - name: Configure CMake (macOS)
         if: matrix.os == 'macos-latest'
-        run: cmake -S Cpp -B Cpp/build -DWITH_TEST=true
+        run: cmake -S Cpp -B Cpp/build -DCMAKE_BUILD_TYPE=Release -DWITH_TEST=true
 
       - name: Build
-        run: cmake --build Cpp/build
+        run: cmake --build Cpp/build --config Release
 
       - name: Run tests
         run: |
