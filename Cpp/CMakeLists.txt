@@ -162,7 +162,6 @@ if (WITH_TEST)
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${DLL_NAME}"
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${LIBRARY_NAME}"
                 "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.exp"
-                "$<TARGET_FILE_DIR:ArcscriptTranspiler>/${PROJECT_NAME}.pdb"
         )
     else()
         set(ARCSCRIPT_TRANSPILER_LIB_FILES
