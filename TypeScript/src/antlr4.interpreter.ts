@@ -22,7 +22,7 @@ export default class Interpreter {
   currentElement: string;
   emit: (event: string, data?: unknown) => void;
 
-  constructor(options = {} as ArcscriptInterpreterOptions) {
+  constructor(options: ArcscriptInterpreterOptions) {
     this.arcscriptVariables = options.state;
     this.elementVisits = options.elementVisits || {};
     this.currentElement = options.currentElement || '';
