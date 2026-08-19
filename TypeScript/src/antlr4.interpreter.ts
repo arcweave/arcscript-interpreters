@@ -120,8 +120,9 @@ export default class Interpreter {
 
   replaceVariables(code: string, variables: Record<string, string>) {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
-    const tokenIdMap = new Map<object, string>();
     const stateVars = Object.values(this.arcscriptVariables);
+    const replacements: SourceReplacement[] = [];
+
     allTokens.forEach((token, index) => {
       if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
         return;
@@ -153,25 +154,16 @@ export default class Interpreter {
           ) ?? null;
       }
 
-      if (targetVar) {
-        tokenIdMap.set(token, targetVar.id);
+      if (targetVar && Object.hasOwn(variables, targetVar.id)) {
+        replacements.push({
+          start: token.start,
+          end: token.start + token.text.length,
+          text: variables[targetVar.id],
+        });
       }
     });
 
-    const variableTokens = allTokens.filter(token => tokenIdMap.has(token));
-    const replaceableTokens = variableTokens
-      .filter(varToken =>
-        Object.hasOwn(variables, tokenIdMap.get(varToken)!)
-      );
-
-    return this.applyReplacements(
-      code,
-      replaceableTokens.map(varToken => ({
-        start: varToken.start,
-        end: varToken.start + varToken.text.length,
-        text: variables[tokenIdMap.get(varToken)!],
-      }))
-    );
+    return this.applyReplacements(code, replacements);
   }
 
   replaceScopes(code: string, scopes: Record<string, string>) {
