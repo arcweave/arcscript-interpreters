@@ -55,12 +55,18 @@ export default class Interpreter {
     };
   }
 
-  parse(code: string) {
+  private createLexer(code: string) {
     const chars = new CharStream(code);
     const lexer = new ArcscriptLexer(chars);
     const errorListener = new ErrorListener();
     lexer.removeErrorListeners();
     lexer.addErrorListener(errorListener);
+
+    return { chars, lexer, errorListener };
+  }
+
+  parse(code: string) {
+    const { chars, lexer, errorListener } = this.createLexer(code);
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
@@ -83,11 +89,7 @@ export default class Interpreter {
   }
 
   private parseTokens(code: string) {
-    const chars = new CharStream(code);
-    const lexer = new ArcscriptLexer(chars);
-    const errorListener = new ErrorListener();
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(errorListener);
+    const { lexer } = this.createLexer(code);
 
     return {
       tokenTypeNames: lexer.getSymbolicNames(),
