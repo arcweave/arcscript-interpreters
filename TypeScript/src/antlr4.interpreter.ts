@@ -20,20 +20,16 @@ export default class Interpreter {
   state: ArcscriptState | null = null;
   elementVisits: Record<string, number>;
   currentElement: string;
-  variableOffsets: { start: number; end: number }[];
   emit: (event: string, data?: unknown) => void;
 
   constructor(options = {} as ArcscriptInterpreterOptions) {
     this.arcscriptVariables = options.state;
     this.elementVisits = options.elementVisits || {};
     this.currentElement = options.currentElement || '';
-    this.variableOffsets = [];
     this.emit = options.eventHandler || (() => {});
   }
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
-    this.variableOffsets = [];
-
     this.state = new ArcscriptState(
       this.arcscriptVariables,
       this.elementVisits,
@@ -76,7 +72,6 @@ export default class Interpreter {
     parser.removeErrorListeners();
     parser.addErrorListener(errorListener);
     const tree = parser.input();
-    // const visitor = new ArcscriptVisitor();
 
     return {
       chars,
