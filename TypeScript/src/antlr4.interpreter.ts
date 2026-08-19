@@ -22,11 +22,11 @@ export default class Interpreter {
   currentElement: string;
   emit: (event: string, data?: unknown) => void;
 
-  constructor(options: ArcscriptInterpreterOptions) {
+  constructor(options: ArcscriptInterpreterOptions = { state: {} }) {
     this.arcscriptVariables = options.state;
-    this.elementVisits = options.elementVisits || {};
-    this.currentElement = options.currentElement || '';
-    this.emit = options.eventHandler || (() => {});
+    this.elementVisits = options.elementVisits ?? {};
+    this.currentElement = options.currentElement ?? '';
+    this.emit = options.eventHandler ?? (() => {});
   }
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
