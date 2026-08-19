@@ -129,7 +129,13 @@ export default class Interpreter {
     return this.applyReplacements(code, replacements);
   }
 
-  replaceScopes(code: string, scopes: Record<string, string>) {
+  replaceScope(code: string, scope: string, replacement: string) {
+    return this.replaceScopes(code, {
+      [scope]: replacement,
+    });
+  }
+
+  private replaceScopes(code: string, scopes: Record<string, string>) {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
     const stateVars = Object.values(this.arcscriptVariables);
 
@@ -167,12 +173,6 @@ export default class Interpreter {
         text: scopes[scopeToken.text],
       }))
     );
-  }
-
-  replaceScope(code: string, scope: string, replacement: string) {
-    return this.replaceScopes(code, {
-      [scope]: replacement,
-    });
   }
 
   private createLexer(code: string) {

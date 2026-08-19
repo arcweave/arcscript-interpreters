@@ -325,16 +325,19 @@ describe('Replace scopes', () => {
     );
   });
 
-  test('supports replacing multiple scopes in one pass', () => {
+  test('supports replacing multiple scopes through the public API', () => {
     const interpreter = new Interpreter({
       state: (replaceVariableTests as unknown as TestSuite).initialVars,
     });
-    const result = interpreter.replaceScopes(
+    const componentScopeReplaced = interpreter.replaceScope(
       '<pre><code>comp1.x = boardOne.xyz + x</code></pre>',
-      {
-        comp1: 'comp2',
-        boardOne: 'boardTwo',
-      }
+      'comp1',
+      'comp2'
+    );
+    const result = interpreter.replaceScope(
+      componentScopeReplaced,
+      'boardOne',
+      'boardTwo'
     );
 
     expect(result).toBe('<pre><code>comp2.x = boardTwo.xyz + x</code></pre>');
