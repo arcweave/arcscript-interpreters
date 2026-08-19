@@ -1,11 +1,11 @@
 ![NPM Version](https://img.shields.io/npm/v/%40arcweave%2Farcscript)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/arcweave/arcscript-interpreters/JavaScript.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/arcweave/arcscript-interpreters/TypeScript.yml)
 
-# JS Arcscript Interpreter
+# TypeScript Arcscript Interpreter
 
 ## Table of contents
 
-- [JS Arcscript Interpreter](#js-arcscript-interpreter)
+- [TypeScript Arcscript Interpreter](#typescript-arcscript-interpreter)
   - [Table of contents](#table-of-contents)
   - [Getting Started](#getting-started)
   - [Installation](#installation)
@@ -54,7 +54,7 @@ TODO: Write API
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+To contribute to the TypeScript interpreter:
 
 1.  Fork it!
 2.  Create your feature branch: `git checkout -b my-new-feature`

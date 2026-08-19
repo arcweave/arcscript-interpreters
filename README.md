@@ -1,6 +1,6 @@
 # Arcscript Interpreters
 
-This repository includes the supported interpreters for **arcscript**, the scripting language of [Arcweave](https://arcweave.com), for [C++](Cpp), [C#](CSharp) and [JavaScript](JavaScript).
+This repository includes the supported interpreters for **arcscript**, the scripting language of [Arcweave](https://arcweave.com), for [C++](Cpp), [C#](CSharp) and [TypeScript](TypeScript).
 
 The interpreters are built using [ANTLR 4](https://github.com/antlr/antlr4), a parser generator for reading, processing, executing, or translating structured text or binary files.
 
@@ -8,7 +8,7 @@ The interpreters are built using [ANTLR 4](https://github.com/antlr/antlr4), a p
 
 ### Why a parser generator?
 
-In order to support updating game data from Arcweave that use arcscript during runtime in game engines, we had to find a way to interpret it without having to rebuild the game. This lead us to use a parser generator. ANTLR 4 is a great option for that, since it can create parsers for multiple languages, including C++ (which we use for unreal), C# (for Unity and Godot) and JavaScript (for our frontend). 
+In order to support updating game data from Arcweave that use arcscript during runtime in game engines, we had to find a way to interpret it without having to rebuild the game. This lead us to use a parser generator. ANTLR 4 is a great option for that, since it can create parsers for multiple languages, including C++ (which we use for unreal), C# (for Unity and Godot) and TypeScript (for our frontend).
 
 ### Our Implementation
 
@@ -22,7 +22,7 @@ In folder [`grammar`](grammar) you can find the files [`ArcscriptLexer.g4`](gram
 - Java JRE to run the antlr4 tool
 - python3
 
-In order to build all Parsers for C++, C# and JavaScript, run the [`generate.sh`](generate.sh) shell script.
+In order to build all Parsers for C++, C# and TypeScript, run the [`generate.sh`](generate.sh) shell script.
 
 ```bash
 $ sh generate.sh
@@ -36,11 +36,11 @@ This script:
 
 ## Languages
 
-### JavaScript
+### TypeScript
 
-We are using the JavaScript parser to interpret arcscript in our arcweave app. We have also created a package, [`@arcweave/arcscript`](https://www.npmjs.com/package/@arcweave/arcscript) using the generated files in [JavaScript](JavaScript), along with a custom ANTLR Visitor to parse the generated Parse Tree from ANTLR.
+We are using the TypeScript parser to interpret arcscript in our Arcweave app. We have also created a package, [`@arcweave/arcscript`](https://www.npmjs.com/package/@arcweave/arcscript), using the generated files in [TypeScript](TypeScript), along with a custom ANTLR Visitor to parse the generated Parse Tree from ANTLR.
 
-You can find more info in [JavaScript](JavaScript) folder.
+You can find more info in the [TypeScript](TypeScript) folder.
 
 ### C#
 
