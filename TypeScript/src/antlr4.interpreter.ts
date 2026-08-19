@@ -136,15 +136,13 @@ export default class Interpreter {
     });
 
     const variableTokens = allTokens.filter(token => tokenIdMap.has(token));
-    const f = variableTokens
+    const replaceableTokens = variableTokens
       .filter(varToken =>
-        tokenIdMap.has(varToken)
-          ? Object.keys(variables).includes(tokenIdMap.get(varToken)!)
-          : false
+        Object.hasOwn(variables, tokenIdMap.get(varToken)!)
       )
       .sort((a, b) => b.start - a.start);
     let newCode = code;
-    f.forEach(varToken => {
+    replaceableTokens.forEach(varToken => {
       const { start } = varToken;
       const end = start + varToken.text.length;
       const replace = variables[tokenIdMap.get(varToken)!];
