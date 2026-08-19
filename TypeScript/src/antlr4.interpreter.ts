@@ -36,26 +36,25 @@ export default class Interpreter {
   }
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
-    this.state = new ArcscriptState(
+    const state = new ArcscriptState(
       this.arcscriptVariables,
       this.elementVisits,
       this.currentElement,
       this.emit
     );
+    this.state = state;
 
     const { tree } = this.parse(code);
 
-    const visitor = new ArcscriptVisitor(this.state);
+    const visitor = new ArcscriptVisitor(state);
 
-    this.state.setVarValues(varValues);
+    state.setVarValues(varValues);
 
     const result = tree.accept(visitor);
-
-    let output = visitor.state.generateOutput();
-    output = clearBlockStyle(output);
+    const output = clearBlockStyle(state.generateOutput());
 
     return {
-      changes: visitor.state.getChanges(),
+      changes: state.getChanges(),
       output,
       result,
     };
