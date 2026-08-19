@@ -15,6 +15,12 @@ type ArcscriptInterpreterOptions = {
   eventHandler?: (event: string, data?: unknown) => void;
 };
 
+type SourceReplacement = {
+  start: number;
+  end: number;
+  text: string;
+};
+
 export default class Interpreter {
   arcscriptVariables: ArcscriptStateDef;
   state: ArcscriptState | null = null;
@@ -97,6 +103,21 @@ export default class Interpreter {
     };
   }
 
+  private applyReplacements(
+    code: string,
+    replacements: SourceReplacement[]
+  ) {
+    return [...replacements]
+      .sort((a, b) => b.start - a.start)
+      .reduce(
+        (updatedCode, replacement) =>
+          updatedCode.slice(0, replacement.start) +
+          replacement.text +
+          updatedCode.slice(replacement.end),
+        code
+      );
+  }
+
   replaceVariables(code: string, variables: Record<string, string>) {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
     const tokenIdMap = new Map<object, string>();
@@ -141,16 +162,16 @@ export default class Interpreter {
     const replaceableTokens = variableTokens
       .filter(varToken =>
         Object.hasOwn(variables, tokenIdMap.get(varToken)!)
-      )
-      .sort((a, b) => b.start - a.start);
-    let newCode = code;
-    replaceableTokens.forEach(varToken => {
-      const { start } = varToken;
-      const end = start + varToken.text.length;
-      const replace = variables[tokenIdMap.get(varToken)!];
-      newCode = newCode.slice(0, start) + replace + newCode.slice(end);
-    });
-    return newCode;
+      );
+
+    return this.applyReplacements(
+      code,
+      replaceableTokens.map(varToken => ({
+        start: varToken.start,
+        end: varToken.start + varToken.text.length,
+        text: variables[tokenIdMap.get(varToken)!],
+      }))
+    );
   }
 
   replaceScopes(code: string, scopes: Record<string, string>) {
@@ -181,18 +202,16 @@ export default class Interpreter {
       })
       .filter(scopeToken =>
         Object.prototype.hasOwnProperty.call(scopes, scopeToken.text)
-      )
-      .sort((a, b) => b.start - a.start);
+      );
 
-    let newCode = code;
-    targetScopeTokens.forEach(scopeToken => {
-      const start = scopeToken.start;
-      const end = start + scopeToken.text.length;
-      const replace = scopes[scopeToken.text];
-      newCode = newCode.slice(0, start) + replace + newCode.slice(end);
-    });
-
-    return newCode;
+    return this.applyReplacements(
+      code,
+      targetScopeTokens.map(scopeToken => ({
+        start: scopeToken.start,
+        end: scopeToken.start + scopeToken.text.length,
+        text: scopes[scopeToken.text],
+      }))
+    );
   }
 
   replaceScope(code: string, scope: string, replacement: string) {
