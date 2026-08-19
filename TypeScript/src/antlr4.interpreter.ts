@@ -22,11 +22,10 @@ type SourceReplacement = {
 };
 
 export default class Interpreter {
-  arcscriptVariables: ArcscriptStateDef;
-  state: ArcscriptState | null = null;
-  elementVisits: Record<string, number>;
-  currentElement: string;
-  emit: (event: string, data?: unknown) => void;
+  private readonly arcscriptVariables: ArcscriptStateDef;
+  private readonly elementVisits: Record<string, number>;
+  private readonly currentElement: string;
+  private readonly emit: (event: string, data?: unknown) => void;
 
   constructor(options: ArcscriptInterpreterOptions = { state: {} }) {
     this.arcscriptVariables = options.state;
@@ -42,7 +41,6 @@ export default class Interpreter {
       this.currentElement,
       this.emit
     );
-    this.state = state;
 
     const { tree } = this.parse(code);
 
