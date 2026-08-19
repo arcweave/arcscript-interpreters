@@ -58,16 +58,6 @@ export default class Interpreter {
     };
   }
 
-  private createLexer(code: string) {
-    const chars = new CharStream(code);
-    const lexer = new ArcscriptLexer(chars);
-    const errorListener = new ErrorListener();
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(errorListener);
-
-    return { chars, lexer, errorListener };
-  }
-
   parse(code: string) {
     const { chars, lexer, errorListener } = this.createLexer(code);
     const tokens = new antlr4.CommonTokenStream(lexer);
@@ -89,30 +79,6 @@ export default class Interpreter {
       parser,
       tree,
     };
-  }
-
-  private parseTokens(code: string) {
-    const { lexer } = this.createLexer(code);
-
-    return {
-      tokenTypeNames: lexer.getSymbolicNames(),
-      allTokens: lexer.getAllTokens(),
-    };
-  }
-
-  private applyReplacements(
-    code: string,
-    replacements: SourceReplacement[]
-  ) {
-    return [...replacements]
-      .sort((a, b) => b.start - a.start)
-      .reduce(
-        (updatedCode, replacement) =>
-          updatedCode.slice(0, replacement.start) +
-          replacement.text +
-          updatedCode.slice(replacement.end),
-        code
-      );
   }
 
   replaceVariables(code: string, variables: Record<string, string>) {
@@ -207,5 +173,39 @@ export default class Interpreter {
     return this.replaceScopes(code, {
       [scope]: replacement,
     });
+  }
+
+  private createLexer(code: string) {
+    const chars = new CharStream(code);
+    const lexer = new ArcscriptLexer(chars);
+    const errorListener = new ErrorListener();
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(errorListener);
+
+    return { chars, lexer, errorListener };
+  }
+
+  private parseTokens(code: string) {
+    const { lexer } = this.createLexer(code);
+
+    return {
+      tokenTypeNames: lexer.getSymbolicNames(),
+      allTokens: lexer.getAllTokens(),
+    };
+  }
+
+  private applyReplacements(
+    code: string,
+    replacements: SourceReplacement[]
+  ) {
+    return [...replacements]
+      .sort((a, b) => b.start - a.start)
+      .reduce(
+        (updatedCode, replacement) =>
+          updatedCode.slice(0, replacement.start) +
+          replacement.text +
+          updatedCode.slice(replacement.end),
+        code
+      );
   }
 }
