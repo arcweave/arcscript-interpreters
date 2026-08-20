@@ -96,10 +96,14 @@ describe('show', () => {
 
   test('replaces supported escape sequences', () => {
     const { functions, state } = createFunctionContext();
+    const pushOutput = vi.spyOn(state, 'pushOutput');
 
     functions.show(String.raw`\a\b\f\n\r\t\v\'\"\\`);
 
-    expect(state.outputs[0].output).toBe(`<p>${'\x07\b\f\n\r\t\v\'"\\'}</p>`);
+    expect(pushOutput).toHaveBeenCalledWith(
+      `<p>${'\x07\b\f\n\r\t\v\'"\\'}</p>`,
+      true
+    );
   });
 
   test('does not interpret an escape after an escaped backslash', () => {

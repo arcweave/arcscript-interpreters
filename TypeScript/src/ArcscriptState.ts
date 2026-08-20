@@ -64,17 +64,17 @@ type OutputObject = {
 };
 
 export default class ArcscriptState {
-  variables: Record<string, ArcscriptVariable>;
+  readonly variables: Record<string, ArcscriptVariable>;
 
-  elementVisits: Record<string, number>;
-  currentElement: string;
-  outputs: OutputObject[];
-  conditionDepth: number;
-  emit: (event: string, data?: unknown) => void;
-  outputDoc: Document;
-  rootElement: HTMLElement;
-  inBlockquote: boolean;
-  insertBlockquote: boolean;
+  readonly elementVisits: Record<string, number>;
+  readonly currentElement: string;
+  private readonly outputs: OutputObject[];
+  private conditionDepth: number;
+  private readonly emit: (event: string, data?: unknown) => void;
+  private readonly outputDoc: Document;
+  private readonly rootElement: HTMLElement;
+  private inBlockquote: boolean;
+  private insertBlockquote: boolean;
 
   constructor(
     arcscriptVariables: ArcscriptStateDef,
