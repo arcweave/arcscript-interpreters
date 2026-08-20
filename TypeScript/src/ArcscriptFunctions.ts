@@ -20,7 +20,8 @@ export type ArcscriptNonVoidFunctionKeys = Exclude<
   ArcscriptVoidFunctionKeys
 >;
 
-type ArgumentTypes = (VarValue | MentionResult | ArcscriptVariable)[];
+type ArgumentType = VarValue | MentionResult | ArcscriptVariable;
+type ArgumentTypes = ArgumentType[];
 
 const ESCAPE_SEQUENCES: Record<string, string> = {
   a: '\x07',
@@ -43,27 +44,27 @@ export default class ArcscriptFunctions {
   }
 
   sqrt(...args: ArgumentTypes): number {
-    this.assertNumber('sqrt', args[0]);
-    const n = args[0] as number;
-    const result = Math.sqrt(n);
+    const value = args[0];
+    this.assertNumber('sqrt', value);
+    const result = Math.sqrt(value);
     if (Number.isNaN(result)) {
       throw new RuntimeError(
-        `Invalid call to function sqrt with argument: ${n}`
+        `Invalid call to function sqrt with argument: ${value}`
       );
     }
     return result;
   }
 
   sqr(...args: ArgumentTypes): number {
-    this.assertNumber('sqr', args[0]);
-    const n = args[0] as number;
-    return n * n;
+    const value = args[0];
+    this.assertNumber('sqr', value);
+    return value * value;
   }
 
   abs(...args: ArgumentTypes): number {
-    this.assertNumber('abs', args[0]);
-    const n = args[0] as number;
-    return Math.abs(n);
+    const value = args[0];
+    this.assertNumber('abs', value);
+    return Math.abs(value);
   }
 
   random(): number {
@@ -77,13 +78,11 @@ export default class ArcscriptFunctions {
 
     this.assertPositiveInteger('roll', maxRoll);
     this.assertPositiveInteger('roll', rolls);
-    const maxRollNum = maxRoll as number;
-    const rollsNum = rolls as number;
 
     // Perform several dice rolls
     let rollSum = 0;
-    for (let i = 0; i < rollsNum; i += 1) {
-      rollSum += Math.floor(Math.random() * maxRollNum) + 1;
+    for (let i = 0; i < rolls; i += 1) {
+      rollSum += Math.floor(Math.random() * maxRoll) + 1;
     }
     return rollSum;
   }
@@ -113,20 +112,19 @@ export default class ArcscriptFunctions {
   }
 
   round(...args: ArgumentTypes): number {
-    const num = args[0];
-    this.assertNumber('round', num);
-    const n = num as number;
-    return Math.round(n);
+    const value = args[0];
+    this.assertNumber('round', value);
+    return Math.round(value);
   }
 
   min(...args: ArgumentTypes): number {
-    args.forEach(arg => this.assertNumber('min', arg));
-    return Math.min(...(args as number[]));
+    this.assertNumbers('min', args);
+    return Math.min(...args);
   }
 
   max(...args: ArgumentTypes): number {
-    args.forEach(arg => this.assertNumber('max', arg));
-    return Math.max(...(args as number[]));
+    this.assertNumbers('max', args);
+    return Math.max(...args);
   }
 
   visits(...args: ArgumentTypes): number {
@@ -183,15 +181,19 @@ export default class ArcscriptFunctions {
    * @param {string} name         The function name
    * @param {VarValue}  arg          The argument to check
    */
-  private assertNumber(
-    name: string,
-    arg: VarValue | MentionResult | ArcscriptVariable
-  ) {
+  private assertNumber(name: string, arg: ArgumentType): asserts arg is number {
     if (typeof arg !== 'number' || Number.isNaN(arg)) {
       throw new RuntimeError(
         `Invalid argument ${arg} in function ${name}. Expected number (integer or float)`
       );
     }
+  }
+
+  private assertNumbers(
+    name: string,
+    args: ArgumentTypes
+  ): asserts args is number[] {
+    args.forEach(arg => this.assertNumber(name, arg));
   }
 
   /**
@@ -201,8 +203,8 @@ export default class ArcscriptFunctions {
    */
   private assertPositiveInteger(
     name: string,
-    arg: VarValue | MentionResult | ArcscriptVariable
-  ) {
+    arg: ArgumentType
+  ): asserts arg is number {
     if (typeof arg !== 'number' || !Number.isInteger(arg) || arg <= 0) {
       throw new RuntimeError(
         `Invalid argument ${arg} in function ${name}. Expected positive integer`
