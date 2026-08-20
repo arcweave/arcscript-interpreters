@@ -97,7 +97,7 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
-  initializeVariables(arcscriptVariables: ArcscriptStateDef) {
+  private initializeVariables(arcscriptVariables: ArcscriptStateDef) {
     validateStateDef(arcscriptVariables);
     const variables: Record<string, ArcscriptVariable> = {};
     Object.entries(arcscriptVariables).forEach(([id, varDef]) => {
