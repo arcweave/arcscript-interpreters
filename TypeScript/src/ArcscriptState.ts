@@ -173,95 +173,28 @@ export default class ArcscriptState {
    * @param {boolean} fromScript If the output comes from a script
    */
   pushOutput(output: string, fromScript: boolean = false) {
-    let previousOutput = null;
-    if (this.outputs.length > 0) {
-      previousOutput = this.outputs[this.outputs.length - 1];
-    }
-
-    let outputNode = new DOMParser().parseFromString(output, 'text/html').body
-      .firstElementChild;
+    const previousOutput = this.outputs[this.outputs.length - 1];
+    const outputNode = this.parseOutputNode(output);
     if (!outputNode) {
       return;
     }
 
-    this.outputs.push({
-      output,
-      index: this.conditionDepth,
-      fromScript,
-      inBlockquote: this.inBlockquote,
-      isScript: false,
-    });
+    this.recordOutput(output, fromScript);
 
     // If this is the first output to be inserted
     if (!this.rootElement.innerHTML) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        outputNode = newNode;
-        this.insertBlockquote = false;
-      }
-      this.rootElement.appendChild(outputNode);
+      this.appendToRoot(outputNode);
     }
     // If current output is coming from a script, we are merging it with the previous output
     else if (fromScript) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        outputNode = newNode;
-        this.insertBlockquote = false;
-        this.rootElement.appendChild(outputNode);
-      } else if (outputNode.innerHTML) {
-        const children =
-          this.outputDoc.body.querySelectorAll('div p:last-child');
-        if (children[children.length - 1].innerHTML === '') {
-          children[children.length - 1].innerHTML = outputNode.innerHTML;
-        } else {
-          children[children.length - 1].innerHTML += ` ${outputNode.innerHTML}`;
-        }
-      }
+      this.appendScriptOutput(outputNode);
     }
     // If the previous output was from a script, the node was a script or
     // the condition depth is different, merge if the nodes are of the same type
-    else if (
-      previousOutput &&
-      (previousOutput.fromScript ||
-        previousOutput.isScript ||
-        previousOutput.index !== this.conditionDepth)
-    ) {
-      const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
-      const previousNode = this.rootElement.lastElementChild;
-      if (previousNode && previousNode.nodeName === nodeName) {
-        if (outputNode.innerHTML) {
-          const children =
-            this.rootElement.querySelectorAll('div p:last-child');
-          if (children[children.length - 1].innerHTML === '') {
-            children[children.length - 1].innerHTML = outputNode.innerHTML;
-          } else {
-            children[children.length - 1].innerHTML +=
-              ` ${outputNode.innerHTML}`;
-          }
-        }
-      } else {
-        if (this.insertBlockquote) {
-          const newNode = this.outputDoc.createElement('blockquote');
-          newNode.appendChild(outputNode);
-          outputNode = newNode;
-          this.insertBlockquote = false;
-        }
-        this.rootElement.appendChild(outputNode);
-      }
+    else if (this.shouldMergeWithPreviousOutput(previousOutput)) {
+      this.appendAfterPreviousOutput(outputNode);
     } else if (this.inBlockquote) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        this.rootElement.appendChild(newNode);
-
-        this.insertBlockquote = false;
-      } else {
-        this.outputDoc
-          .querySelector('blockquote:last-child')
-          ?.appendChild(outputNode);
-      }
+      this.appendBlockquoteOutput(outputNode);
     } else {
       this.rootElement.appendChild(outputNode);
     }
@@ -309,5 +242,88 @@ export default class ArcscriptState {
       this.elementVisits[key] = 0;
     });
     this.emit('resetVisits', {});
+  }
+
+  private parseOutputNode(output: string): Element | null {
+    return new DOMParser().parseFromString(output, 'text/html').body
+      .firstElementChild;
+  }
+
+  private recordOutput(output: string, fromScript: boolean): void {
+    this.outputs.push({
+      output,
+      index: this.conditionDepth,
+      fromScript,
+      inBlockquote: this.inBlockquote,
+      isScript: false,
+    });
+  }
+
+  private appendToRoot(outputNode: Element): void {
+    this.rootElement.appendChild(this.wrapInBlockquote(outputNode));
+  }
+
+  private wrapInBlockquote(outputNode: Element): Element {
+    if (!this.insertBlockquote) {
+      return outputNode;
+    }
+    const blockquote = this.outputDoc.createElement('blockquote');
+    blockquote.appendChild(outputNode);
+    return blockquote;
+  }
+
+  private appendScriptOutput(outputNode: Element): void {
+    if (this.insertBlockquote) {
+      this.appendToRoot(outputNode);
+      return;
+    }
+    this.mergeWithLastParagraph(outputNode, this.outputDoc.body);
+  }
+
+  private shouldMergeWithPreviousOutput(
+    previousOutput: OutputObject | undefined
+  ): boolean {
+    return Boolean(
+      previousOutput &&
+      (previousOutput.fromScript ||
+        previousOutput.isScript ||
+        previousOutput.index !== this.conditionDepth)
+    );
+  }
+
+  private appendAfterPreviousOutput(outputNode: Element): void {
+    const expectedNodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
+    const previousNode = this.rootElement.lastElementChild;
+    if (previousNode?.nodeName === expectedNodeName) {
+      this.mergeWithLastParagraph(outputNode, this.rootElement);
+      return;
+    }
+    this.appendToRoot(outputNode);
+  }
+
+  private mergeWithLastParagraph(
+    outputNode: Element,
+    container: ParentNode
+  ): void {
+    if (!outputNode.innerHTML) {
+      return;
+    }
+    const paragraphs = container.querySelectorAll('div p:last-child');
+    const lastParagraph = paragraphs[paragraphs.length - 1];
+    if (lastParagraph.innerHTML === '') {
+      lastParagraph.innerHTML = outputNode.innerHTML;
+    } else {
+      lastParagraph.innerHTML += ` ${outputNode.innerHTML}`;
+    }
+  }
+
+  private appendBlockquoteOutput(outputNode: Element): void {
+    if (this.insertBlockquote) {
+      this.appendToRoot(outputNode);
+      return;
+    }
+    this.outputDoc
+      .querySelector('blockquote:last-child')
+      ?.appendChild(outputNode);
   }
 }
