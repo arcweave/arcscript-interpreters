@@ -30,7 +30,7 @@
 	},
 	"homepage": "https://github.com/arcweave/arcscript-interpreters#readme",
 	"author": "Arcweave",
-	"license": "ISC",
+	"license": "BSD-3-Clause",
 	"packageManager": "pnpm@10.12.2",
 	"files": [
 		"dist"

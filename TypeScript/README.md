@@ -242,4 +242,4 @@ The build writes compiled files and declarations to `dist/`.
 
 ## License
 
-ISC
+This project is licensed under the terms in [`LICENSE.txt`](../LICENSE.txt).
