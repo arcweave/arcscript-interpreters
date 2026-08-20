@@ -4,12 +4,22 @@ import ArcscriptState from '../ArcscriptState.js';
 import { RuntimeError } from '../errors/index.js';
 import { MentionResult } from '../types.js';
 
+function createFunctionContext(
+  elementVisits: Record<string, number> = {},
+  currentElement = ''
+) {
+  const state = new ArcscriptState({}, elementVisits, currentElement, () => {});
+  return {
+    functions: new ArcscriptFunctions(state),
+    state,
+  };
+}
+
 function createFunctions(
   elementVisits: Record<string, number> = {},
   currentElement = ''
 ): ArcscriptFunctions {
-  const state = new ArcscriptState({}, elementVisits, currentElement, () => {});
-  return new ArcscriptFunctions(state);
+  return createFunctionContext(elementVisits, currentElement).functions;
 }
 
 function createMention(elementId: string): MentionResult {
@@ -72,6 +82,40 @@ describe('roll', () => {
     expect(() => createFunctions().roll('6')).toThrow(
       'Expected positive integer'
     );
+  });
+});
+
+describe('show', () => {
+  test('concatenates arguments without separators', () => {
+    const { functions, state } = createFunctionContext();
+
+    functions.show('Value: ', 3, true);
+
+    expect(state.generateOutput()).toBe('<p>Value: 3true</p>');
+  });
+
+  test('replaces supported escape sequences', () => {
+    const { functions, state } = createFunctionContext();
+
+    functions.show(String.raw`\a\b\f\n\r\t\v\'\"\\`);
+
+    expect(state.outputs[0].output).toBe(`<p>${'\x07\b\f\n\r\t\v\'"\\'}</p>`);
+  });
+
+  test('does not interpret an escape after an escaped backslash', () => {
+    const { functions, state } = createFunctionContext();
+
+    functions.show(String.raw`\\n`);
+
+    expect(state.generateOutput()).toBe(String.raw`<p>\n</p>`);
+  });
+
+  test('preserves unsupported escape sequences', () => {
+    const { functions, state } = createFunctionContext();
+
+    functions.show(String.raw`\x`);
+
+    expect(state.generateOutput()).toBe(String.raw`<p>\x</p>`);
   });
 });
 

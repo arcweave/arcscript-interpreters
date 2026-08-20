@@ -22,6 +22,19 @@ export type ArcscriptNonVoidFunctionKeys = Exclude<
 
 type ArgumentTypes = (VarValue | MentionResult | ArcscriptVariable)[];
 
+const ESCAPE_SEQUENCES: Record<string, string> = {
+  a: '\x07',
+  b: '\b',
+  f: '\f',
+  n: '\n',
+  r: '\r',
+  t: '\t',
+  v: '\v',
+  "'": "'",
+  '"': '"',
+  '\\': '\\',
+};
+
 export default class ArcscriptFunctions {
   private state: ArcscriptState;
 
@@ -76,31 +89,11 @@ export default class ArcscriptFunctions {
   }
 
   show(...args: ArgumentTypes): void {
-    let result = args.join('');
-    result = result.replace(/\\([abfnrtv'"])/g, (match, p1) => {
-      switch (p1) {
-        case 'a':
-          return '\x07';
-        case 'b':
-          return '\b';
-        case 'f':
-          return '\f';
-        case 'n':
-          return '\n';
-        case 'r':
-          return '\r';
-        case 't':
-          return '\t';
-        case 'v':
-          return '\v';
-        case "'":
-          return "'";
-        case '"':
-          return '"';
-        default:
-          return match;
-      }
-    });
+    const result = args
+      .join('')
+      .replace(/\\([abfnrtv'"\\])/g, (_match, escape: string) => {
+        return ESCAPE_SEQUENCES[escape];
+      });
     this.state.pushOutput(`<p>${result}</p>`, true);
   }
 
