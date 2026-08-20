@@ -150,23 +150,32 @@ export default class ArcscriptFunctions {
   visits(...args: ArgumentTypes): number {
     let elementId = this.state.currentElement;
     if (args.length > 0) {
-      const mention = args[0] as MentionResult;
+      const mention = args[0];
       if (
         typeof mention !== 'object' ||
+        mention === null ||
+        !('attrs' in mention) ||
+        typeof mention.attrs !== 'object' ||
+        mention.attrs === null ||
         typeof mention.attrs['data-id'] !== 'string'
       ) {
         throw new RuntimeError(
           `Invalid argument ${mention} in function visits. Expected an element mention`
         );
       }
-      if (!(mention.attrs['data-id'] in this.state.elementVisits)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          this.state.elementVisits,
+          mention.attrs['data-id']
+        )
+      ) {
         throw new RuntimeError(
           `Invalid mention id: ${mention.attrs['data-id']}`
         );
       }
       elementId = mention.attrs['data-id'];
     }
-    return this.state.elementVisits[elementId];
+    return this.state.elementVisits[elementId] ?? 0;
   }
 
   resetVisits(): void {

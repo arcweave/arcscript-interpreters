@@ -2,10 +2,24 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import ArcscriptFunctions from '../ArcscriptFunctions.js';
 import ArcscriptState from '../ArcscriptState.js';
 import { RuntimeError } from '../errors/index.js';
+import { MentionResult } from '../types.js';
 
-function createFunctions(): ArcscriptFunctions {
-  const state = new ArcscriptState({}, {}, '', () => {});
+function createFunctions(
+  elementVisits: Record<string, number> = {},
+  currentElement = ''
+): ArcscriptFunctions {
+  const state = new ArcscriptState({}, elementVisits, currentElement, () => {});
   return new ArcscriptFunctions(state);
+}
+
+function createMention(elementId: string): MentionResult {
+  return {
+    attrs: {
+      'data-id': elementId,
+      'data-type': 'element',
+    },
+    label: '',
+  };
 }
 
 describe('roll', () => {
@@ -60,3 +74,51 @@ describe('roll', () => {
     );
   });
 });
+
+describe('visits', () => {
+  test('returns visits for the current element', () => {
+    expect(createFunctions({ current: 3 }, 'current').visits()).toBe(3);
+  });
+
+  test('returns zero when the current element has no recorded visits', () => {
+    expect(createFunctions({}, 'current').visits()).toBe(0);
+  });
+
+  test('returns visits for a mentioned element', () => {
+    const functions = createFunctions({ current: 3, mentioned: 5 }, 'current');
+
+    expect(functions.visits(createMention('mentioned'))).toBe(5);
+  });
+
+  test.each([null, {}, { attrs: null }, { attrs: {} }])(
+    'rejects malformed mention argument %#',
+    argument => {
+      expect(() => functionsWithInvalidArgument(argument)).toThrow(
+        RuntimeError
+      );
+      expect(() => functionsWithInvalidArgument(argument)).toThrow(
+        'Expected an element mention'
+      );
+    }
+  );
+
+  test('rejects an unknown mentioned element', () => {
+    const functions = createFunctions({ known: 1 });
+
+    expect(() => functions.visits(createMention('unknown'))).toThrow(
+      'Invalid mention id: unknown'
+    );
+  });
+
+  test('does not accept inherited visit properties as element ids', () => {
+    const functions = createFunctions({});
+
+    expect(() => functions.visits(createMention('toString'))).toThrow(
+      'Invalid mention id: toString'
+    );
+  });
+});
+
+function functionsWithInvalidArgument(argument: unknown): number {
+  return createFunctions().visits(argument as MentionResult);
+}
