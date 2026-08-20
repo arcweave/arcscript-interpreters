@@ -60,7 +60,7 @@ export default class ArcscriptFunctions {
   roll(...args: ArgumentTypes): number {
     // Default value for the number of rolls is 1
     const maxRoll = args[0];
-    const rolls = args[1] || 1;
+    const rolls = args[1] ?? 1;
 
     this.assertPositiveInteger('roll', maxRoll);
     this.assertPositiveInteger('roll', rolls);
@@ -198,12 +198,7 @@ export default class ArcscriptFunctions {
     name: string,
     arg: VarValue | MentionResult | ArcscriptVariable
   ) {
-    if (typeof arg !== 'number' || Number.isNaN(arg)) {
-      throw new RuntimeError(
-        `Invalid argument ${arg} in function ${name}. Expected number (integer)`
-      );
-    }
-    if (arg <= 0) {
+    if (typeof arg !== 'number' || !Number.isInteger(arg) || arg <= 0) {
       throw new RuntimeError(
         `Invalid argument ${arg} in function ${name}. Expected positive integer`
       );
