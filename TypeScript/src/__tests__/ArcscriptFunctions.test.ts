@@ -119,6 +119,30 @@ describe('show', () => {
   });
 });
 
+describe('reset', () => {
+  test('validates every argument before resetting variables', () => {
+    const state = new ArcscriptState(
+      {
+        first: {
+          id: 'first',
+          name: 'first',
+          type: 'integer',
+          defaultValue: 1,
+          value: 10,
+        },
+      },
+      {},
+      '',
+      () => {}
+    );
+    const functions = new ArcscriptFunctions(state);
+    const first = state.variables.first;
+
+    expect(() => functions.reset(first, 'invalid')).toThrow(RuntimeError);
+    expect(first.getValue()).toBe(10);
+  });
+});
+
 describe('visits', () => {
   test('returns visits for the current element', () => {
     expect(createFunctions({ current: 3 }, 'current').visits()).toBe(3);

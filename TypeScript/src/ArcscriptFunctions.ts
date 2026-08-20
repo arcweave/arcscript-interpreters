@@ -98,25 +98,14 @@ export default class ArcscriptFunctions {
   }
 
   reset(...args: ArgumentTypes): void {
-    args.forEach(variable => {
-      if (!(variable instanceof ArcscriptVariable)) {
-        throw new RuntimeError(
-          `Invalid argument ${variable} in function reset. Expected a variable`
-        );
-      }
-      variable.reset();
-    });
+    const variables = this.getVariableArguments('reset', args);
+    variables.forEach(variable => variable.reset());
   }
 
   resetAll(...args: ArgumentTypes): void {
-    const except = args.map(variable => {
-      if (!(variable instanceof ArcscriptVariable)) {
-        throw new RuntimeError(
-          `Invalid argument ${variable} in function resetAll. Expected a variable`
-        );
-      }
-      return variable.id;
-    });
+    const except = this.getVariableArguments('resetAll', args).map(
+      variable => variable.id
+    );
     const variablesToReset = Object.values(this.state.variables).filter(
       v => !except.includes(v.id)
     );
@@ -173,6 +162,20 @@ export default class ArcscriptFunctions {
 
   resetVisits(): void {
     this.state.resetVisits();
+  }
+
+  private getVariableArguments(
+    name: string,
+    args: ArgumentTypes
+  ): ArcscriptVariable[] {
+    return args.map(variable => {
+      if (!(variable instanceof ArcscriptVariable)) {
+        throw new RuntimeError(
+          `Invalid argument ${variable} in function ${name}. Expected a variable`
+        );
+      }
+      return variable;
+    });
   }
 
   /**
