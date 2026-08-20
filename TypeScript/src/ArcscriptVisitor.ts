@@ -311,8 +311,8 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     if (typeof left === 'string' || typeof right === 'string') {
       throw new RuntimeError('Invalid operation with string');
     }
-    const leftValue = new BigNumber(left as number);
-    const rightValue = new BigNumber(right as number);
+    const leftValue = new BigNumber(Number(left));
+    const rightValue = new BigNumber(Number(right));
 
     if (ctx.MUL()) {
       return leftValue.multipliedBy(rightValue).toNumber();

@@ -100,6 +100,30 @@
 			}
 		},
 		{
+			"code": "<pre><code>x = true * true</code></pre>",
+			"changes": {
+				"var1": 1
+			}
+		},
+		{
+			"code": "<pre><code>x = false * 5</code></pre>",
+			"changes": {
+				"var1": 0
+			}
+		},
+		{
+			"code": "<pre><code>x = true / true</code></pre>",
+			"changes": {
+				"var1": 1
+			}
+		},
+		{
+			"code": "<pre><code>x = true % 2</code></pre>",
+			"changes": {
+				"var1": 1
+			}
+		},
+		{
 			"code": "<pre><code>x = 10 % 3</code></pre>",
 			"changes": {
 				"var1": 1
