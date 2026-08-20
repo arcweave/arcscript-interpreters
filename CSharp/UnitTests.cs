@@ -240,6 +240,23 @@ public class Tests
     }
 
     [Test]
+    public void ReportsWhetherInputIsACondition()
+    {
+        var project = new Project.Project(
+            new List<Board>(),
+            new List<Variable>(),
+            new List<Component>()
+        );
+        var interpreter = new AwInterpreter(project);
+
+        var scriptOutput = interpreter.RunScript("<p>Hello</p>");
+        var conditionOutput = interpreter.RunScript("<pre><code>true</code></pre>");
+
+        Assert.That(scriptOutput.IsCondition, Is.False);
+        Assert.That(conditionOutput.IsCondition, Is.True);
+    }
+
+    [Test]
     [TestCaseSource(nameof(GetStringConcatTestData))]
     public void StringConcatTests(Project.Project project, TestCase testCase, Dictionary<string, TestVariable> initialVars)
     {
