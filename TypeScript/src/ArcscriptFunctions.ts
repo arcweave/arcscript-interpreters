@@ -102,11 +102,11 @@ export default class ArcscriptFunctions {
   }
 
   resetAll(...args: ArgumentTypes): void {
-    const except = this.getVariableArguments('resetAll', args).map(
-      variable => variable.id
+    const except = new Set(
+      this.getVariableArguments('resetAll', args).map(variable => variable.id)
     );
     const variablesToReset = Object.values(this.state.variables).filter(
-      v => !except.includes(v.id)
+      variable => !except.has(variable.id)
     );
     variablesToReset.forEach(variable => variable.reset());
   }
