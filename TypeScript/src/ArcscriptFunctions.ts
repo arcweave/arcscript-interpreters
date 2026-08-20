@@ -3,22 +3,13 @@ import ArcscriptState from './ArcscriptState.js';
 import { MentionResult, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
 
-type FunctionName = keyof ArcscriptFunctions;
-
-type VoidFunctionKeys<T> = {
-  [K in keyof T]: T[K] extends (...args: ArgumentTypes) => void
-    ? ReturnType<T[K]> extends void
-      ? K
-      : never
+type FunctionKeys<T> = {
+  [Key in keyof T]: T[Key] extends (...args: infer _Arguments) => unknown
+    ? Key
     : never;
 }[keyof T];
 
-type ArcscriptVoidFunctionKeys = VoidFunctionKeys<ArcscriptFunctions>;
-
-export type ArcscriptNonVoidFunctionKeys = Exclude<
-  FunctionName,
-  ArcscriptVoidFunctionKeys
->;
+export type ArcscriptFunctionName = FunctionKeys<ArcscriptFunctions>;
 
 type ArgumentType = VarValue | MentionResult | ArcscriptVariable;
 type ArgumentTypes = ArgumentType[];

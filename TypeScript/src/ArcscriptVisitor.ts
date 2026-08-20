@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
 import ArcscriptFunctions, {
-  ArcscriptNonVoidFunctionKeys,
+  ArcscriptFunctionName,
 } from './ArcscriptFunctions.js';
 import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
@@ -414,7 +414,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitFunction_call = (ctx: Function_callContext) => {
     let argument_list: (VarValue | MentionResult | ArcscriptVariable)[] = [];
-    const function_name = ctx.FNAME().getText() as ArcscriptNonVoidFunctionKeys;
+    const function_name = ctx.FNAME().getText() as ArcscriptFunctionName;
     if (ctx.argument_list()) {
       argument_list = this.visitArgument_list(ctx.argument_list());
     }
@@ -440,7 +440,6 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       }
     }
 
-    // TODO: remove non void function keys
     return this.functions[function_name](...argument_list);
   };
 
