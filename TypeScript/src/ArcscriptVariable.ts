@@ -4,7 +4,7 @@ export default class ArcscriptVariable {
   readonly id: string;
   readonly name: string;
   private value: VarValue;
-  readonly defaultValue: VarValue;
+  private readonly defaultValue: VarValue;
   private changed = false;
   readonly scope: string | null;
 
@@ -22,20 +22,20 @@ export default class ArcscriptVariable {
     }
   }
 
-  reset() {
+  reset(): void {
     this.value = this.defaultValue;
     this.changed = true;
   }
 
-  getValue() {
+  getValue(): VarValue {
     return this.value;
   }
 
-  hasChanged() {
+  hasChanged(): boolean {
     return this.changed;
   }
 
-  setValue(newValue: VarValue) {
+  setValue(newValue: VarValue): void {
     this.value = newValue;
     this.changed = true;
   }
