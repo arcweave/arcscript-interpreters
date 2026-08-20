@@ -99,7 +99,7 @@ export default class ArcscriptState {
 
   private initializeVariables(arcscriptVariables: ArcscriptStateDef) {
     validateStateDef(arcscriptVariables);
-    const variables: Record<string, ArcscriptVariable> = {};
+    const variables = Object.create(null) as Record<string, ArcscriptVariable>;
     Object.entries(arcscriptVariables).forEach(([id, varDef]) => {
       variables[id] = new ArcscriptVariable({
         id,
@@ -147,22 +147,18 @@ export default class ArcscriptState {
 
   setVarValues(values: Record<string, VarValue>) {
     Object.entries(values).forEach(([id, value]) => {
-      if (this.variables[id]) {
+      if (hasProperty(this.variables, id)) {
         this.variables[id].setValue(value);
       }
     });
   }
 
   getChanges() {
-    const changes: Record<string, VarValue> = {};
-    Object.entries(this.variables).forEach(
-      ([id, variable]: [string, ArcscriptVariable]) => {
-        if (variable.changed) {
-          changes[id] = variable.getValue();
-        }
-      }
-    );
-    return changes;
+    return Object.fromEntries(
+      Object.entries(this.variables)
+        .filter(([, variable]) => variable.changed)
+        .map(([id, variable]) => [id, variable.getValue()])
+    ) as Record<string, VarValue>;
   }
 
   /**
