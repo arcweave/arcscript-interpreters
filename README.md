@@ -44,9 +44,9 @@ You can find more info in the [TypeScript](TypeScript) folder.
 
 ### C#
 
-Use the C# code along with the antlr4 NuGet package in your project.
+Use the C# interpreter with the ANTLR C# runtime in .NET and Godot integrations.
 
-Find more info in the [CSharp](CSharp) folder.
+See the [C# interpreter guide](CSharp/README.md) for build instructions, project-model examples, scoped variables, errors, events, and tests.
 
 ### C++
 
