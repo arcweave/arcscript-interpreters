@@ -3,7 +3,7 @@ import ArcscriptState from './ArcscriptState.js';
 import { MentionResult, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
 
-export type FunctionName = keyof ArcscriptFunctions;
+type FunctionName = keyof ArcscriptFunctions;
 
 type VoidFunctionKeys<T> = {
   [K in keyof T]: T[K] extends (...args: ArgumentTypes) => void
@@ -13,7 +13,7 @@ type VoidFunctionKeys<T> = {
     : never;
 }[keyof T];
 
-export type ArcscriptVoidFunctionKeys = VoidFunctionKeys<ArcscriptFunctions>;
+type ArcscriptVoidFunctionKeys = VoidFunctionKeys<ArcscriptFunctions>;
 
 export type ArcscriptNonVoidFunctionKeys = Exclude<
   FunctionName,
@@ -23,7 +23,7 @@ export type ArcscriptNonVoidFunctionKeys = Exclude<
 type ArgumentType = VarValue | MentionResult | ArcscriptVariable;
 type ArgumentTypes = ArgumentType[];
 
-const ESCAPE_SEQUENCES: Record<string, string> = {
+const ESCAPE_SEQUENCES: Readonly<Record<string, string>> = {
   a: '\x07',
   b: '\b',
   f: '\f',
@@ -37,7 +37,7 @@ const ESCAPE_SEQUENCES: Record<string, string> = {
 };
 
 export default class ArcscriptFunctions {
-  private state: ArcscriptState;
+  private readonly state: ArcscriptState;
 
   constructor(state: ArcscriptState) {
     this.state = state;
