@@ -179,11 +179,6 @@ export default class ArcscriptFunctions {
     });
   }
 
-  /**
-   * Checks if the function argument is a number
-   * @param {string} name         The function name
-   * @param {VarValue}  arg          The argument to check
-   */
   private assertNumber(name: string, arg: ArgumentType): asserts arg is number {
     if (typeof arg !== 'number' || Number.isNaN(arg)) {
       throw new RuntimeError(
@@ -199,11 +194,6 @@ export default class ArcscriptFunctions {
     args.forEach(arg => this.assertNumber(name, arg));
   }
 
-  /**
-   * Checks if the function argument is a positive integer
-   * @param {string} name         The function name
-   * @param {VarValue}  arg       The argument to check
-   */
   private assertPositiveInteger(
     name: string,
     arg: ArgumentType
