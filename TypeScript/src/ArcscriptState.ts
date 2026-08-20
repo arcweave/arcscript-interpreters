@@ -152,7 +152,7 @@ export default class ArcscriptState {
   getChanges() {
     return Object.fromEntries(
       Object.entries(this.variables)
-        .filter(([, variable]) => variable.changed)
+        .filter(([, variable]) => variable.hasChanged())
         .map(([id, variable]) => [id, variable.getValue()])
     ) as Record<string, VarValue>;
   }

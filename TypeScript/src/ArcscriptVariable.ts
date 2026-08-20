@@ -13,9 +13,9 @@ export default class ArcscriptVariable {
   readonly id: string;
   readonly name: string;
   type: string;
-  value: VarValue;
+  private value: VarValue;
   readonly defaultValue: VarValue;
-  changed = false;
+  private changed = false;
   readonly scope: string | null;
 
   constructor({
@@ -47,6 +47,10 @@ export default class ArcscriptVariable {
 
   getValue() {
     return this.value;
+  }
+
+  hasChanged() {
+    return this.changed;
   }
 
   setValue(newValue: VarValue) {
