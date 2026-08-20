@@ -321,3 +321,17 @@ ctest -C Release --output-on-failure
 The `-C Release` option is needed by multi-configuration generators and is harmless for single-configuration generators. With CMake 3.20 or newer, CTest may instead be run from the repository root with `ctest --test-dir Cpp/build -C Release --output-on-failure`.
 
 CTest runs the valid-script, member-variable, condition, string-concatenation, runtime-error, and parse-error fixtures independently. It also runs native API tests for reset behavior, current/default values, and variable validation.
+
+## Contributing
+
+1. Generate the ANTLR sources from the repository root.
+2. Configure the C++ project with `WITH_TEST=ON`.
+3. Add or update JSON fixtures and native API tests for behavioral changes.
+4. Build the project and run the complete CTest suite.
+5. Open a pull request describing the change and its test coverage.
+
+Keep changes focused and preserve behavior across the C++, C#, and TypeScript interpreters where the implementations share Arcscript semantics.
+
+## License
+
+This project is licensed under the terms in [`LICENSE.txt`](../LICENSE.txt).
