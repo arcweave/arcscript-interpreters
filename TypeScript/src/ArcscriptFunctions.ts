@@ -130,36 +130,39 @@ export default class ArcscriptFunctions {
   visits(...args: ArgumentTypes): number {
     let elementId = this.state.currentElement;
     if (args.length > 0) {
-      const mention = args[0];
-      if (
-        typeof mention !== 'object' ||
-        mention === null ||
-        !('attrs' in mention) ||
-        typeof mention.attrs !== 'object' ||
-        mention.attrs === null ||
-        typeof mention.attrs['data-id'] !== 'string'
-      ) {
-        throw new RuntimeError(
-          `Invalid argument ${mention} in function visits. Expected an element mention`
-        );
-      }
+      const mentionId = this.getElementMentionId(args[0]);
       if (
         !Object.prototype.hasOwnProperty.call(
           this.state.elementVisits,
-          mention.attrs['data-id']
+          mentionId
         )
       ) {
-        throw new RuntimeError(
-          `Invalid mention id: ${mention.attrs['data-id']}`
-        );
+        throw new RuntimeError(`Invalid mention id: ${mentionId}`);
       }
-      elementId = mention.attrs['data-id'];
+      elementId = mentionId;
     }
     return this.state.elementVisits[elementId] ?? 0;
   }
 
   resetVisits(): void {
     this.state.resetVisits();
+  }
+
+  private getElementMentionId(mention: ArgumentType): string {
+    if (
+      typeof mention !== 'object' ||
+      mention === null ||
+      !('attrs' in mention) ||
+      typeof mention.attrs !== 'object' ||
+      mention.attrs === null ||
+      mention.attrs['data-type'] !== 'element' ||
+      typeof mention.attrs['data-id'] !== 'string'
+    ) {
+      throw new RuntimeError(
+        `Invalid argument ${mention} in function visits. Expected an element mention`
+      );
+    }
+    return mention.attrs['data-id'];
   }
 
   private getVariableArguments(

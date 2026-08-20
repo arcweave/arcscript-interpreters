@@ -158,17 +158,19 @@ describe('visits', () => {
     expect(functions.visits(createMention('mentioned'))).toBe(5);
   });
 
-  test.each([null, {}, { attrs: null }, { attrs: {} }])(
-    'rejects malformed mention argument %#',
-    argument => {
-      expect(() => functionsWithInvalidArgument(argument)).toThrow(
-        RuntimeError
-      );
-      expect(() => functionsWithInvalidArgument(argument)).toThrow(
-        'Expected an element mention'
-      );
-    }
-  );
+  test.each([
+    null,
+    {},
+    { attrs: null },
+    { attrs: {} },
+    { attrs: { 'data-id': 'known' } },
+    { attrs: { 'data-id': 'known', 'data-type': 'component' } },
+  ])('rejects malformed mention argument %#', argument => {
+    expect(() => functionsWithInvalidArgument(argument)).toThrow(RuntimeError);
+    expect(() => functionsWithInvalidArgument(argument)).toThrow(
+      'Expected an element mention'
+    );
+  });
 
   test('rejects an unknown mentioned element', () => {
     const functions = createFunctions({ known: 1 });
