@@ -10,13 +10,13 @@ type ArcscriptVariableParams = {
 };
 
 export default class ArcscriptVariable {
-  id: string;
-  name: string;
+  readonly id: string;
+  readonly name: string;
   type: string;
   value: VarValue;
-  defaultValue: VarValue;
+  readonly defaultValue: VarValue;
   changed = false;
-  scope: string | null;
+  readonly scope: string | null;
 
   constructor({
     id,
