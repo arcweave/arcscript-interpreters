@@ -45,8 +45,8 @@ import ArcscriptParserBase from './Generated/ArcscriptParserBase.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
-  state: ArcscriptState;
-  functions: ArcscriptFunctions;
+  private readonly state: ArcscriptState;
+  private readonly functions: ArcscriptFunctions;
 
   constructor(state: ArcscriptState) {
     super();
