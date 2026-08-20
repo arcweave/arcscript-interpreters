@@ -1,31 +1,15 @@
-import { VarValue } from './types.js';
-
-type ArcscriptVariableParams = {
-  id: string;
-  name: string;
-  type: string;
-  defaultValue: VarValue;
-  value?: VarValue;
-  scope?: string | null;
-};
+import { VarDef, VarValue } from './types.js';
 
 export default class ArcscriptVariable {
   readonly id: string;
   readonly name: string;
-  type: string;
+  type: VarDef['type'];
   private value: VarValue;
   readonly defaultValue: VarValue;
   private changed = false;
   readonly scope: string | null;
 
-  constructor({
-    id,
-    name,
-    defaultValue,
-    type,
-    value,
-    scope,
-  }: ArcscriptVariableParams) {
+  constructor({ id, name, defaultValue, type, value, scope }: VarDef) {
     this.id = id;
     this.name = name;
     this.type = type;
