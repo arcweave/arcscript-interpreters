@@ -140,7 +140,7 @@ describe('reset', () => {
       () => {}
     );
     const functions = new ArcscriptFunctions(state);
-    const first = state.variables.first;
+    const first = state.getVar('first');
 
     expect(() => functions.reset(first, 'invalid')).toThrow(RuntimeError);
     expect(first.getValue()).toBe(10);

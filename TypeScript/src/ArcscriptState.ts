@@ -64,10 +64,9 @@ type OutputObject = {
 };
 
 export default class ArcscriptState {
-  readonly variables: Record<string, ArcscriptVariable>;
-
-  readonly elementVisits: Record<string, number>;
-  readonly currentElement: string;
+  private readonly variables: Record<string, ArcscriptVariable>;
+  private readonly elementVisits: Record<string, number>;
+  private readonly currentElement: string;
   private readonly outputs: OutputObject[];
   private conditionDepth: number;
   private readonly emit: (event: string, data?: unknown) => void;
@@ -125,6 +124,25 @@ export default class ArcscriptState {
       throw new Error(`Variable ${name} not found`);
     }
     return variable;
+  }
+
+  resetVariablesExcept(excludedIds: ReadonlySet<string>): void {
+    Object.values(this.variables).forEach(variable => {
+      if (!excludedIds.has(variable.id)) {
+        variable.reset();
+      }
+    });
+  }
+
+  getCurrentElementVisitCount(): number {
+    return this.getElementVisitCount(this.currentElement) ?? 0;
+  }
+
+  getElementVisitCount(elementId: string): number | undefined {
+    if (!hasProperty(this.elementVisits, elementId)) {
+      return undefined;
+    }
+    return this.elementVisits[elementId];
   }
 
   setVarValues(values: Record<string, VarValue>) {

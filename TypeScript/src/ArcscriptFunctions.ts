@@ -105,10 +105,7 @@ export default class ArcscriptFunctions {
     const except = new Set(
       this.getVariableArguments('resetAll', args).map(variable => variable.id)
     );
-    const variablesToReset = Object.values(this.state.variables).filter(
-      variable => !except.has(variable.id)
-    );
-    variablesToReset.forEach(variable => variable.reset());
+    this.state.resetVariablesExcept(except);
   }
 
   round(...args: ArgumentTypes): number {
@@ -128,20 +125,16 @@ export default class ArcscriptFunctions {
   }
 
   visits(...args: ArgumentTypes): number {
-    let elementId = this.state.currentElement;
-    if (args.length > 0) {
-      const mentionId = this.getElementMentionId(args[0]);
-      if (
-        !Object.prototype.hasOwnProperty.call(
-          this.state.elementVisits,
-          mentionId
-        )
-      ) {
-        throw new RuntimeError(`Invalid mention id: ${mentionId}`);
-      }
-      elementId = mentionId;
+    if (args.length === 0) {
+      return this.state.getCurrentElementVisitCount();
     }
-    return this.state.elementVisits[elementId] ?? 0;
+
+    const mentionId = this.getElementMentionId(args[0]);
+    const visitCount = this.state.getElementVisitCount(mentionId);
+    if (visitCount === undefined) {
+      throw new RuntimeError(`Invalid mention id: ${mentionId}`);
+    }
+    return visitCount;
   }
 
   resetVisits(): void {
