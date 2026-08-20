@@ -419,24 +419,14 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       argument_list = this.visitArgument_list(ctx.argument_list());
     }
     if (ctx.identifier_list()) {
-      argument_list = this.visitIdentifier_list(ctx.identifier_list());
+      const variables = this.visitIdentifier_list(ctx.identifier_list());
       if (
         ArcscriptParserBase.arcscriptFunctionsInfo[function_name].argType ===
         'variable'
       ) {
-        argument_list = argument_list.map(variable => {
-          if (variable instanceof ArcscriptVariable) {
-            return variable;
-          }
-          throw new RuntimeError('Expected a variable');
-        });
+        argument_list = variables;
       } else {
-        argument_list = argument_list.map(variable => {
-          if (variable instanceof ArcscriptVariable) {
-            return variable.getValue();
-          }
-          throw new RuntimeError('Expected a variable');
-        });
+        argument_list = variables.map(variable => variable.getValue());
       }
     }
 
