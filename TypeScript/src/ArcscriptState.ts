@@ -55,19 +55,15 @@ function validateStateDef(stateDef: ArcscriptStateDef) {
   });
 }
 
-type OutputObject = {
-  output?: string;
-  index?: number;
-  fromScript?: boolean;
-  inBlockquote?: boolean;
-  isScript: boolean;
-};
+type OutputEntry =
+  | { isScript: true }
+  | { isScript: false; conditionDepth: number; fromScript: boolean };
 
 export default class ArcscriptState {
   private readonly variables: Record<string, ArcscriptVariable>;
   private readonly elementVisits: Record<string, number>;
   private readonly currentElement: string;
-  private readonly outputs: OutputObject[];
+  private readonly outputs: OutputEntry[];
   private conditionDepth: number;
   private readonly emit: (event: string, data?: unknown) => void;
   private readonly outputDoc: Document;
@@ -161,13 +157,7 @@ export default class ArcscriptState {
     ) as Record<string, VarValue>;
   }
 
-  /**
-   * Adds an output to the array. The array has info on the current condition depth,
-   * the type of the output pushed (blockquote or paragraph), and if comes from a script
-   * (i.e. using 'show' function)
-   * @param {string} output The output
-   * @param {boolean} fromScript If the output comes from a script
-   */
+  /** Adds rendered output and records metadata used for subsequent merging. */
   pushOutput(output: string, fromScript: boolean = false) {
     const previousOutput = this.outputs[this.outputs.length - 1];
     const outputNode = this.parseOutputNode(output);
@@ -175,7 +165,7 @@ export default class ArcscriptState {
       return;
     }
 
-    this.recordOutput(output, fromScript);
+    this.recordOutput(fromScript);
 
     // If this is the first output to be inserted
     if (!this.rootElement.innerHTML) {
@@ -198,10 +188,7 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
-  /**
-   * Adds to the outputs the existanse of a script "generateOutput" will be able
-   * to recognize when to concatenate paragraphs
-   */
+  /** Records a script boundary used when merging subsequent output. */
   addScript() {
     this.outputs.push({
       isScript: true,
@@ -245,12 +232,10 @@ export default class ArcscriptState {
       .firstElementChild;
   }
 
-  private recordOutput(output: string, fromScript: boolean): void {
+  private recordOutput(fromScript: boolean): void {
     this.outputs.push({
-      output,
-      index: this.conditionDepth,
+      conditionDepth: this.conditionDepth,
       fromScript,
-      inBlockquote: this.inBlockquote,
       isScript: false,
     });
   }
@@ -277,13 +262,17 @@ export default class ArcscriptState {
   }
 
   private shouldMergeWithPreviousOutput(
-    previousOutput: OutputObject | undefined
+    previousOutput: OutputEntry | undefined
   ): boolean {
-    return Boolean(
-      previousOutput &&
-      (previousOutput.fromScript ||
-        previousOutput.isScript ||
-        previousOutput.index !== this.conditionDepth)
+    if (!previousOutput) {
+      return false;
+    }
+    if (previousOutput.isScript) {
+      return true;
+    }
+    return (
+      previousOutput.fromScript ||
+      previousOutput.conditionDepth !== this.conditionDepth
     );
   }
 
