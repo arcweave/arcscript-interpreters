@@ -18,3 +18,15 @@
    cmake --build .
    ```
 2. The generated libraries will be located in the `build/Debug` or `build/Release` directory, depending on your build configuration. The folder also includes the `include` directory with the header files needed to use the transpiler.
+
+## Running Tests
+
+Configure the project with the C++ test suite enabled, build it, and run CTest:
+
+```bash
+cmake -S . -B build -DWITH_TEST=ON
+cmake --build build --config Release
+ctest --test-dir build --build-config Release --output-on-failure
+```
+
+CTest runs each shared JSON fixture independently, plus native API tests for reset behavior and variable validation.

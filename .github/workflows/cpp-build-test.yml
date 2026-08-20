@@ -21,8 +21,6 @@ jobs:
       matrix:
         os: [macos-latest, windows-2022]
       fail-fast: false
-    env:
-      DEMO_DIR: demo/${{ matrix.os == 'windows-2022' && 'Win32/Release' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,10 +55,7 @@ jobs:
         run: cmake --build Cpp/build --config Release
 
       - name: Run tests
-        run: |
-          cd Cpp/build/${{ env.DEMO_DIR }}
-          ls
-          ./ArcscriptTest
+        run: ctest --test-dir Cpp/build --build-config Release --output-on-failure
 
       - name: Upload native library artifact
         uses: actions/upload-artifact@v4

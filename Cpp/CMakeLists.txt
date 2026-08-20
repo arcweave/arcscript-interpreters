@@ -7,6 +7,9 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 set(PROJECT_VERSION "0.1.0")
 project(ArcscriptTranspiler VERSION ${PROJECT_VERSION})
 
+include(CTest)
+option(WITH_TEST "Build the Arcscript C++ test suite" OFF)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 message(STATUS "Generator: ${CMAKE_GENERATOR}")
@@ -120,6 +123,7 @@ add_custom_command(TARGET ArcscriptTranspiler POST_BUILD
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 if (WITH_TEST)
+    enable_testing()
     add_executable(ArcscriptTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/ArcscriptTest.cpp)
 
     include(FetchContent)
@@ -142,6 +146,34 @@ if (WITH_TEST)
             ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"
             OUTPUT_NAME ArcscriptTest
+    )
+
+    set(ARCSCRIPT_TEST_FIXTURES
+            valid
+            member
+            conditions
+            stringConcat
+            runtimeErrors
+            parseErrors
+    )
+
+    foreach(FIXTURE_NAME IN LISTS ARCSCRIPT_TEST_FIXTURES)
+        add_test(
+                NAME "Arcscript.${FIXTURE_NAME}"
+                COMMAND ArcscriptTest
+                        --fixture
+                        "${CMAKE_CURRENT_SOURCE_DIR}/demo/tests/${FIXTURE_NAME}.json"
+        )
+        set_tests_properties("Arcscript.${FIXTURE_NAME}" PROPERTIES
+                LABELS "arcscript;fixtures"
+                TIMEOUT 30
+        )
+    endforeach()
+
+    add_test(NAME Arcscript.NativeApi COMMAND ArcscriptTest --native)
+    set_tests_properties(Arcscript.NativeApi PROPERTIES
+            LABELS "arcscript;native"
+            TIMEOUT 30
     )
 
     file(GLOB TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/demo/tests/*.json")

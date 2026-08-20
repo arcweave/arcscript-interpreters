@@ -5,8 +5,10 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <any>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "ArcscriptTranspiler.h"
 
@@ -66,6 +68,19 @@ UVariable* getInitialVars(json initialVarsJson) {
     }
 
     return initVars;
+}
+
+void freeInitialVars(UVariable* initVars, size_t initVarLen) {
+    for (size_t i = 0; i < initVarLen; i++) {
+        free(const_cast<char *>(initVars[i].id));
+        free(const_cast<char *>(initVars[i].name));
+        free(const_cast<char *>(initVars[i].scope));
+        if (initVars[i].type == VariableType::AW_STRING) {
+            free(const_cast<char *>(initVars[i].string_val));
+            free(const_cast<char *>(initVars[i].default_string_val));
+        }
+    }
+    delete[] initVars;
 }
 
 std::map<std::string, std::any> getExpectedChanges(json changes) {
@@ -183,24 +198,25 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
     if (hasError) {
         errorOutput << "Test case " << caseIndex << " failed: \"" << code << "\"" << std::endl;
         errorOutput << "Expected error of type: " << errorType << " but no error thrown." << std::endl;
+        deallocateOutput(result);
         free(const_cast<char *>(code));
         return errorOutput.str();
     }
 
-    if (testCase.contains("output"))
-    {
-        std::string output = testCase["output"].get<std::string>();
-        if (output != result->output)
-        {
-            errorOutput << "Different Text Output" << std::endl;
-            errorOutput << "EXPECTED:\t\"" << output << "\"" << std::endl << "ACTUAL:\t\t\"" << result->output << "\"" << std::endl;
-        }
+    const std::string expectedOutput = testCase.value("output", "");
+    if (expectedOutput != result->output) {
+        errorOutput << "Different Text Output" << std::endl;
+        errorOutput << "EXPECTED:\t\"" << expectedOutput << "\"" << std::endl << "ACTUAL:\t\t\"" << result->output << "\"" << std::endl;
     }
 
     if (testCase.contains("changes")) {
-        json changes = testCase["changes"];
+        const json& expectedChanges = testCase["changes"];
+        if (result->changesLen != expectedChanges.size()) {
+            errorOutput << "Variable change count mismatch: expected " << expectedChanges.size()
+                        << ", got " << result->changesLen << std::endl;
+        }
 
-        for (json::iterator it = changes.begin(); it != changes.end(); ++it) {
+        for (json::const_iterator it = expectedChanges.begin(); it != expectedChanges.end(); ++it) {
             const std::string& expectedChangeKey = it.key();
             const json& expectedChangeValue = it.value();
             UVariableChange change;
@@ -280,6 +296,11 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
 
 int testFile(const std::filesystem::path& path, int testIndex = -1) {
     std::ifstream f(path);
+    if (!f.is_open()) {
+        std::cerr << "Fixture file not found: " << path << std::endl;
+        return 1;
+    }
+
     json data = json::parse(f);
 
     std::cout << "Testing file: " << path;
@@ -294,9 +315,11 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
 
         if (!errorOutput.empty()) {
             std::cout << errorOutput << std::endl;
+            freeInitialVars(initVars, initVarLen);
             return 1;
         }
 
+        freeInitialVars(initVars, initVarLen);
         return 0;
     }
 
@@ -320,15 +343,7 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
 
 
 
-    for (int j = 0; j < initVarLen; j++) {
-        free(const_cast<char *>(initVars[j].id));
-        free(const_cast<char *>(initVars[j].name));
-        if (initVars[j].type == VariableType::AW_STRING) {
-            free(const_cast<char *>(initVars[j].string_val));
-            free(const_cast<char *>(initVars[j].default_string_val));
-        }
-    }
-    delete[] initVars;
+    freeInitialVars(initVars, initVarLen);
 
     if (fileError) {
         return 1;
@@ -495,10 +510,31 @@ int testLegacyAggregatePreservesScopeAndRejectsMissingDefault() {
 
 
 
-int main(int argc, char* argv[])
-{
-    // Create an array of the test path files
-    std::vector<std::filesystem::path> testPaths = {
+int testNativeApi() {
+    bool hasErrors = false;
+    hasErrors = testResetAcrossInvocations("<pre><code>reset(score)</code></pre>") != 0 || hasErrors;
+    hasErrors = testResetAcrossInvocations("<pre><code>resetAll()</code></pre>") != 0 || hasErrors;
+    hasErrors = testMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNullStringDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingCurrentRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testLegacyAggregatePreservesScopeAndRejectsMissingDefault() != 0 || hasErrors;
+    return hasErrors ? 1 : 0;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc == 3 && std::string(argv[1]) == "--fixture") {
+        return testFile(argv[2]);
+    }
+    if (argc == 2 && std::string(argv[1]) == "--native") {
+        return testNativeApi();
+    }
+    if (argc != 1) {
+        std::cerr << "Usage: ArcscriptTest [--fixture <path> | --native]" << std::endl;
+        return 1;
+    }
+
+    const std::vector<std::filesystem::path> testPaths = {
         "./tests/valid.json",
         "./tests/member.json",
         "./tests/conditions.json",
@@ -509,22 +545,12 @@ int main(int argc, char* argv[])
     bool hasErrors = false;
     for (const auto& path : testPaths) {
         if (!std::filesystem::exists(path)) {
-            std::cout << "File not found: " << path << std::endl;
+            std::cerr << "Fixture file not found: " << path << std::endl;
+            hasErrors = true;
             continue;
         }
-        auto result = testFile(path);
-        if (result != 0) {
-            hasErrors = true;
-        }
+        hasErrors = testFile(path) != 0 || hasErrors;
     }
-    hasErrors = testResetAcrossInvocations("<pre><code>reset(score)</code></pre>") != 0 || hasErrors;
-    hasErrors = testResetAcrossInvocations("<pre><code>resetAll()</code></pre>") != 0 || hasErrors;
-    hasErrors = testMissingDefaultRejected() != 0 || hasErrors;
-    hasErrors = testNullStringDefaultRejected() != 0 || hasErrors;
-    hasErrors = testNativeMissingCurrentRejected() != 0 || hasErrors;
-    hasErrors = testNativeMissingDefaultRejected() != 0 || hasErrors;
-    hasErrors = testLegacyAggregatePreservesScopeAndRejectsMissingDefault() != 0 || hasErrors;
-    if (hasErrors) {
-        return 1;
-    }
+    hasErrors = testNativeApi() != 0 || hasErrors;
+    return hasErrors ? 1 : 0;
 }
