@@ -6,6 +6,7 @@ import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 import { ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptState from './ArcscriptState.js';
+import { isGlobalScope } from './scope.js';
 
 type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
@@ -14,26 +15,27 @@ type ArcscriptInterpreterOptions = {
   eventHandler?: (event: string, data?: unknown) => void;
 };
 
-export default class Interpreter {
-  arcscriptVariables: ArcscriptStateDef;
-  state: ArcscriptState | null = null;
-  elementVisits: Record<string, number>;
-  currentElement: string;
-  variableOffsets: { start: number; end: number }[];
-  emit: (event: string, data?: unknown) => void;
+type SourceReplacement = {
+  start: number;
+  end: number;
+  text: string;
+};
 
-  constructor(options = {} as ArcscriptInterpreterOptions) {
+export default class Interpreter {
+  private readonly arcscriptVariables: ArcscriptStateDef;
+  private readonly elementVisits: Record<string, number>;
+  private readonly currentElement: string;
+  private readonly emit: (event: string, data?: unknown) => void;
+
+  constructor(options: ArcscriptInterpreterOptions = { state: {} }) {
     this.arcscriptVariables = options.state;
-    this.elementVisits = options.elementVisits || {};
-    this.currentElement = options.currentElement || '';
-    this.variableOffsets = [];
-    this.emit = options.eventHandler || (() => {});
+    this.elementVisits = options.elementVisits ?? {};
+    this.currentElement = options.currentElement ?? '';
+    this.emit = options.eventHandler ?? (() => {});
   }
 
   runScript(code: string, varValues: Record<string, VarValue> = {}) {
-    this.variableOffsets = [];
-
-    this.state = new ArcscriptState(
+    const state = new ArcscriptState(
       this.arcscriptVariables,
       this.elementVisits,
       this.currentElement,
@@ -42,28 +44,22 @@ export default class Interpreter {
 
     const { tree } = this.parse(code);
 
-    const visitor = new ArcscriptVisitor(this.state);
+    const visitor = new ArcscriptVisitor(state);
 
-    this.state.setVarValues(varValues);
+    state.setVarValues(varValues);
 
     const result = tree.accept(visitor);
-
-    let output = visitor.state.generateOutput();
-    output = clearBlockStyle(output);
+    const output = clearBlockStyle(state.generateOutput());
 
     return {
-      changes: visitor.state.getChanges(),
+      changes: state.getChanges(),
       output,
       result,
     };
   }
 
   parse(code: string) {
-    const chars = new CharStream(code);
-    const lexer = new ArcscriptLexer(chars);
-    const errorListener = new ErrorListener();
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(errorListener);
+    const { chars, lexer, errorListener } = this.createLexer(code);
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
@@ -75,7 +71,6 @@ export default class Interpreter {
     parser.removeErrorListeners();
     parser.addErrorListener(errorListener);
     const tree = parser.input();
-    // const visitor = new ArcscriptVisitor();
 
     return {
       chars,
@@ -86,26 +81,10 @@ export default class Interpreter {
     };
   }
 
-  private parseTokens(code: string) {
-    const chars = new CharStream(code);
-    const lexer = new ArcscriptLexer(chars);
-    const errorListener = new ErrorListener();
-    lexer.removeErrorListeners();
-    lexer.addErrorListener(errorListener);
-
-    return {
-      tokenTypeNames: lexer.getSymbolicNames(),
-      allTokens: lexer.getAllTokens(),
-    };
-  }
-
   replaceVariables(code: string, variables: Record<string, string>) {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
-    const tokenIdMap = new Map<object, string>();
     const stateVars = Object.values(this.arcscriptVariables);
-    const isGlobalScope = (scope: string | null | undefined) => {
-      return scope === undefined || scope === null || scope === 'global';
-    };
+    const replacements: SourceReplacement[] = [];
 
     allTokens.forEach((token, index) => {
       if (tokenTypeNames[token.type] !== 'IDENTIFIER') {
@@ -138,30 +117,25 @@ export default class Interpreter {
           ) ?? null;
       }
 
-      if (targetVar) {
-        tokenIdMap.set(token, targetVar.id);
+      if (targetVar && Object.hasOwn(variables, targetVar.id)) {
+        replacements.push({
+          start: token.start,
+          end: token.start + token.text.length,
+          text: variables[targetVar.id],
+        });
       }
     });
 
-    const variableTokens = allTokens.filter(token => tokenIdMap.has(token));
-    const f = variableTokens
-      .filter(varToken =>
-        tokenIdMap.has(varToken)
-          ? Object.keys(variables).includes(tokenIdMap.get(varToken)!)
-          : false
-      )
-      .sort((a, b) => b.start - a.start);
-    let newCode = code;
-    f.forEach(varToken => {
-      const { start } = varToken;
-      const end = start + varToken.text.length;
-      const replace = variables[tokenIdMap.get(varToken)!];
-      newCode = newCode.slice(0, start) + replace + newCode.slice(end);
-    });
-    return newCode;
+    return this.applyReplacements(code, replacements);
   }
 
-  replaceScopes(code: string, scopes: Record<string, string>) {
+  replaceScope(code: string, scope: string, replacement: string) {
+    return this.replaceScopes(code, {
+      [scope]: replacement,
+    });
+  }
+
+  private replaceScopes(code: string, scopes: Record<string, string>) {
     const { tokenTypeNames, allTokens } = this.parseTokens(code);
     const stateVars = Object.values(this.arcscriptVariables);
 
@@ -189,23 +163,49 @@ export default class Interpreter {
       })
       .filter(scopeToken =>
         Object.prototype.hasOwnProperty.call(scopes, scopeToken.text)
-      )
-      .sort((a, b) => b.start - a.start);
+      );
 
-    let newCode = code;
-    targetScopeTokens.forEach(scopeToken => {
-      const start = scopeToken.start;
-      const end = start + scopeToken.text.length;
-      const replace = scopes[scopeToken.text];
-      newCode = newCode.slice(0, start) + replace + newCode.slice(end);
-    });
-
-    return newCode;
+    return this.applyReplacements(
+      code,
+      targetScopeTokens.map(scopeToken => ({
+        start: scopeToken.start,
+        end: scopeToken.start + scopeToken.text.length,
+        text: scopes[scopeToken.text],
+      }))
+    );
   }
 
-  replaceScope(code: string, scope: string, replacement: string) {
-    return this.replaceScopes(code, {
-      [scope]: replacement,
-    });
+  private createLexer(code: string) {
+    const chars = new CharStream(code);
+    const lexer = new ArcscriptLexer(chars);
+    const errorListener = new ErrorListener();
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(errorListener);
+
+    return { chars, lexer, errorListener };
+  }
+
+  private parseTokens(code: string) {
+    const { lexer } = this.createLexer(code);
+
+    return {
+      tokenTypeNames: lexer.getSymbolicNames(),
+      allTokens: lexer.getAllTokens(),
+    };
+  }
+
+  private applyReplacements(
+    code: string,
+    replacements: SourceReplacement[]
+  ) {
+    return [...replacements]
+      .sort((a, b) => b.start - a.start)
+      .reduce(
+        (updatedCode, replacement) =>
+          updatedCode.slice(0, replacement.start) +
+          replacement.text +
+          updatedCode.slice(replacement.end),
+        code
+      );
   }
 }

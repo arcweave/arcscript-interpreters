@@ -105,6 +105,94 @@ describe('Object members variables', () => {
   );
 });
 
+describe('Global and scoped variables with matching names', () => {
+  const initialVars: ArcscriptStateDef = {
+    scopedHealth: {
+      id: 'scopedHealth',
+      name: 'health',
+      type: 'integer',
+      defaultValue: 10,
+      scope: 'global',
+    },
+    globalHealth: {
+      id: 'globalHealth',
+      name: 'health',
+      type: 'integer',
+      defaultValue: 20,
+    },
+  };
+
+  test('unqualified lookup ignores an earlier variable scoped under the literal global', () => {
+    const interpreter = new Interpreter({ state: initialVars });
+    const { changes, output } = interpreter.runScript(
+      '<pre><code>show(health, " ", global.health)</code></pre><pre><code>health = 21</code></pre><pre><code>global.health = 11</code></pre>'
+    );
+
+    expect(output).toBe('<p>20 10</p>');
+    expect(changes).toEqual({
+      globalHealth: 21,
+      scopedHealth: 11,
+    });
+  });
+});
+
+describe('Variable state validation', () => {
+  test.each([
+    ['defaultValue', { defaultValue: null }],
+    ['value', { defaultValue: 1, value: null }],
+  ])('rejects a null %s', (_property, values) => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          ...values,
+        },
+      } as unknown as ArcscriptStateDef,
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow(`Variable variable has null ${_property} property`);
+  });
+
+  test('rejects an empty scope', () => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          defaultValue: 1,
+          scope: '',
+        },
+      },
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow('Variable variable has empty scope property');
+  });
+
+  test('rejects an undefined defaultValue', () => {
+    const interpreter = new Interpreter({
+      state: {
+        variable: {
+          id: 'variable',
+          name: 'variable',
+          type: 'integer',
+          defaultValue: undefined,
+        },
+      } as unknown as ArcscriptStateDef,
+    });
+
+    expect(() =>
+      interpreter.runScript('<pre><code>show(variable)</code></pre>')
+    ).toThrow('Variable variable is missing defaultValue property');
+  });
+});
+
 describe('Interprete string test scripts', () => {
   test.each(stringTests.cases as unknown as TestCase[])(
     'Tests script: $code',
@@ -189,6 +277,36 @@ describe('Replace variables', () => {
       expect(result).toStrictEqual(expectedResult);
     }
   );
+
+  test('distinguishes a scope named global from an unqualified global variable', () => {
+    const interpreter = new Interpreter({
+      state: {
+        scopedHealth: {
+          id: 'scopedHealth',
+          name: 'health',
+          type: 'integer',
+          defaultValue: 10,
+          scope: 'global',
+        },
+        globalHealth: {
+          id: 'globalHealth',
+          name: 'health',
+          type: 'integer',
+          defaultValue: 20,
+        },
+      },
+    });
+
+    const result = interpreter.replaceVariables(
+      '<pre><code>health = global.health</code></pre>',
+      {
+        scopedHealth: 'stamina',
+        globalHealth: 'energy',
+      }
+    );
+
+    expect(result).toBe('<pre><code>energy = global.stamina</code></pre>');
+  });
 });
 
 describe('Replace scopes', () => {
@@ -207,21 +325,22 @@ describe('Replace scopes', () => {
     );
   });
 
-  test('supports replacing multiple scopes in one pass', () => {
+  test('supports replacing multiple scopes through the public API', () => {
     const interpreter = new Interpreter({
       state: (replaceVariableTests as unknown as TestSuite).initialVars,
     });
-    const result = interpreter.replaceScopes(
+    const componentScopeReplaced = interpreter.replaceScope(
       '<pre><code>comp1.x = boardOne.xyz + x</code></pre>',
-      {
-        comp1: 'comp2',
-        boardOne: 'boardTwo',
-      }
+      'comp1',
+      'comp2'
+    );
+    const result = interpreter.replaceScope(
+      componentScopeReplaced,
+      'boardOne',
+      'boardTwo'
     );
 
-    expect(result).toBe(
-      '<pre><code>comp2.x = boardTwo.xyz + x</code></pre>'
-    );
+    expect(result).toBe('<pre><code>comp2.x = boardTwo.xyz + x</code></pre>');
   });
 });
 

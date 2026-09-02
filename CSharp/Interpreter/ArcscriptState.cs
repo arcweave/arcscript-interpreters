@@ -23,15 +23,8 @@ namespace Arcweave.Interpreter
             this.currentElement = elementId;
             this.project = project;
             
-            this.Variables = project.Variables.ToDictionary(variable => variable.Id, variable => variable);
-            foreach (var projectBoard in project.Boards)
-            {
-                if (projectBoard.Variables == null) continue;
-                foreach (var projectBoardVariable in projectBoard.Variables)
-                {
-                    Variables.Add(projectBoardVariable.Id, projectBoardVariable);
-                }
-            }
+            this.Variables = project.GetAllVariables()
+                .ToDictionary(variable => variable.Id, variable => variable);
             
             if (emit != null)
             {
@@ -50,7 +43,9 @@ namespace Arcweave.Interpreter
                 {
                     if (scope != null)
                     {
-                        return variable.Name == name && scope == variable.Parent.CustomId;
+                        return variable.Name == name &&
+                            variable.Parent != null &&
+                            scope == variable.Parent.CustomId;
                     }
 
                     return variable.Name == name && variable.Parent == null;

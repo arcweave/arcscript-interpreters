@@ -6,6 +6,7 @@ import ArcscriptParser, {
   Mention_attributesContext,
 } from './ArcscriptParser.js';
 import { ArcscriptStateDef } from '../types.js';
+import { isGlobalScope } from '../scope.js';
 
 type ArcscriptParserOptions = {
   arcscriptVariables: ArcscriptStateDef;
@@ -60,7 +61,7 @@ export default class ArcscriptParserBase extends Parser {
   setOptions(options: ArcscriptParserOptions) {
     const variableNames = Object.values(options.arcscriptVariables).map(
       variable => {
-        if (variable.scope) {
+        if (!isGlobalScope(variable.scope)) {
           return `${variable.scope}.${variable.name}`;
         }
         return variable.name;

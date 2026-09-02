@@ -13,6 +13,7 @@ namespace Arcweave.Project
 #else
         public List<INode> Nodes { get; private set; }
         public List<Variable> Variables { get; private set; }
+        public List<Attribute> Attributes { get; private set; }
 #endif
         public Board(string id, List<INode> nodes, string customId = null)
         {
@@ -20,6 +21,7 @@ namespace Arcweave.Project
             Nodes = nodes;
             CustomId = customId;
             Variables = new List<Variable>();
+            Attributes = new List<Attribute>();
         }
 
         public Board(string id, List<INode> nodes, List<Variable> variables, string customId = null)
@@ -32,6 +34,7 @@ namespace Arcweave.Project
             }
             Variables = variables;
             CustomId = customId;
+            Attributes = new List<Attribute>();
         }
         
         public T NodeWithID<T>(string id) where T : INode => Nodes.OfType<T>().FirstOrDefault(x => x.Id == id);
@@ -40,6 +43,11 @@ namespace Arcweave.Project
         { 
             variable.Parent = this;
             Variables.Add(variable);
+        }
+
+        public void AddAttribute(Attribute attribute)
+        {
+            Attributes.Add(attribute);
         }
     }
 }

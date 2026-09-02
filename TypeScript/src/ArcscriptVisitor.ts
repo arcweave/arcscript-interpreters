@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import ArcscriptParserVisitor from './Generated/ArcscriptParserVisitor.js';
 import ArcscriptFunctions, {
-  ArcscriptNonVoidFunctionKeys,
+  ArcscriptFunctionName,
 } from './ArcscriptFunctions.js';
 import ArcscriptState from './ArcscriptState.js';
 import { RuntimeError } from './errors/index.js';
@@ -45,8 +45,8 @@ import ArcscriptParserBase from './Generated/ArcscriptParserBase.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
-  state: ArcscriptState;
-  functions: ArcscriptFunctions;
+  private readonly state: ArcscriptState;
+  private readonly functions: ArcscriptFunctions;
 
   constructor(state: ArcscriptState) {
     super();
@@ -311,8 +311,8 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     if (typeof left === 'string' || typeof right === 'string') {
       throw new RuntimeError('Invalid operation with string');
     }
-    const leftValue = new BigNumber(left as number);
-    const rightValue = new BigNumber(right as number);
+    const leftValue = new BigNumber(Number(left));
+    const rightValue = new BigNumber(Number(right));
 
     if (ctx.MUL()) {
       return leftValue.multipliedBy(rightValue).toNumber();
@@ -414,33 +414,22 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
 
   visitFunction_call = (ctx: Function_callContext) => {
     let argument_list: (VarValue | MentionResult | ArcscriptVariable)[] = [];
-    const function_name = ctx.FNAME().getText() as ArcscriptNonVoidFunctionKeys;
+    const function_name = ctx.FNAME().getText() as ArcscriptFunctionName;
     if (ctx.argument_list()) {
       argument_list = this.visitArgument_list(ctx.argument_list());
     }
     if (ctx.identifier_list()) {
-      argument_list = this.visitIdentifier_list(ctx.identifier_list());
+      const variables = this.visitIdentifier_list(ctx.identifier_list());
       if (
         ArcscriptParserBase.arcscriptFunctionsInfo[function_name].argType ===
         'variable'
       ) {
-        argument_list = argument_list.map(variable => {
-          if (variable instanceof ArcscriptVariable) {
-            return variable;
-          }
-          throw new RuntimeError('Expected a variable');
-        });
+        argument_list = variables;
       } else {
-        argument_list = argument_list.map(variable => {
-          if (variable instanceof ArcscriptVariable) {
-            return variable.getValue();
-          }
-          throw new RuntimeError('Expected a variable');
-        });
+        argument_list = variables.map(variable => variable.getValue());
       }
     }
 
-    // TODO: remove non void function keys
     return this.functions[function_name](...argument_list);
   };
 

@@ -5,8 +5,10 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <any>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "ArcscriptTranspiler.h"
 
@@ -28,6 +30,7 @@ UVariable* getInitialVars(json initialVarsJson) {
 
         initVars[i].id = strdup(id.c_str());
         initVars[i].name = strdup(name.c_str());
+        initVars[i].has_default_value = true;
         if (it.value().contains("scope")) {
             initVars[i].scope = strdup(it.value()["scope"].get<std::string>().c_str());
         }
@@ -47,20 +50,37 @@ UVariable* getInitialVars(json initialVarsJson) {
 
         if (initVars[i].type == VariableType::AW_STRING) {
             initVars[i].string_val = strdup(it.value()["value"].get<std::string>().c_str());
+            initVars[i].default_string_val = strdup(it.value()["value"].get<std::string>().c_str());
         }
         else if (initVars[i].type == VariableType::AW_INTEGER) {
             initVars[i].int_val = it.value()["value"].get<int>();
+            initVars[i].default_int_val = it.value()["value"].get<int>();
         }
         else if (initVars[i].type == VariableType::AW_DOUBLE) {
             initVars[i].double_val= it.value()["value"].get<double>();
+            initVars[i].default_double_val = it.value()["value"].get<double>();
         }
         else if (initVars[i].type == VariableType::AW_BOOLEAN) {
             initVars[i].bool_val = it.value()["value"].get<bool>();
+            initVars[i].default_bool_val = it.value()["value"].get<bool>();
         }
         i += 1;
     }
 
     return initVars;
+}
+
+void freeInitialVars(UVariable* initVars, size_t initVarLen) {
+    for (size_t i = 0; i < initVarLen; i++) {
+        free(const_cast<char *>(initVars[i].id));
+        free(const_cast<char *>(initVars[i].name));
+        free(const_cast<char *>(initVars[i].scope));
+        if (initVars[i].type == VariableType::AW_STRING) {
+            free(const_cast<char *>(initVars[i].string_val));
+            free(const_cast<char *>(initVars[i].default_string_val));
+        }
+    }
+    delete[] initVars;
 }
 
 std::map<std::string, std::any> getExpectedChanges(json changes) {
@@ -178,24 +198,25 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
     if (hasError) {
         errorOutput << "Test case " << caseIndex << " failed: \"" << code << "\"" << std::endl;
         errorOutput << "Expected error of type: " << errorType << " but no error thrown." << std::endl;
+        deallocateOutput(result);
         free(const_cast<char *>(code));
         return errorOutput.str();
     }
 
-    if (testCase.contains("output"))
-    {
-        std::string output = testCase["output"].get<std::string>();
-        if (output != result->output)
-        {
-            errorOutput << "Different Text Output" << std::endl;
-            errorOutput << "EXPECTED:\t\"" << output << "\"" << std::endl << "ACTUAL:\t\t\"" << result->output << "\"" << std::endl;
-        }
+    const std::string expectedOutput = testCase.value("output", "");
+    if (expectedOutput != result->output) {
+        errorOutput << "Different Text Output" << std::endl;
+        errorOutput << "EXPECTED:\t\"" << expectedOutput << "\"" << std::endl << "ACTUAL:\t\t\"" << result->output << "\"" << std::endl;
     }
 
     if (testCase.contains("changes")) {
-        json changes = testCase["changes"];
+        const json& expectedChanges = testCase["changes"];
+        if (result->changesLen != expectedChanges.size()) {
+            errorOutput << "Variable change count mismatch: expected " << expectedChanges.size()
+                        << ", got " << result->changesLen << std::endl;
+        }
 
-        for (json::iterator it = changes.begin(); it != changes.end(); ++it) {
+        for (json::const_iterator it = expectedChanges.begin(); it != expectedChanges.end(); ++it) {
             const std::string& expectedChangeKey = it.key();
             const json& expectedChangeValue = it.value();
             UVariableChange change;
@@ -275,6 +296,11 @@ std::string test(json testCase, size_t caseIndex, UVariable* initVars, size_t in
 
 int testFile(const std::filesystem::path& path, int testIndex = -1) {
     std::ifstream f(path);
+    if (!f.is_open()) {
+        std::cerr << "Fixture file not found: " << path << std::endl;
+        return 1;
+    }
+
     json data = json::parse(f);
 
     std::cout << "Testing file: " << path;
@@ -289,9 +315,11 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
 
         if (!errorOutput.empty()) {
             std::cout << errorOutput << std::endl;
+            freeInitialVars(initVars, initVarLen);
             return 1;
         }
 
+        freeInitialVars(initVars, initVarLen);
         return 0;
     }
 
@@ -315,14 +343,7 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
 
 
 
-    for (int j = 0; j < initVarLen; j++) {
-        free(const_cast<char *>(initVars[j].id));
-        free(const_cast<char *>(initVars[j].name));
-        if (initVars[j].type == VariableType::AW_STRING) {
-            free(const_cast<char *>(initVars[j].string_val));
-        }
-    }
-    delete[] initVars;
+    freeInitialVars(initVars, initVarLen);
 
     if (fileError) {
         return 1;
@@ -331,12 +352,189 @@ int testFile(const std::filesystem::path& path, int testIndex = -1) {
     return 0;
 }
 
+int testResetAcrossInvocations(const char* resetScript) {
+    UVariable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.int_val = 10;
+    variable.default_int_val = 10;
+    variable.has_default_value = true;
+
+    UTranspilerOutput* assignment = runScriptExport(
+        "<pre><code>score = 25</code></pre>",
+        "TestElement",
+        &variable,
+        1,
+        nullptr,
+        0,
+        onEvent
+    );
+    variable.int_val = assignment->changes[0].int_result;
+    deallocateOutput(assignment);
+
+    UTranspilerOutput* reset = runScriptExport(
+        resetScript,
+        "TestElement",
+        &variable,
+        1,
+        nullptr,
+        0,
+        onEvent
+    );
+    const bool passed = reset->changesLen == 1 &&
+        reset->changes[0].type == VariableType::AW_INTEGER &&
+        reset->changes[0].int_result == 10;
+    deallocateOutput(reset);
+
+    if (!passed) {
+        std::cout << "Two-invocation reset failed for script: " << resetScript << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int testMissingDefaultRejected() {
+    UVariable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.int_val = 10;
+
+    try {
+        UTranspilerOutput* result = runScriptExport(
+            "<pre><code>show(score)</code></pre>",
+            "TestElement",
+            &variable,
+            1,
+            nullptr,
+            0,
+            onEvent
+        );
+        deallocateOutput(result);
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNullStringDefaultRejected() {
+    UVariable variable;
+    variable.id = "name-id";
+    variable.name = "name";
+    variable.type = VariableType::AW_STRING;
+    variable.string_val = "current";
+    variable.has_default_value = true;
+
+    try {
+        UTranspilerOutput* result = runScriptExport(
+            "<pre><code>show(name)</code></pre>",
+            "TestElement",
+            &variable,
+            1,
+            nullptr,
+            0,
+            onEvent
+        );
+        deallocateOutput(result);
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) ==
+            "String variable name-id must have current and default values." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNativeMissingCurrentRejected() {
+    Variable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.defaultValue = 10;
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a current value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testNativeMissingDefaultRejected() {
+    Variable variable;
+    variable.id = "score-id";
+    variable.name = "score";
+    variable.type = VariableType::AW_INTEGER;
+    variable.value = 10;
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
+}
+
+int testLegacyAggregatePreservesScopeAndRejectsMissingDefault() {
+    Variable variable{"score-id", "score", VariableType::AW_INTEGER, 10, "board"};
+    if (variable.scope != "board") {
+        return 1;
+    }
+
+    try {
+        ArcscriptTranspiler transpiler(
+            "TestElement",
+            {{ variable.id, variable }},
+            {},
+            onEvent
+        );
+    } catch (RuntimeErrorException &e) {
+        return std::string(e.what()) == "Variable score-id is missing a default value." ? 0 : 1;
+    }
+
+    return 1;
+}
 
 
-int main(int argc, char* argv[])
-{
-    // Create an array of the test path files
-    std::vector<std::filesystem::path> testPaths = {
+
+int testNativeApi() {
+    bool hasErrors = false;
+    hasErrors = testResetAcrossInvocations("<pre><code>reset(score)</code></pre>") != 0 || hasErrors;
+    hasErrors = testResetAcrossInvocations("<pre><code>resetAll()</code></pre>") != 0 || hasErrors;
+    hasErrors = testMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNullStringDefaultRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingCurrentRejected() != 0 || hasErrors;
+    hasErrors = testNativeMissingDefaultRejected() != 0 || hasErrors;
+    hasErrors = testLegacyAggregatePreservesScopeAndRejectsMissingDefault() != 0 || hasErrors;
+    return hasErrors ? 1 : 0;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc == 3 && std::string(argv[1]) == "--fixture") {
+        return testFile(argv[2]);
+    }
+    if (argc == 2 && std::string(argv[1]) == "--native") {
+        return testNativeApi();
+    }
+    if (argc != 1) {
+        std::cerr << "Usage: ArcscriptTest [--fixture <path> | --native]" << std::endl;
+        return 1;
+    }
+
+    const std::vector<std::filesystem::path> testPaths = {
         "./tests/valid.json",
         "./tests/member.json",
         "./tests/conditions.json",
@@ -347,15 +545,12 @@ int main(int argc, char* argv[])
     bool hasErrors = false;
     for (const auto& path : testPaths) {
         if (!std::filesystem::exists(path)) {
-            std::cout << "File not found: " << path << std::endl;
+            std::cerr << "Fixture file not found: " << path << std::endl;
+            hasErrors = true;
             continue;
         }
-        auto result = testFile(path);
-        if (result != 0) {
-            hasErrors = true;
-        }
+        hasErrors = testFile(path) != 0 || hasErrors;
     }
-    if (hasErrors) {
-        return 1;
-    }
+    hasErrors = testNativeApi() != 0 || hasErrors;
+    return hasErrors ? 1 : 0;
 }

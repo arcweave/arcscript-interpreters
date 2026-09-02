@@ -6,31 +6,36 @@ on:
     paths:
       - "Cpp/**"
       - "grammar/*.g4"
+      - ".github/workflows/cpp-build-test.yml"
   pull_request:
     branches: [main]
     paths:
       - "Cpp/**"
       - "grammar/*.g4"
+      - ".github/workflows/cpp-build-test.yml"
 
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-2022]
       fail-fast: false
-    env:
-      DEMO_DIR: demo/${{ matrix.os == 'windows-latest' && 'Win32/Debug' || 'Mac' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: "3.x"
 
       - name: Generate ANTLR4 files (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: .\generate.ps1
 
       - name: Generate ANTLR4 files (macOS)
@@ -38,19 +43,24 @@ jobs:
         run: sh ./generate.sh
         shell: bash
 
-      - name: Configure CMake
-        run: |
-          mkdir -p Cpp/build
-          cd Cpp/build
-          cmake .. -DWITH_TEST=true
+      - name: Configure CMake (Windows)
+        if: matrix.os == 'windows-2022'
+        run: cmake -S Cpp -B Cpp/build -G "Visual Studio 17 2022" -A x64 -DWITH_TEST=true
+
+      - name: Configure CMake (macOS)
+        if: matrix.os == 'macos-latest'
+        run: cmake -S Cpp -B Cpp/build -DCMAKE_BUILD_TYPE=Release -DWITH_TEST=true
 
       - name: Build
-        run: |
-          cd Cpp/build
-          cmake --build .
+        run: cmake --build Cpp/build --config Release
 
       - name: Run tests
-        run: |
-          cd Cpp/build/${{ env.DEMO_DIR }}
-          ls
-          ./ArcscriptTest
+        run: ctest --test-dir Cpp/build --build-config Release --output-on-failure
+
+      - name: Upload native library artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcscript-cpp-${{ matrix.os }}-${{ github.sha }}
+          path: Cpp/build/lib/**
+          if-no-files-found: error
+          retention-days: 14

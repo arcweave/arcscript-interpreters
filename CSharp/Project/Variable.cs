@@ -15,6 +15,10 @@ public partial class Variable
     public object DefaultValue => _defaultValue;
     public Variable(string id, string name, object value)
     {
+        if (value == null)
+        {
+            throw new ArgumentNullException(nameof(value), "Variable value cannot be null.");
+        }
         Id = id;
         Name = name;
         Value = value;
@@ -22,12 +26,8 @@ public partial class Variable
         Type = value.GetType();
     }
     public Variable(string id, string name, object value, IHasVariables parent)
+        : this(id, name, value)
     {
-        Id = id;
-        Name = name;
-        Value = value;
-        _defaultValue = value;
-        Type = value.GetType();
         Parent = parent;
     }
     public void ResetToDefaultValue()

@@ -1,5 +1,6 @@
 import { ArcscriptStateDef, VarDef, VarValue } from './types.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
+import { isGlobalScope } from './scope.js';
 
 function hasProperty<T extends object>(obj: T, prop: keyof T): boolean {
   if (Object.hasOwn) {
@@ -23,8 +24,17 @@ function validateVarDef(variableId: string, varDef: VarDef) {
   if (!hasProperty(varDef, 'type')) {
     throw new Error(`Variable ${varDef.id} is missing type property`);
   }
-  if (!hasProperty(varDef, 'defaultValue')) {
+  if (
+    !hasProperty(varDef, 'defaultValue') ||
+    varDef.defaultValue === undefined
+  ) {
     throw new Error(`Variable ${varDef.id} is missing defaultValue property`);
+  }
+  if (varDef.defaultValue === null) {
+    throw new Error(`Variable ${varDef.id} has null defaultValue property`);
+  }
+  if (hasProperty(varDef, 'value') && varDef.value === null) {
+    throw new Error(`Variable ${varDef.id} has null value property`);
   }
   if (
     hasProperty(varDef, 'scope') &&
@@ -34,6 +44,9 @@ function validateVarDef(variableId: string, varDef: VarDef) {
   ) {
     throw new Error(`Variable ${varDef.id} has invalid scope property`);
   }
+  if (varDef.scope === '') {
+    throw new Error(`Variable ${varDef.id} has empty scope property`);
+  }
 }
 
 function validateStateDef(stateDef: ArcscriptStateDef) {
@@ -42,26 +55,21 @@ function validateStateDef(stateDef: ArcscriptStateDef) {
   });
 }
 
-type OutputObject = {
-  output?: string;
-  index?: number;
-  fromScript?: boolean;
-  inBlockquote?: boolean;
-  isScript: boolean;
-};
+type OutputEntry =
+  | { isScript: true }
+  | { isScript: false; conditionDepth: number; fromScript: boolean };
 
 export default class ArcscriptState {
-  variables: Record<string, ArcscriptVariable>;
-
-  elementVisits: Record<string, number>;
-  currentElement: string;
-  outputs: OutputObject[];
-  conditionDepth: number;
-  emit: (event: string, data?: unknown) => void;
-  outputDoc: Document;
-  rootElement: HTMLElement;
-  inBlockquote: boolean;
-  insertBlockquote: boolean;
+  private readonly variables: Record<string, ArcscriptVariable>;
+  private readonly elementVisits: Record<string, number>;
+  private readonly currentElement: string;
+  private readonly outputs: OutputEntry[];
+  private conditionDepth: number;
+  private readonly emit: (event: string, data?: unknown) => void;
+  private readonly outputDoc: Document;
+  private readonly rootElement: HTMLElement;
+  private inBlockquote: boolean;
+  private insertBlockquote: boolean;
 
   constructor(
     arcscriptVariables: ArcscriptStateDef,
@@ -85,9 +93,9 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
-  initializeVariables(arcscriptVariables: ArcscriptStateDef) {
+  private initializeVariables(arcscriptVariables: ArcscriptStateDef) {
     validateStateDef(arcscriptVariables);
-    const variables: Record<string, ArcscriptVariable> = {};
+    const variables = Object.create(null) as Record<string, ArcscriptVariable>;
     Object.entries(arcscriptVariables).forEach(([id, varDef]) => {
       variables[id] = new ArcscriptVariable({
         id,
@@ -103,10 +111,10 @@ export default class ArcscriptState {
 
   getVar(name: string, scope: string | null = null): ArcscriptVariable {
     const variable = Object.values(this.variables).find(v => {
-      if (scope) {
+      if (scope !== null) {
         return v.name === name && v.scope === scope;
       }
-      return v.name === name;
+      return v.name === name && isGlobalScope(v.scope);
     });
     if (!variable) {
       throw new Error(`Variable ${name} not found`);
@@ -114,123 +122,65 @@ export default class ArcscriptState {
     return variable;
   }
 
+  resetVariablesExcept(excludedIds: ReadonlySet<string>): void {
+    Object.values(this.variables).forEach(variable => {
+      if (!excludedIds.has(variable.id)) {
+        variable.reset();
+      }
+    });
+  }
+
+  getCurrentElementVisitCount(): number {
+    return this.getElementVisitCount(this.currentElement) ?? 0;
+  }
+
+  getElementVisitCount(elementId: string): number | undefined {
+    if (!hasProperty(this.elementVisits, elementId)) {
+      return undefined;
+    }
+    return this.elementVisits[elementId];
+  }
+
   setVarValues(values: Record<string, VarValue>) {
     Object.entries(values).forEach(([id, value]) => {
-      if (this.variables[id]) {
+      if (hasProperty(this.variables, id)) {
         this.variables[id].setValue(value);
       }
     });
   }
 
   getChanges() {
-    const changes: Record<string, VarValue> = {};
-    Object.entries(this.variables).forEach(
-      ([id, variable]: [string, ArcscriptVariable]) => {
-        if (variable.changed) {
-          changes[id] = variable.getValue();
-        }
-      }
-    );
-    return changes;
+    return Object.fromEntries(
+      Object.entries(this.variables)
+        .filter(([, variable]) => variable.hasChanged())
+        .map(([id, variable]) => [id, variable.getValue()])
+    ) as Record<string, VarValue>;
   }
 
-  /**
-   * Adds an output to the array. The array has info on the current condition depth,
-   * the type of the output pushed (blockquote or paragraph), and if comes from a script
-   * (i.e. using 'show' function)
-   * @param {string} output The output
-   * @param {boolean} fromScript If the output comes from a script
-   */
+  /** Adds rendered output and records metadata used for subsequent merging. */
   pushOutput(output: string, fromScript: boolean = false) {
-    let previousOutput = null;
-    if (this.outputs.length > 0) {
-      previousOutput = this.outputs[this.outputs.length - 1];
-    }
-
-    let outputNode = new DOMParser().parseFromString(output, 'text/html').body
-      .firstElementChild;
+    const previousOutput = this.outputs[this.outputs.length - 1];
+    const outputNode = this.parseOutputNode(output);
     if (!outputNode) {
       return;
     }
 
-    this.outputs.push({
-      output,
-      index: this.conditionDepth,
-      fromScript,
-      inBlockquote: this.inBlockquote,
-      isScript: false,
-    });
+    this.recordOutput(fromScript);
 
     // If this is the first output to be inserted
     if (!this.rootElement.innerHTML) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        outputNode = newNode;
-        this.insertBlockquote = false;
-      }
-      this.rootElement.appendChild(outputNode);
+      this.appendToRoot(outputNode);
     }
     // If current output is coming from a script, we are merging it with the previous output
     else if (fromScript) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        outputNode = newNode;
-        this.insertBlockquote = false;
-        this.rootElement.appendChild(outputNode);
-      } else if (outputNode.innerHTML) {
-        const children =
-          this.outputDoc.body.querySelectorAll('div p:last-child');
-        if (children[children.length - 1].innerHTML === '') {
-          children[children.length - 1].innerHTML = outputNode.innerHTML;
-        } else {
-          children[children.length - 1].innerHTML += ` ${outputNode.innerHTML}`;
-        }
-      }
+      this.appendScriptOutput(outputNode);
     }
     // If the previous output was from a script, the node was a script or
     // the condition depth is different, merge if the nodes are of the same type
-    else if (
-      previousOutput &&
-      (previousOutput.fromScript ||
-        previousOutput.isScript ||
-        previousOutput.index !== this.conditionDepth)
-    ) {
-      const nodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
-      const previousNode = this.rootElement.lastElementChild;
-      if (previousNode && previousNode.nodeName === nodeName) {
-        if (outputNode.innerHTML) {
-          const children =
-            this.rootElement.querySelectorAll('div p:last-child');
-          if (children[children.length - 1].innerHTML === '') {
-            children[children.length - 1].innerHTML = outputNode.innerHTML;
-          } else {
-            children[children.length - 1].innerHTML +=
-              ` ${outputNode.innerHTML}`;
-          }
-        }
-      } else {
-        if (this.insertBlockquote) {
-          const newNode = this.outputDoc.createElement('blockquote');
-          newNode.appendChild(outputNode);
-          outputNode = newNode;
-          this.insertBlockquote = false;
-        }
-        this.rootElement.appendChild(outputNode);
-      }
+    else if (this.shouldMergeWithPreviousOutput(previousOutput)) {
+      this.appendAfterPreviousOutput(outputNode);
     } else if (this.inBlockquote) {
-      if (this.insertBlockquote) {
-        const newNode = this.outputDoc.createElement('blockquote');
-        newNode.appendChild(outputNode);
-        this.rootElement.appendChild(newNode);
-
-        this.insertBlockquote = false;
-      } else {
-        this.outputDoc
-          .querySelector('blockquote:last-child')
-          ?.appendChild(outputNode);
-      }
+      this.appendBlockquoteOutput(outputNode);
     } else {
       this.rootElement.appendChild(outputNode);
     }
@@ -238,10 +188,7 @@ export default class ArcscriptState {
     this.insertBlockquote = false;
   }
 
-  /**
-   * Adds to the outputs the existanse of a script "generateOutput" will be able
-   * to recognize when to concatenate paragraphs
-   */
+  /** Records a script boundary used when merging subsequent output. */
   addScript() {
     this.outputs.push({
       isScript: true,
@@ -278,5 +225,90 @@ export default class ArcscriptState {
       this.elementVisits[key] = 0;
     });
     this.emit('resetVisits', {});
+  }
+
+  private parseOutputNode(output: string): Element | null {
+    return new DOMParser().parseFromString(output, 'text/html').body
+      .firstElementChild;
+  }
+
+  private recordOutput(fromScript: boolean): void {
+    this.outputs.push({
+      conditionDepth: this.conditionDepth,
+      fromScript,
+      isScript: false,
+    });
+  }
+
+  private appendToRoot(outputNode: Element): void {
+    this.rootElement.appendChild(this.wrapInBlockquote(outputNode));
+  }
+
+  private wrapInBlockquote(outputNode: Element): Element {
+    if (!this.insertBlockquote) {
+      return outputNode;
+    }
+    const blockquote = this.outputDoc.createElement('blockquote');
+    blockquote.appendChild(outputNode);
+    return blockquote;
+  }
+
+  private appendScriptOutput(outputNode: Element): void {
+    if (this.insertBlockquote) {
+      this.appendToRoot(outputNode);
+      return;
+    }
+    this.mergeWithLastParagraph(outputNode, this.outputDoc.body);
+  }
+
+  private shouldMergeWithPreviousOutput(
+    previousOutput: OutputEntry | undefined
+  ): boolean {
+    if (!previousOutput) {
+      return false;
+    }
+    if (previousOutput.isScript) {
+      return true;
+    }
+    return (
+      previousOutput.fromScript ||
+      previousOutput.conditionDepth !== this.conditionDepth
+    );
+  }
+
+  private appendAfterPreviousOutput(outputNode: Element): void {
+    const expectedNodeName = this.inBlockquote ? 'BLOCKQUOTE' : 'P';
+    const previousNode = this.rootElement.lastElementChild;
+    if (previousNode?.nodeName === expectedNodeName) {
+      this.mergeWithLastParagraph(outputNode, this.rootElement);
+      return;
+    }
+    this.appendToRoot(outputNode);
+  }
+
+  private mergeWithLastParagraph(
+    outputNode: Element,
+    container: ParentNode
+  ): void {
+    if (!outputNode.innerHTML) {
+      return;
+    }
+    const paragraphs = container.querySelectorAll('div p:last-child');
+    const lastParagraph = paragraphs[paragraphs.length - 1];
+    if (lastParagraph.innerHTML === '') {
+      lastParagraph.innerHTML = outputNode.innerHTML;
+    } else {
+      lastParagraph.innerHTML += ` ${outputNode.innerHTML}`;
+    }
+  }
+
+  private appendBlockquoteOutput(outputNode: Element): void {
+    if (this.insertBlockquote) {
+      this.appendToRoot(outputNode);
+      return;
+    }
+    this.outputDoc
+      .querySelector('blockquote:last-child')
+      ?.appendChild(outputNode);
   }
 }

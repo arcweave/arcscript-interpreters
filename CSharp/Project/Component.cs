@@ -5,11 +5,26 @@ namespace Arcweave.Project
 {
 public partial class Component
 {
+    public string CustomId { get; }
     public List<Attribute> Attributes { get; }
+    public List<Variable> Variables { get; }
+
+    public Component(string customId = null)
+    {
+        CustomId = customId;
+        Attributes = new List<Attribute>();
+        Variables = new List<Variable>();
+    }
+
     public void AddAttribute(Attribute attribute)
     {
-        throw new NotImplementedException();
+        Attributes.Add(attribute);
+    }
+
+    public void AddVariable(Variable variable)
+    {
+        variable.Parent = this;
+        Variables.Add(variable);
     }
 }
 }
-
