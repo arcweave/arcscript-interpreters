@@ -1,6 +1,6 @@
 {
 	"name": "@arcweave/arcscript",
-	"version": "2.0.0",
+	"version": "3.0.0",
 	"description": "An interpreter for arcscript using antlr4",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
