@@ -200,6 +200,32 @@ describe('legacy variable reference rewriting', () => {
     });
   });
 
+  test('preserves complete escape sequences when masking legacy matches', () => {
+    expect(
+      rewrite(
+        { unicode: variable('unicode', 'nöm') },
+        'show("\\nöm", nöm)',
+        { unicode: 'nom' }
+      )
+    ).toEqual({
+      code: 'show("\\nöm", nom)',
+      blockedVariableIds: [],
+    });
+  });
+
+  test('does not create string delimiters while masking escaped quotes', () => {
+    expect(
+      rewrite(
+        { escaped: variable('escaped', 'foo\\"bar') },
+        'foo\\"bar + "foo\\"bar"',
+        { escaped: 'foo_bar' }
+      )
+    ).toEqual({
+      code: 'foo_bar + "foo\\"bar"',
+      blockedVariableIds: [],
+    });
+  });
+
   test('rewrites scoped references and preserves dot whitespace', () => {
     const state = {
       first: variable('first', 'score:name', 'one'),
@@ -273,6 +299,23 @@ describe('legacy variable reference rewriting', () => {
     ).toEqual({
       code: 'show(score)',
       blockedVariableIds: ['closing'],
+    });
+  });
+
+  test('blocks names that consume an internal syntax delimiter', () => {
+    expect(
+      rewrite(
+        {
+          score: variable('score', 'score'),
+          bonus: variable('bonus', 'bonus'),
+          combined: variable('combined', 'score, bonus'),
+        },
+        'max(score, bonus)',
+        { combined: 'score_bonus' }
+      )
+    ).toEqual({
+      code: 'max(score, bonus)',
+      blockedVariableIds: ['combined'],
     });
   });
 

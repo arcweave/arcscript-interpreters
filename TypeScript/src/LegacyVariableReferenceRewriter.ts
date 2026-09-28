@@ -105,6 +105,14 @@ const OPERATOR_TOKEN_NAMES = new Set([
   'NOTKEYWORD',
 ]);
 
+const DELIMITER_TOKEN_NAMES = new Set([
+  'LPAREN',
+  'RPAREN',
+  'COMMA',
+  'LBRACE',
+  'RBRACE',
+]);
+
 const EXPRESSION_KEYWORDS_BEFORE = new Set([
   'IFKEYWORD',
   'ELSEIFKEYWORD',
@@ -378,6 +386,9 @@ export default class LegacyVariableReferenceRewriter {
     if (!hasOperator) {
       return false;
     }
+    if (tokenNames.some(name => DELIMITER_TOKEN_NAMES.has(name))) {
+      return true;
+    }
     if (
       this.isOperatorToken(tokens, 0) ||
       this.isOperatorToken(tokens, tokens.tokens.length - 1)
@@ -505,7 +516,9 @@ export default class LegacyVariableReferenceRewriter {
 
       for (let position = match.start; position < match.end; position += 1) {
         if (masked[position] !== '\\') {
-          masked[position] = 'x';
+          masked[position] = this.isEscapedCharacter(code, position)
+            ? 'n'
+            : 'x';
         }
       }
     }
@@ -649,6 +662,19 @@ export default class LegacyVariableReferenceRewriter {
     const start =
       previous >= 0xdc00 && previous <= 0xdfff ? index - 2 : index - 1;
     return value.slice(start, index);
+  }
+
+  private isEscapedCharacter(value: string, index: number) {
+    let backslashes = 0;
+    for (
+      let position = index - 1;
+      position >= 0 && value[position] === '\\';
+      position -= 1
+    ) {
+      backslashes += 1;
+    }
+
+    return backslashes % 2 === 1;
   }
 
   private rangesOverlap(left: SourceRange, right: SourceRange) {
