@@ -220,6 +220,51 @@ Replaces referenced variable names. The replacement record is keyed by variable 
 
 Replaces a scope qualifier for variables known to the interpreter state.
 
+### `rewriteLegacyVariableReferences(code, replacements, options?)`
+
+Safely rewrites references whose stored variable names are not valid Arcscript
+identifiers. Replacements are keyed by variable ID. The method accepts raw
+Arcscript code and preserves its whitespace, entities, strings, and mentions.
+
+String literals, mention spans, operators, and identifiers are recognized with
+the generated Arcscript lexer, and potential Arcscript expressions are checked
+with the generated parser. Accepted references are replaced directly at their
+original source ranges.
+
+```ts
+const interpreter = new Interpreter({
+  state: {
+    score: {
+      id: 'score',
+      name: 'score value',
+      type: 'integer',
+      defaultValue: 0,
+      scope: 'hero',
+    },
+  },
+});
+
+const result = interpreter.rewriteLegacyVariableReferences(
+  'hero . score value += 1',
+  { score: 'score_value' },
+  { scopeNames: ['hero'] }
+);
+
+console.log(result.code);
+// hero . score_value += 1
+console.log(result.blockedVariableIds);
+// []
+```
+
+`scopeNames` should contain every board/component scope name, including
+duplicates. Variables are reported in `blockedVariableIds` and left unchanged
+when their references could instead be Arcscript syntax, when their name is
+duplicated within a scope, when a scoped qualifier is invalid or ambiguous, or
+when the requested replacement is not a non-reserved Arcscript identifier.
+All accepted replacements are located in the original source before any are
+applied, so overlapping names cannot consume each other and replacement text
+is never reinterpreted.
+
 ## Development
 
 This project uses the version of pnpm declared in `package.json`.
@@ -228,6 +273,7 @@ This project uses the version of pnpm declared in `package.json`.
 pnpm install
 pnpm build
 pnpm test
+pnpm lint
 ```
 
 The build writes compiled files and declarations to `dist/`.

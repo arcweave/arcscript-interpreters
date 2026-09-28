@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 cd "$(dirname "$0")"
 
 if [ ! -f ./antlr4.jar ]
@@ -9,6 +11,9 @@ cd grammar
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=TypeScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./TypeScript
 mkdir -p ../TypeScript/src/Generated
 cp TypeScript/*.ts ../TypeScript/src/Generated/.
+parser_file=../TypeScript/src/Generated/ArcscriptParser.ts
+sed "s|'./ArcscriptParserBase'|'./ArcscriptParserBase.js'|" "$parser_file" > "$parser_file.tmp"
+mv "$parser_file.tmp" "$parser_file"
 rm -rf ./TypeScript
 
 cp Arcscript*.g4 ./Cpp/.

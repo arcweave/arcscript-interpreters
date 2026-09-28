@@ -16,3 +16,16 @@ export type MentionResult = {
 };
 
 export type ArcscriptStateDef = Record<string, VarDef>;
+
+export type LegacyVariableRewriteOptions = {
+  /**
+   * All board/component scope names in the project. Keep duplicates so an
+   * ambiguous scope shared by more than one container can be detected.
+   */
+  scopeNames?: readonly string[];
+};
+
+export type LegacyVariableRewriteResult = {
+  code: string;
+  blockedVariableIds: string[];
+};

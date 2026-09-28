@@ -9,6 +9,9 @@ Set-Location "grammar"
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=TypeScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./TypeScript
 New-Item -ItemType Directory -Force -Path ../TypeScript/src/Generated | Out-Null
 Copy-Item TypeScript\*.ts ../TypeScript/src/Generated\
+(Get-Content ../TypeScript/src/Generated/ArcscriptParser.ts) `
+    -replace "'./ArcscriptParserBase'", "'./ArcscriptParserBase.js'" | `
+    Set-Content ../TypeScript/src/Generated/ArcscriptParser.ts
 Remove-Item -Recurse -Force ./TypeScript
 
 # Copy grammar files for Cpp

@@ -100,8 +100,11 @@ ISKEYWORD: 'is';
 
 NOTKEYWORD: 'not';
 
-STRING: '"' STRING_CONTENT* '"' | '\'' STRING_CONTENT* '\'';
-fragment STRING_CONTENT: ~[\\\r\n'"] | '\\' [abfnrtv'"\\];
+STRING:
+	'"' DOUBLE_STRING_CONTENT* '"'
+	| '\'' SINGLE_STRING_CONTENT* '\'';
+fragment DOUBLE_STRING_CONTENT: ~[\\\r\n"] | '\\' [abfnrtv'"\\];
+fragment SINGLE_STRING_CONTENT: ~[\\\r\n'] | '\\' [abfnrtv'"\\];
 
 IDENTIFIER: IDENTIFIER_START IDENTIFIER_PART*;
 
@@ -109,6 +112,10 @@ fragment IDENTIFIER_START: [A-Za-z$_];
 fragment IDENTIFIER_PART: [0-9A-Za-z$_];
 
 WHITESPACE: [ \t\r\n]+ -> skip;
+
+// Keep tokenizing malformed legacy code so source-rewrite tooling can inspect
+// the complete code block. The parser still rejects this token.
+LEGACY_CHARACTER: .;
 
 mode MENTIONSEGMENT;
 
