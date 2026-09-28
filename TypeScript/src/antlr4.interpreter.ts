@@ -4,9 +4,15 @@ import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
+import { ParseError } from './errors/index.js';
 import { ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptState from './ArcscriptState.js';
 import { isGlobalScope } from './scope.js';
+import LegacyVariableReferenceRewriter from './LegacyVariableReferenceRewriter.js';
+import type {
+  LegacyVariableRewriteOptions,
+  LegacyVariableRewriteResult,
+} from './types.js';
 
 type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
@@ -129,6 +135,22 @@ export default class Interpreter {
     return this.applyReplacements(code, replacements);
   }
 
+  /**
+   * Rewrites references to legacy variable names that the Arcscript grammar
+   * cannot parse as identifiers. Unlike replaceVariables(), unsafe ambiguous
+   * references are reported instead of being changed.
+   */
+  rewriteLegacyVariableReferences(
+    code: string,
+    variables: Record<string, string>,
+    options: LegacyVariableRewriteOptions = {}
+  ): LegacyVariableRewriteResult {
+    return new LegacyVariableReferenceRewriter(
+      this.arcscriptVariables,
+      legacyName => this.parsesAsArcscript(legacyName)
+    ).rewrite(code, variables, options);
+  }
+
   replaceScope(code: string, scope: string, replacement: string) {
     return this.replaceScopes(code, {
       [scope]: replacement,
@@ -158,7 +180,8 @@ export default class Interpreter {
 
         return stateVars.some(
           variable =>
-            variable.scope === token.text && variable.name === variableToken.text
+            variable.scope === token.text &&
+            variable.name === variableToken.text
         );
       })
       .filter(scopeToken =>
@@ -194,10 +217,29 @@ export default class Interpreter {
     };
   }
 
-  private applyReplacements(
-    code: string,
-    replacements: SourceReplacement[]
-  ) {
+  private parsesAsArcscript(code: string) {
+    const scripts = [
+      `<pre><code>${code}</code></pre>`,
+      `<pre><code>${code}</code></pre><p></p><pre><code>endif</code></pre>`,
+      `<pre><code>if true</code></pre><p></p><pre><code>${code}</code></pre><p></p><pre><code>endif</code></pre>`,
+    ];
+
+    for (const script of scripts) {
+      try {
+        this.parse(script);
+
+        return true;
+      } catch (error) {
+        if (!(error instanceof ParseError)) {
+          throw error;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private applyReplacements(code: string, replacements: SourceReplacement[]) {
     return [...replacements]
       .sort((a, b) => b.start - a.start)
       .reduce(

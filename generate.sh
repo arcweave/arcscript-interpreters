@@ -9,6 +9,7 @@ cd grammar
 java -Xmx500M -cp ../antlr4.jar org.antlr.v4.Tool -Dlanguage=TypeScript ArcscriptLexer.g4 ArcscriptParser.g4 -visitor -no-listener -o ./TypeScript
 mkdir -p ../TypeScript/src/Generated
 cp TypeScript/*.ts ../TypeScript/src/Generated/.
+sed -i "s|'./ArcscriptParserBase'|'./ArcscriptParserBase.js'|" ../TypeScript/src/Generated/ArcscriptParser.ts
 rm -rf ./TypeScript
 
 cp Arcscript*.g4 ./Cpp/.
