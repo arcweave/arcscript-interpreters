@@ -18,6 +18,11 @@ type DecodedSource = {
   sourceUnits: SourceRange[];
 };
 
+type ProtectedRanges = {
+  all: SourceRange[];
+  strings: SourceRange[];
+};
+
 type Candidate = {
   id: string;
   oldName: string;
@@ -163,14 +168,21 @@ export default class LegacyVariableReferenceRewriter {
       decoded.text,
       possibleMatches
     );
-    const sourceProtectedRanges = this.protectedRanges(code, sourceMatches);
+    const sourceProtectedRanges = this.protectedRanges(
+      code,
+      sourceMatches,
+      false,
+      decodedProtectedRanges.strings.map(range =>
+        this.mapStringInteriorToSource(range, decoded, code.length)
+      )
+    );
     const matches = this.nonOverlappingMatches(
       possibleMatches.filter(
         (match, index) =>
-          !decodedProtectedRanges.some(range =>
+          !decodedProtectedRanges.all.some(range =>
             this.rangesOverlap(range, match)
           ) &&
-          !sourceProtectedRanges.some(range =>
+          !sourceProtectedRanges.all.some(range =>
             this.rangesOverlap(range, sourceMatches[index])
           )
       )
@@ -227,6 +239,7 @@ export default class LegacyVariableReferenceRewriter {
       if (
         candidate.oldName.length === 0 ||
         this.hasUnescapedDoubleQuote(candidate.oldName) ||
+        this.hasSingleQuoteDelimiter(candidate.oldName) ||
         !this.isValidIdentifier(candidate.newName) ||
         RESERVED_NAMES.has(candidate.newName) ||
         (candidate.scope !== null &&
@@ -482,11 +495,27 @@ export default class LegacyVariableReferenceRewriter {
     );
   }
 
-  private protectedRanges(code: string, matches: CandidateMatch[]) {
+  private protectedRanges(
+    code: string,
+    matches: CandidateMatch[],
+    protectUnmatchedQuotes = true,
+    neutralQuoteRanges: SourceRange[] = []
+  ): ProtectedRanges {
     const prefix = '<pre><code>';
-    const source = `${prefix}${this.maskLegacyMatches(code, matches)}</code></pre>`;
+    const maskedCode = this.maskLegacyMatches(code, matches).split('');
+    for (const range of neutralQuoteRanges) {
+      for (let position = range.start; position < range.end; position += 1) {
+        if (maskedCode[position] === '"' || maskedCode[position] === "'") {
+          maskedCode[position] = this.isEscapedCharacter(code, position)
+            ? 'n'
+            : 'x';
+        }
+      }
+    }
+    const source = `${prefix}${maskedCode.join('')}</code></pre>`;
     const tokens = this.createLenientLexer(source).getAllTokens();
     const ranges: SourceRange[] = [];
+    const stringRanges: SourceRange[] = [];
     let mentionStart: number | null = null;
     for (const token of tokens) {
       const start = token.start - prefix.length;
@@ -503,11 +532,14 @@ export default class LegacyVariableReferenceRewriter {
         });
         mentionStart = null;
       } else if (token.type === ArcscriptLexer.STRING) {
-        ranges.push({
+        const range = {
           start: Math.max(0, start),
           end: Math.max(0, end),
-        });
+        };
+        ranges.push(range);
+        stringRanges.push(range);
       } else if (
+        protectUnmatchedQuotes &&
         token.type === ArcscriptLexer.LEGACY_CHARACTER &&
         (token.text === '"' || token.text === "'")
       ) {
@@ -515,7 +547,7 @@ export default class LegacyVariableReferenceRewriter {
       }
     }
 
-    return ranges;
+    return { all: ranges, strings: stringRanges };
   }
 
   private maskLegacyMatches(code: string, matches: CandidateMatch[]) {
@@ -603,6 +635,17 @@ export default class LegacyVariableReferenceRewriter {
     };
   }
 
+  private mapStringInteriorToSource(
+    range: SourceRange,
+    decoded: DecodedSource,
+    sourceLength: number
+  ): SourceRange {
+    return {
+      start: decoded.sourceUnits[range.start]?.end ?? sourceLength,
+      end: decoded.sourceUnits[range.end - 1]?.start ?? sourceLength,
+    };
+  }
+
   private hasUnescapedDoubleQuote(text: string) {
     let position = text.indexOf('"');
     while (position !== -1) {
@@ -610,6 +653,26 @@ export default class LegacyVariableReferenceRewriter {
         return true;
       }
       position = text.indexOf('"', position + 1);
+    }
+
+    return false;
+  }
+
+  private hasSingleQuoteDelimiter(text: string) {
+    let position = text.indexOf("'");
+    while (position !== -1) {
+      if (!this.isEscapedCharacter(text, position)) {
+        const prefixTokens = this.tokensForCode(text.slice(0, position));
+        const previousToken = prefixTokens.tokenNames.at(-1);
+        if (
+          !this.isIdentifierPart(this.codePointBefore(text, position)) ||
+          (previousToken !== 'IDENTIFIER' &&
+            previousToken !== 'LEGACY_CHARACTER')
+        ) {
+          return true;
+        }
+      }
+      position = text.indexOf("'", position + 1);
     }
 
     return false;

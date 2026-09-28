@@ -194,6 +194,23 @@ describe('legacy variable reference rewriting', () => {
     });
   });
 
+  test('does not let apostrophes in entity-delimited strings hide references', () => {
+    expect(
+      rewrite(
+        {
+          message: variable('message', 'message'),
+          unicode: variable('unicode', 'é'),
+          apostrophe: variable('apostrophe', "Amise'sPower"),
+        },
+        "message == &quot;Bob's cat&quot; and é > 0 and Amise'sPower",
+        { unicode: 'e', apostrophe: 'Amise_sPower' }
+      )
+    ).toEqual({
+      code: "message == &quot;Bob's cat&quot; and e > 0 and Amise_sPower",
+      blockedVariableIds: [],
+    });
+  });
+
   test('preserves literal ranges after supplementary Unicode characters', () => {
     expect(
       rewrite({ unicode: variable('unicode', 'é') }, 'show("😀😀", "é", é)', {
@@ -350,6 +367,19 @@ describe('legacy variable reference rewriting', () => {
       )
     ).toEqual({
       code: 'message = "hello"',
+      blockedVariableIds: ['legacy'],
+    });
+  });
+
+  test('blocks names containing a single-quoted string delimiter', () => {
+    expect(
+      rewrite(
+        { legacy: variable('legacy', "true is 'hello") },
+        "true is 'hello'",
+        { legacy: 'true_is_hello' }
+      )
+    ).toEqual({
+      code: "true is 'hello'",
       blockedVariableIds: ['legacy'],
     });
   });
