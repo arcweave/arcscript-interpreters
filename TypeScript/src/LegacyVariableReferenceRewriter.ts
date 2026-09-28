@@ -378,6 +378,12 @@ export default class LegacyVariableReferenceRewriter {
     if (!hasOperator) {
       return false;
     }
+    if (
+      this.isOperatorToken(tokens, 0) ||
+      this.isOperatorToken(tokens, tokens.tokens.length - 1)
+    ) {
+      return true;
+    }
 
     for (const other of candidates) {
       if (
@@ -438,16 +444,26 @@ export default class LegacyVariableReferenceRewriter {
     };
   }
 
+  private isOperatorToken(
+    tokens: ReturnType<LegacyVariableReferenceRewriter['tokensForCode']>,
+    index: number
+  ) {
+    return (
+      OPERATOR_TOKEN_NAMES.has(tokens.tokenNames[index]) ||
+      (tokens.tokenNames[index] === 'LEGACY_CHARACTER' &&
+        '-+*/%<>=!&|(),{}'.includes(tokens.tokens[index].text))
+    );
+  }
+
   private protectedRanges(code: string, matches: CandidateMatch[]) {
     const prefix = '<pre><code>';
     const source = `${prefix}${this.maskLegacyMatches(code, matches)}</code></pre>`;
     const tokens = this.createLenientLexer(source).getAllTokens();
-    const offsets = this.codePointOffsets(source);
     const ranges: SourceRange[] = [];
     let mentionStart: number | null = null;
     for (const token of tokens) {
-      const start = (offsets[token.start] ?? source.length) - prefix.length;
-      const end = (offsets[token.stop + 1] ?? source.length) - prefix.length;
+      const start = token.start - prefix.length;
+      const end = token.stop + 1 - prefix.length;
       if (token.type === ArcscriptLexer.MENTION_TAG_OPEN) {
         mentionStart = start;
       } else if (
@@ -488,7 +504,9 @@ export default class LegacyVariableReferenceRewriter {
       }
 
       for (let position = match.start; position < match.end; position += 1) {
-        masked[position] = 'x';
+        if (masked[position] !== '\\') {
+          masked[position] = 'x';
+        }
       }
     }
 
@@ -635,16 +653,6 @@ export default class LegacyVariableReferenceRewriter {
 
   private rangesOverlap(left: SourceRange, right: SourceRange) {
     return left.start < right.end && right.start < left.end;
-  }
-
-  private codePointOffsets(value: string) {
-    const offsets = [0];
-    let offset = 0;
-    for (const character of value) {
-      offset += character.length;
-      offsets.push(offset);
-    }
-    return offsets;
   }
 
   private applyReplacements(code: string, replacements: SourceReplacement[]) {

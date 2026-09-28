@@ -210,10 +210,21 @@ export default class Interpreter {
 
   private parseTokens(code: string) {
     const { lexer } = this.createLexer(code);
+    const tokenTypeNames = lexer.getSymbolicNames();
+    const allTokens = lexer.getAllTokens();
+    const legacyToken = allTokens.find(
+      token => tokenTypeNames[token.type] === 'LEGACY_CHARACTER'
+    );
+    if (legacyToken) {
+      throw new ParseError(`token recognition error at: '${legacyToken.text}'`, {
+        line: legacyToken.line,
+        col: legacyToken.column,
+      });
+    }
 
     return {
-      tokenTypeNames: lexer.getSymbolicNames(),
-      allTokens: lexer.getAllTokens(),
+      tokenTypeNames,
+      allTokens,
     };
   }
 

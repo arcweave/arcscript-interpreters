@@ -307,6 +307,32 @@ describe('Replace variables', () => {
 
     expect(result).toBe('<pre><code>energy = global.stamina</code></pre>');
   });
+
+  test('rejects legacy characters instead of partially replacing identifiers', () => {
+    const interpreter = new Interpreter({
+      state: {
+        accented: {
+          id: 'accented',
+          name: 'éscore',
+          type: 'integer',
+          defaultValue: 0,
+        },
+        score: {
+          id: 'score',
+          name: 'score',
+          type: 'integer',
+          defaultValue: 0,
+        },
+      },
+    });
+
+    expect(() =>
+      interpreter.replaceVariables(
+        '<pre><code>éscore + score</code></pre>',
+        { score: 'points' }
+      )
+    ).toThrow(ParseError);
+  });
 });
 
 describe('Replace scopes', () => {

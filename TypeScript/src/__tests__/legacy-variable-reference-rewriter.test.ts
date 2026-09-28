@@ -171,6 +171,35 @@ describe('legacy variable reference rewriting', () => {
     });
   });
 
+  test('preserves literal ranges after supplementary Unicode characters', () => {
+    expect(
+      rewrite(
+        { unicode: variable('unicode', 'é') },
+        'show("😀😀", "é", é)',
+        { unicode: 'e' }
+      )
+    ).toEqual({
+      code: 'show("😀😀", "é", e)',
+      blockedVariableIds: [],
+    });
+  });
+
+  test('preserves escaped quotes when masking legacy matches', () => {
+    expect(
+      rewrite(
+        {
+          escaped: variable('escaped', 'foo\\'),
+          reserved: variable('reserved', 'round'),
+        },
+        'show("foo\\"round") and round',
+        { escaped: 'foo', reserved: 'round_variable' }
+      )
+    ).toEqual({
+      code: 'show("foo\\"round") and round_variable',
+      blockedVariableIds: [],
+    });
+  });
+
   test('rewrites scoped references and preserves dot whitespace', () => {
     const state = {
       first: variable('first', 'score:name', 'one'),
@@ -228,6 +257,22 @@ describe('legacy variable reference rewriting', () => {
     ).toEqual({
       code: 'score=1; score is 1; 123 > 1; team_+1 == 2',
       blockedVariableIds: ['assignment', 'expression', 'numeric', 'words'],
+    });
+  });
+
+  test('blocks names that consume a surrounding syntax delimiter', () => {
+    expect(
+      rewrite(
+        {
+          score: variable('score', 'score'),
+          closing: variable('closing', 'score)'),
+        },
+        'show(score)',
+        { closing: 'score_value' }
+      )
+    ).toEqual({
+      code: 'show(score)',
+      blockedVariableIds: ['closing'],
     });
   });
 
