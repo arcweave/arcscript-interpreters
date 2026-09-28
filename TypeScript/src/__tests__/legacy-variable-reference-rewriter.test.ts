@@ -169,15 +169,36 @@ describe('legacy variable reference rewriting', () => {
       code: 'message == &#39;round&#39; and round_variable',
       blockedVariableIds: [],
     });
+    expect(
+      rewrite(state, 'show("hello &quot;round&quot;") and round', replacements)
+    ).toEqual({
+      code: 'show("hello &quot;round&quot;") and round_variable',
+      blockedVariableIds: [],
+    });
+    expect(
+      rewrite(state, "show('hello &#39;round&#39;') and round", replacements)
+    ).toEqual({
+      code: "show('hello &#39;round&#39;') and round_variable",
+      blockedVariableIds: [],
+    });
+  });
+
+  test('decodes only the entity beginning at the current position', () => {
+    expect(
+      rewrite({ unicode: variable('unicode', 'é') }, 'true && é &gt; 1', {
+        unicode: 'e',
+      })
+    ).toEqual({
+      code: 'true && e &gt; 1',
+      blockedVariableIds: [],
+    });
   });
 
   test('preserves literal ranges after supplementary Unicode characters', () => {
     expect(
-      rewrite(
-        { unicode: variable('unicode', 'é') },
-        'show("😀😀", "é", é)',
-        { unicode: 'e' }
-      )
+      rewrite({ unicode: variable('unicode', 'é') }, 'show("😀😀", "é", é)', {
+        unicode: 'e',
+      })
     ).toEqual({
       code: 'show("😀😀", "é", e)',
       blockedVariableIds: [],
@@ -202,11 +223,9 @@ describe('legacy variable reference rewriting', () => {
 
   test('preserves complete escape sequences when masking legacy matches', () => {
     expect(
-      rewrite(
-        { unicode: variable('unicode', 'nöm') },
-        'show("\\nöm", nöm)',
-        { unicode: 'nom' }
-      )
+      rewrite({ unicode: variable('unicode', 'nöm') }, 'show("\\nöm", nöm)', {
+        unicode: 'nom',
+      })
     ).toEqual({
       code: 'show("\\nöm", nom)',
       blockedVariableIds: [],
@@ -316,6 +335,39 @@ describe('legacy variable reference rewriting', () => {
     ).toEqual({
       code: 'max(score, bonus)',
       blockedVariableIds: ['combined'],
+    });
+  });
+
+  test('blocks names containing an unescaped double quote', () => {
+    expect(
+      rewrite(
+        {
+          message: variable('message', 'message'),
+          legacy: variable('legacy', 'message = "hello'),
+        },
+        'message = "hello"',
+        { legacy: 'message_hello' }
+      )
+    ).toEqual({
+      code: 'message = "hello"',
+      blockedVariableIds: ['legacy'],
+    });
+  });
+
+  test('blocks padded names that resolve to existing syntax', () => {
+    expect(
+      rewrite(
+        {
+          score: variable('score', 'score'),
+          padded: variable('padded', 'score '),
+          boolean: variable('boolean', 'true '),
+        },
+        'score + 1; true + 1',
+        { padded: 'legacy_score', boolean: 'legacy_true' }
+      )
+    ).toEqual({
+      code: 'score + 1; true + 1',
+      blockedVariableIds: ['boolean', 'padded'],
     });
   });
 
@@ -501,6 +553,19 @@ describe('legacy variable reference rewriting', () => {
         },
         'föo+1',
         { component: 'foo', compound: 'foo_1' }
+      )
+    ).toEqual({
+      code: 'föo+1',
+      blockedVariableIds: ['compound'],
+    });
+    expect(
+      rewrite(
+        {
+          component: variable('component', 'föo'),
+          compound: variable('compound', 'föo+1'),
+        },
+        'föo+1',
+        { compound: 'foo_1' }
       )
     ).toEqual({
       code: 'föo+1',

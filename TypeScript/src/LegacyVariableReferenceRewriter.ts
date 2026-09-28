@@ -1,4 +1,4 @@
-import { decodeHTMLStrict } from 'entities';
+import { DecodingMode, EntityDecoder, htmlDecodeTree } from 'entities/decode';
 import ArcscriptLexer from './Generated/ArcscriptLexer.js';
 import type {
   ArcscriptStateDef,
@@ -156,19 +156,25 @@ export default class LegacyVariableReferenceRewriter {
     const possibleMatches = candidates
       .filter(candidate => !blocked.has(candidate.id))
       .flatMap(candidate => this.candidateMatches(decoded.text, candidate));
-    const protectedRanges = this.protectedRanges(decoded.text, possibleMatches);
+    const sourceMatches = possibleMatches.map(match =>
+      this.mapMatchToSource(match, decoded, code.length)
+    );
+    const decodedProtectedRanges = this.protectedRanges(
+      decoded.text,
+      possibleMatches
+    );
+    const sourceProtectedRanges = this.protectedRanges(code, sourceMatches);
     const matches = this.nonOverlappingMatches(
       possibleMatches.filter(
-        match =>
-          !protectedRanges.some(range => this.rangesOverlap(range, match))
+        (match, index) =>
+          !decodedProtectedRanges.some(range =>
+            this.rangesOverlap(range, match)
+          ) &&
+          !sourceProtectedRanges.some(range =>
+            this.rangesOverlap(range, sourceMatches[index])
+          )
       )
-    ).map(match => ({
-      ...match,
-      replacementStart:
-        decoded.sourceUnits[match.replacementStart]?.start ?? code.length,
-      replacementEnd:
-        decoded.sourceUnits[match.replacementEnd - 1]?.end ?? code.length,
-    }));
+    ).map(match => this.mapMatchToSource(match, decoded, code.length));
 
     const matchesByCandidate = new Map<string, CandidateMatch[]>();
     for (const match of matches) {
@@ -180,7 +186,7 @@ export default class LegacyVariableReferenceRewriter {
     for (const candidate of candidates) {
       if (
         (matchesByCandidate.get(candidate.id)?.length ?? 0) > 0 &&
-        this.isAmbiguous(candidate, candidates, options)
+        this.isAmbiguous(candidate, options)
       ) {
         blocked.add(candidate.id);
       }
@@ -220,6 +226,7 @@ export default class LegacyVariableReferenceRewriter {
     for (const candidate of candidates) {
       if (
         candidate.oldName.length === 0 ||
+        this.hasUnescapedDoubleQuote(candidate.oldName) ||
         !this.isValidIdentifier(candidate.newName) ||
         RESERVED_NAMES.has(candidate.newName) ||
         (candidate.scope !== null &&
@@ -347,7 +354,6 @@ export default class LegacyVariableReferenceRewriter {
 
   private isAmbiguous(
     candidate: Candidate,
-    candidates: Candidate[],
     options: LegacyVariableRewriteOptions
   ) {
     const name = candidate.oldName.trim();
@@ -355,6 +361,15 @@ export default class LegacyVariableReferenceRewriter {
     if (
       tokens.tokenNames[0] === 'INTEGER' ||
       tokens.tokenNames[0] === 'FLOAT'
+    ) {
+      return true;
+    }
+    if (
+      name !== candidate.oldName &&
+      (RESERVED_NAMES.has(name) ||
+        this.parsesAsArcscript(
+          candidate.scope === null ? name : `${candidate.scope}.${name}`
+        ))
     ) {
       return true;
     }
@@ -396,10 +411,11 @@ export default class LegacyVariableReferenceRewriter {
       return true;
     }
 
-    for (const other of candidates) {
+    for (const other of Object.values(this.state)) {
       if (
         other.id !== candidate.id &&
-        this.containsLegacyOperand(candidate.oldName, other.oldName)
+        other.name.length > 0 &&
+        this.containsLegacyOperand(candidate.oldName, other.name)
       ) {
         return true;
       }
@@ -538,21 +554,22 @@ export default class LegacyVariableReferenceRewriter {
     let position = 0;
     while (position < source.length) {
       if (source[position] === '&') {
-        const semicolon = source.indexOf(';', position + 1);
-        if (semicolon !== -1 && semicolon - position <= 64) {
-          const encoded = source.slice(position, semicolon + 1);
-          const decoded = decodeHTMLStrict(encoded);
-          if (decoded !== encoded) {
-            text += decoded;
-            for (let index = 0; index < decoded.length; index += 1) {
-              sourceUnits.push({
-                start: position,
-                end: semicolon + 1,
-              });
-            }
-            position = semicolon + 1;
-            continue;
+        let decodedEntity = '';
+        const decoder = new EntityDecoder(htmlDecodeTree, codePoint => {
+          decodedEntity += String.fromCodePoint(codePoint);
+        });
+        decoder.startEntity(DecodingMode.Strict);
+        const consumed = decoder.write(source, position + 1);
+        if (consumed > 0) {
+          text += decodedEntity;
+          for (let index = 0; index < decodedEntity.length; index += 1) {
+            sourceUnits.push({
+              start: position,
+              end: position + consumed,
+            });
           }
+          position += consumed;
+          continue;
         }
       }
 
@@ -568,6 +585,34 @@ export default class LegacyVariableReferenceRewriter {
     }
 
     return { text, sourceUnits };
+  }
+
+  private mapMatchToSource(
+    match: CandidateMatch,
+    decoded: DecodedSource,
+    sourceLength: number
+  ): CandidateMatch {
+    return {
+      ...match,
+      start: decoded.sourceUnits[match.start]?.start ?? sourceLength,
+      end: decoded.sourceUnits[match.end - 1]?.end ?? sourceLength,
+      replacementStart:
+        decoded.sourceUnits[match.replacementStart]?.start ?? sourceLength,
+      replacementEnd:
+        decoded.sourceUnits[match.replacementEnd - 1]?.end ?? sourceLength,
+    };
+  }
+
+  private hasUnescapedDoubleQuote(text: string) {
+    let position = text.indexOf('"');
+    while (position !== -1) {
+      if (!this.isEscapedCharacter(text, position)) {
+        return true;
+      }
+      position = text.indexOf('"', position + 1);
+    }
+
+    return false;
   }
 
   private hasIdentifierBoundaries(text: string, start: number, end: number) {
