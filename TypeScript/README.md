@@ -278,6 +278,8 @@ pnpm lint
 
 The build writes compiled files and declarations to `dist/`.
 
+New GitHub releases are automatically published to [npmjs.com](https://www.npmjs.com/package/@arcweave/arcscript).
+
 ## Contributing
 
 1. Fork the repository.
