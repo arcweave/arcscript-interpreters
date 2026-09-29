@@ -278,49 +278,7 @@ pnpm lint
 
 The build writes compiled files and declarations to `dist/`.
 
-## Publishing releases
-
-The [`Publish to npm` workflow](../.github/workflows/npm-publish.yml) publishes
-`@arcweave/arcscript` when a GitHub release is published. It checks out the release
-tag, generates the parsers, installs dependencies from the lockfile, builds the
-package, and runs the tests before publishing with provenance.
-
-### One-time npm setup
-
-An npm package maintainer must add a GitHub Actions trusted publisher in the
-[`@arcweave/arcscript` package settings](https://www.npmjs.com/package/@arcweave/arcscript/access):
-
-| Setting | Value |
-| --- | --- |
-| Organization or user | `arcweave` |
-| Repository | `arcscript-interpreters` |
-| Workflow filename | `npm-publish.yml` |
-| Environment name | Leave empty |
-| Allowed actions | Enable direct publishing with `npm publish` |
-
-The workflow uses npm's [trusted publishing](https://docs.npmjs.com/trusted-publishers/)
-through GitHub Actions OIDC. No `NPM_TOKEN` repository secret is needed.
-Merge the workflow into `main` and configure the trusted publisher before making
-the next release.
-
-### Making a release
-
-1. Update `version` in `TypeScript/package.json` and merge the change into `main`.
-   For example, run `pnpm version 3.2.0 --no-git-tag-version` from `TypeScript/`.
-2. Create a GitHub release from that commit with a matching tag, such as `v3.2.0`
-   or `3.2.0`. Both tag formats are supported; a mismatch fails the workflow.
-3. Publish the GitHub release. Stable versions are published to npm's `latest` tag.
-   Prerelease versions, such as `3.2.0-beta.1`, are published to `next` and can be
-   installed with `npm install @arcweave/arcscript@next`. GitHub prereleases must
-   use a prerelease package version. To release a stable version afterward, bump
-   to `3.2.0` and publish a new release with its own matching tag.
-4. Check the `Publish to npm` run in the repository's Actions tab.
-
-Saving a draft release or pushing a tag alone does not publish to npm. Each
-release needs a version that has not already been published to npm. Existing
-releases are not published retroactively. If a run fails before publishing,
-correct the setup problem and use **Re-run failed jobs**; source changes require
-a new release tag.
+New GitHub releases are automatically published to [npmjs.com](https://www.npmjs.com/package/@arcweave/arcscript).
 
 ## Contributing
 
