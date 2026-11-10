@@ -15,6 +15,75 @@ bool ArcscriptParserBase::assertVariable(antlr4::ParserRuleContext *identifierCo
   throw Arcweave::ParseErrorException("Unknown variable \"" + variableName + "\"");
 }
 
+void ArcscriptParserBase::assertAssignable(ParserRuleContext *identifier) const {
+  auto reference = _declarations->resolve(identifier->getText());
+  if (reference && reference->kind == Arcweave::ReferenceKind::EnumMember)
+    throw Arcweave::ParseErrorException("Enum member " + identifier->getText() + " is read-only");
+  assertVariable(identifier);
+}
+
+namespace {
+using Arcweave::ArcscriptParser;
+std::string expressionEnum(ArcscriptParser::ExpressionContext *context, const Arcweave::ArcscriptContext& declarations) {
+  if (auto parenthesized = dynamic_cast<ArcscriptParser::ParenthesizedExpressionContext*>(context))
+    return expressionEnum(parenthesized->expression(), declarations);
+  if (auto identifier = dynamic_cast<ArcscriptParser::IdentifierExpressionContext*>(context)) {
+    auto reference = declarations.resolve(identifier->identifier()->getText());
+    return reference ? reference->enumId : "";
+  }
+  return "";
+}
+bool isConstantExpression(ArcscriptParser::ExpressionContext *context, const Arcweave::ArcscriptContext& declarations) {
+  if (auto identifier = dynamic_cast<ArcscriptParser::IdentifierExpressionContext*>(context)) {
+    auto reference = declarations.resolve(identifier->identifier()->getText());
+    return reference && reference->kind == Arcweave::ReferenceKind::EnumMember;
+  }
+  if (dynamic_cast<ArcscriptParser::LiteralExpressionContext*>(context)) return true;
+  if (auto function = dynamic_cast<ArcscriptParser::FunctionCallExpressionContext*>(context)) {
+    auto call = function->function_call();
+    if (!Arcweave::ArcscriptFunctions::functions.at(call->FNAME()->getText()).isPure) return false;
+    if (call->identifier_list()) {
+      for (auto identifier : call->identifier_list()->identifier()) {
+        auto reference = declarations.resolve(identifier->getText());
+        if (!reference || reference->kind != Arcweave::ReferenceKind::EnumMember) return false;
+      }
+    } else if (auto arguments = call->argument_list()) {
+      for (auto argument : arguments->argument())
+        if (!argument->expression() || !isConstantExpression(argument->expression(), declarations)) return false;
+    }
+    return true;
+  }
+  for (auto child : context->getRuleContexts<ArcscriptParser::ExpressionContext>())
+    if (!isConstantExpression(child, declarations)) return false;
+  return true;
+}
+}
+
+void ArcscriptParserBase::validateEnums(ParserRuleContext *context) const {
+  const auto& declarations = *_declarations;
+  if (!declarations.hasEnums()) return;
+  if (auto assignment = dynamic_cast<Arcweave::ArcscriptParser::Statement_assignmentContext*>(context)) {
+    auto variable = declarations.resolve(assignment->assignable()->getText());
+    if (variable && !variable->enumId.empty() && (!assignment->ASSIGN() ||
+        expressionEnum(assignment->expression(), declarations) != variable->enumId))
+      throw Arcweave::ParseErrorException("Enum assignment requires a member or variable of the same enum");
+  }
+  if (auto comparison = dynamic_cast<Arcweave::ArcscriptParser::ComparisonExpressionContext*>(context)) {
+    if (comparison->AND() || comparison->ANDKEYWORD() || comparison->OR() || comparison->ORKEYWORD()) return;
+    auto left = expressionEnum(comparison->expression(0), declarations);
+    auto right = expressionEnum(comparison->expression(1), declarations);
+    if (!left.empty() && !right.empty() && left != right)
+      throw Arcweave::ParseErrorException("Cannot compare different enum types");
+    if ((!left.empty() && right.empty() && isConstantExpression(comparison->expression(1), declarations)) ||
+        (!right.empty() && left.empty() && isConstantExpression(comparison->expression(0), declarations)))
+      throw Arcweave::ParseErrorException("Enum comparisons with constants require a named member");
+    auto id = left.empty() ? right : left;
+    if (!id.empty() && (comparison->LT() || comparison->GT() || comparison->LE() || comparison->GE()) &&
+        declarations.enumType(id) != Arcweave::AW_INTEGER)
+      throw Arcweave::ParseErrorException("Only integer enums support ordering");
+  }
+}
+
 inline bool ends_with(std::string const & value, std::string const & ending)
 {
     if (ending.size() > value.size()) return false;
@@ -83,6 +152,8 @@ bool ArcscriptParserBase::assertFunctionArguments(Token *fname, std::any listCon
     auto *variableListCtx = std::any_cast<Arcweave::ArcscriptParser::Identifier_listContext*>(listContext);
     if (variableListCtx != NULL) {
       argListLength = static_cast<int>(variableListCtx->identifier().size());
+      if (argsType == "variable")
+        for (auto identifier : variableListCtx->identifier()) assertAssignable(identifier);
     }
   }
 

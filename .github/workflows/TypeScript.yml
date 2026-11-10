@@ -10,11 +10,13 @@ on:
     paths:
       - "TypeScript/**"
       - "grammar/*.g4"
+      - "tests/**"
   pull_request:
     branches: ["main"]
     paths:
       - "TypeScript/**"
       - "grammar/*.g4"
+      - "tests/**"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

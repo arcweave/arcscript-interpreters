@@ -43,6 +43,64 @@ namespace Arcweave.Interpreter
             return true;
         }
 
+        public void assertAssignable(ArcscriptParser.IdentifierContext identifierContext)
+        {
+            if (Declarations.Resolve(identifierContext.GetText())?.Kind == ReferenceKind.EnumMember)
+                throw new ParseException($"Enum member {identifierContext.GetText()} is read-only");
+            assertVariable(identifierContext);
+        }
+
+        private string ExpressionEnum(ArcscriptParser.ExpressionContext context)
+        {
+            if (context is ArcscriptParser.ParenthesizedExpressionContext parenthesized)
+                return ExpressionEnum(parenthesized.expression());
+            if (context is ArcscriptParser.IdentifierExpressionContext identifier)
+                return Declarations.Resolve(identifier.identifier().GetText())?.EnumId;
+            return null;
+        }
+
+        private bool IsConstantExpression(ArcscriptParser.ExpressionContext context)
+        {
+            if (context is ArcscriptParser.IdentifierExpressionContext identifier)
+                return Declarations.Resolve(identifier.identifier().GetText())?.Kind == ReferenceKind.EnumMember;
+            if (context is ArcscriptParser.LiteralExpressionContext) return true;
+            if (context is ArcscriptParser.FunctionCallExpressionContext function)
+            {
+                var call = function.function_call();
+                if (!Functions.FunctionDefinitions[call.FNAME().GetText()].IsPure) return false;
+                if (call.identifier_list() != null)
+                    return call.identifier_list().identifier().All(member => Declarations.Resolve(member.GetText())?.Kind == ReferenceKind.EnumMember);
+                return call.argument_list()?.argument().All(argument =>
+                    argument.expression() != null && IsConstantExpression(argument.expression())) ?? true;
+            }
+            return context.GetRuleContexts<ArcscriptParser.ExpressionContext>().All(IsConstantExpression);
+        }
+
+        public void validateEnums(ParserRuleContext context)
+        {
+            if (!Declarations.HasEnums) return;
+            if (context is ArcscriptParser.Statement_assignmentContext assignment &&
+                Declarations.Resolve(assignment.assignable().GetText())?.EnumId is string enumId &&
+                (assignment.ASSIGN() == null || ExpressionEnum(assignment.expression()) != enumId))
+                throw new ParseException("Enum assignment requires a member or variable of the same enum");
+            if (context is ArcscriptParser.ComparisonExpressionContext comparison &&
+                comparison.AND() == null && comparison.ANDKEYWORD() == null &&
+                comparison.OR() == null && comparison.ORKEYWORD() == null)
+            {
+                var left = ExpressionEnum(comparison.expression(0));
+                var right = ExpressionEnum(comparison.expression(1));
+                if (left != null && right != null && left != right)
+                    throw new ParseException("Cannot compare different enum types");
+                if ((left != null && right == null && IsConstantExpression(comparison.expression(1))) ||
+                    (right != null && left == null && IsConstantExpression(comparison.expression(0))))
+                    throw new ParseException("Enum comparisons with constants require a named member");
+                var id = left ?? right;
+                if (id != null && (comparison.LT() != null || comparison.GT() != null ||
+                    comparison.LE() != null || comparison.GE() != null) && Declarations.EnumType(id) != typeof(int))
+                    throw new ParseException("Only integer enums support ordering");
+            }
+        }
+
         public bool assertMention(IList<ArcscriptParser.Mention_attributesContext> attrCtxList) {
             Dictionary<string, string> attrs = new Dictionary<string, string>();
             foreach ( var attrCtx in attrCtxList ) {
@@ -100,6 +158,8 @@ namespace Arcweave.Interpreter
             
             var min = Functions.FunctionDefinitions[fname.Text].MinArgs;
             var max = Functions.FunctionDefinitions[fname.Text].MaxArgs;
+            if (Functions.FunctionDefinitions[fname.Text].ArgumentsType == typeof(Variable) && identifierListContext != null)
+                foreach (var identifier in identifierListContext.identifier()) assertAssignable(identifier);
             if ( ( min != null && identifierListLength < min ) || ( max != null && identifierListLength > max ) ) {
                 throw new RecognitionException("Incorrect number of arguments for function " + fname.Text, this, this.InputStream, this.Context);
             }

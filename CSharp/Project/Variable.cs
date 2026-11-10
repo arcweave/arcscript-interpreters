@@ -6,6 +6,7 @@ namespace Arcweave.Project
 public partial class Variable
 {
     public string Name { get; set; }
+    public string EnumId { get; set; }
     public string Id { get; }
     public object Value { get; set; }
     public object ObjectValue => Value;

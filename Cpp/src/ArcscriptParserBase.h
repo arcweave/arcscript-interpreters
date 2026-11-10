@@ -16,6 +16,8 @@ public:
     _declarations = &declarations;
   };
   bool assertVariable(antlr4::ParserRuleContext *variable) const;
+  void assertAssignable(antlr4::ParserRuleContext *identifier) const;
+  void validateEnums(antlr4::ParserRuleContext *context) const;
   bool assertMention(std::any attrCtxList);
   bool assertFunctionArguments(antlr4::Token *fname, std::any listContext);
   void setLineStart(antlr4::Token *token);

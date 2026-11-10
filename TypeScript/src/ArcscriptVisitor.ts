@@ -384,11 +384,15 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   private readVariable(reference: ArcscriptReference): ArcscriptVariable {
+    if (reference.kind !== 'variable')
+      throw new RuntimeError('Enum members are read-only');
     return this.state.getVarById(reference.variableId);
   }
 
   private readReference(reference: ArcscriptReference): VarValue {
-    return this.readVariable(reference).getValue();
+    return reference.kind === 'enumMember'
+      ? reference.value
+      : this.readVariable(reference).getValue();
   }
 
   visitLiteral = (ctx: LiteralContext) => {

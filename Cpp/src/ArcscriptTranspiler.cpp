@@ -24,7 +24,7 @@ void ArcscriptTranspiler::validate(std::string code) {
 }
 
 TranspilerOutput ArcscriptTranspiler::process(std::string code, bool execute) {
-  const ArcscriptContext declarations(state.variableValues);
+  const ArcscriptContext declarations(enumDefinitions, state.variableValues, scopeNames);
   ANTLRInputStream input(code);
   ArcscriptLexer lexer(&input);
 
@@ -72,6 +72,14 @@ TranspilerOutput ArcscriptTranspiler::process(std::string code, bool execute) {
 
 UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent)
 {
+    return runScriptWithEnumsExport(code, elId, variables, varLength, visits, visitsLength, onEvent, {}, {});
+}
+
+UTranspilerOutput* runScriptWithEnumsExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent,
+    const std::map<std::string, EnumDefinition>& enums,
+    const std::map<std::string, std::string>& variableEnums,
+    const std::vector<std::string>& scopeNames)
+{
     Arcweave::TranspilerOutput transpilerOutput;
 
     transpilerOutput.type = InputType::CONDITION;
@@ -100,6 +108,8 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         var.id = std::string(variables[i].id);
         var.name = std::string(variables[i].name);
         var.type = variables[i].type;
+        auto enumReference = variableEnums.find(var.id);
+        if (enumReference != variableEnums.end()) var.enumId = enumReference->second;
 
         if (variables[i].scope != nullptr) {
             var.scope = std::string(variables[i].scope);
@@ -129,7 +139,7 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         initVisits[std::string(visits[i].elId)] = visits[i].visits;
     }
 
-    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits, onEvent);
+    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits, onEvent, enums, scopeNames);
     transpilerOutput = transpiler.runScript(sCode);
 
     UTranspilerOutput* uTranspilerOutput = new UTranspilerOutput();

@@ -32,6 +32,7 @@ struct Variable {
   std::any value;
   std::string scope;
   std::any defaultValue;
+  std::string enumId;
 };
 
 class ArcscriptState {

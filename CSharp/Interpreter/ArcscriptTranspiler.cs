@@ -1,6 +1,7 @@
 #nullable enable
 using Antlr4.Runtime;
 using System.Collections.Generic;
+using System.Linq;
 using Arcweave.Interpreter.INodes;
 
 namespace Arcweave.Interpreter
@@ -11,10 +12,15 @@ namespace Arcweave.Interpreter
         private string ElementId { get; set; }
 
         private System.Action<string> _emit;
+        private readonly IReadOnlyDictionary<string, EnumDefinition>? _enums;
+        private readonly IEnumerable<string>? _scopeNames;
 
-        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null)
+        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null,
+            IReadOnlyDictionary<string, EnumDefinition>? enums = null, IEnumerable<string>? scopeNames = null)
         {
             this.Project = project;
+            _enums = enums;
+            _scopeNames = scopeNames;
             this.ElementId = elementId;
             if (onEvent != null)
             {
@@ -26,7 +32,18 @@ namespace Arcweave.Interpreter
             }
         }
 
-        private ArcscriptContext CreateContext() => new ArcscriptContext(Project.GetAllVariables());
+        private ArcscriptContext CreateContext()
+        {
+#if GODOT
+            var scopes = Project.Boards.Values.Select(board => board.CustomId)
+                .Concat(Project.Components.Values.Select(component => component.CustomId));
+#else
+            var scopes = Project.Boards.Select(board => board.CustomId)
+                .Concat(Project.Components.Select(component => component.CustomId));
+#endif
+            return new ArcscriptContext(_enums, Project.GetAllVariables(),
+                scopes.Concat(_scopeNames ?? Enumerable.Empty<string>()));
+        }
 
         public ArcscriptParser.InputContext Parse(string code) => ParseWithContext(code).Tree;
 

@@ -56,17 +56,17 @@ namespace Arcweave {
     }
 
     std::map<std::string, ArcscriptFunctions::FunctionInfo> ArcscriptFunctions::functions = {
-      { "abs", { 1, 1 } },
-      { "max", { 2, -1 }},
-      { "min", { 2, -1 }},
+      { "abs", { 1, 1, "", true } },
+      { "max", { 2, -1, "", true }},
+      { "min", { 2, -1, "", true }},
       { "random", { 0, 0 }},
       { "reset", { 1, -1, "variable" }},
       { "resetAll", { 0, -1, "variable" }},
       { "roll", { 1, 2 } },
-      { "round", { 1, 1} },
+      { "round", { 1, 1, "", true } },
       { "show", { 1, -1 } },
-      { "sqr", { 1, 1 } },
-      { "sqrt", { 1, 1 } },
+      { "sqr", { 1, 1, "", true } },
+      { "sqrt", { 1, 1, "", true } },
       { "visits", { 0, 1 } },
       { "resetVisits", { 0, 0 } },
     };

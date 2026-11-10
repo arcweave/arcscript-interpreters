@@ -6,11 +6,13 @@ on:
     paths:
       - "CSharp/**"
       - "grammar/*.g4"
+      - "tests/**"
   pull_request:
     branches: ["main"]
     paths:
       - "CSharp/**"
       - "grammar/*.g4"
+      - "tests/**"
 
 jobs:
   build-and-test:

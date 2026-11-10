@@ -5,7 +5,7 @@ import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 import { ParseError } from './errors/index.js';
-import { ArcscriptStateDef, VarValue } from './types.js';
+import { ArcscriptEnumDefs, ArcscriptStateDef, VarValue } from './types.js';
 import ArcscriptContext from './ArcscriptContext.js';
 import ArcscriptState from './ArcscriptState.js';
 import { isGlobalScope } from './scope.js';
@@ -17,6 +17,8 @@ import type {
 
 export type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
+  enums?: ArcscriptEnumDefs;
+  scopeNames?: readonly string[];
   elementVisits?: Record<string, number>;
   currentElement?: string;
   eventHandler?: (event: string, data?: unknown) => void;
@@ -33,9 +35,13 @@ export default class Interpreter {
   private readonly elementVisits: Record<string, number>;
   private readonly currentElement: string;
   private readonly emit: (event: string, data?: unknown) => void;
+  private readonly enumDefinitions: ArcscriptEnumDefs;
+  private readonly scopeNames: readonly string[];
 
   constructor(options: ArcscriptInterpreterOptions = { state: {} }) {
     this.arcscriptVariables = options.state;
+    this.enumDefinitions = options.enums ?? {};
+    this.scopeNames = options.scopeNames ?? [];
     this.elementVisits = options.elementVisits ?? {};
     this.currentElement = options.currentElement ?? '';
     this.emit = options.eventHandler ?? (() => {});
@@ -72,7 +78,11 @@ export default class Interpreter {
     parser.setOptions({
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
-      declarations: new ArcscriptContext(this.arcscriptVariables),
+      declarations: new ArcscriptContext(
+        this.enumDefinitions,
+        this.arcscriptVariables,
+        this.scopeNames
+      ),
     });
     parser.buildParseTrees = true;
     parser.removeErrorListeners();

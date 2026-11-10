@@ -362,11 +362,12 @@ std::any ArcscriptVisitor::visitIdentifier(ArcscriptParser::IdentifierContext *c
 }
 
 Variable ArcscriptVisitor::readVariable(const ArcscriptReference& reference) const {
+  if (reference.kind != ReferenceKind::Variable) throw RuntimeErrorException("Enum members are read-only");
   return state->getVarById(reference.variableId);
 }
 
 std::any ArcscriptVisitor::readReference(const ArcscriptReference& reference) const {
-  return state->getVarValueById(reference.variableId);
+  return reference.kind == ReferenceKind::EnumMember ? reference.value : state->getVarValueById(reference.variableId);
 }
 
 std::any ArcscriptVisitor::visitMention(ArcscriptParser::MentionContext *ctx) {

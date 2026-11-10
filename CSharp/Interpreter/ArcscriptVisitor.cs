@@ -414,11 +414,12 @@ namespace Arcweave.Interpreter
 
         private Variable ReadVariable(ArcscriptReference reference)
         {
+            if (reference.Kind != ReferenceKind.Variable) throw new RuntimeException("Enum members are read-only");
             return state.GetVariableById(reference.VariableId);
         }
 
         private object ReadReference(ArcscriptReference reference) =>
-            state.GetVarValueById(reference.VariableId);
+            reference.Kind == ReferenceKind.EnumMember ? reference.Value : state.GetVarValueById(reference.VariableId);
 
         public override object VisitMention([NotNull] ArcscriptParser.MentionContext context) {
             Dictionary<string, string> attrs = new Dictionary<string, string>();
