@@ -5,11 +5,10 @@ import ArcscriptParser, {
   IdentifierContext,
   Mention_attributesContext,
 } from './ArcscriptParser.js';
-import { ArcscriptStateDef } from '../types.js';
-import { isGlobalScope } from '../scope.js';
+import ArcscriptContext from '../ArcscriptContext.js';
 
 type ArcscriptParserOptions = {
-  arcscriptVariables: ArcscriptStateDef;
+  declarations: ArcscriptContext;
   elementVisits: Record<string, number>;
   currentElement: string;
 };
@@ -48,7 +47,7 @@ export default class ArcscriptParserBase extends Parser {
     resetVisits: { minArgs: 0, maxArgs: 0, returnType: 'void' },
   };
 
-  arcscriptVariableNames: string[] = [];
+  declarations!: ArcscriptContext;
   elementVisits: Record<string, number> = {};
   currentElement: string = '';
   currentLine: number = 0;
@@ -59,15 +58,7 @@ export default class ArcscriptParserBase extends Parser {
   }
 
   setOptions(options: ArcscriptParserOptions) {
-    const variableNames = Object.values(options.arcscriptVariables).map(
-      variable => {
-        if (!isGlobalScope(variable.scope)) {
-          return `${variable.scope}.${variable.name}`;
-        }
-        return variable.name;
-      }
-    );
-    this.arcscriptVariableNames = variableNames;
+    this.declarations = options.declarations;
     this.elementVisits = options.elementVisits;
     this.currentElement = options.currentElement;
   }
@@ -119,7 +110,7 @@ export default class ArcscriptParserBase extends Parser {
 
   assertVariable(identifierCtx: IdentifierContext) {
     const variableName = identifierCtx.getText();
-    if (!this.arcscriptVariableNames.includes(variableName)) {
+    if (!this.declarations.resolve(variableName)) {
       this.notifyErrorListeners(
         `The variable ${variableName} does not exist`,
         identifierCtx.start,

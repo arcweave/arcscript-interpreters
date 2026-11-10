@@ -77,20 +77,29 @@ public:
   }
 
   inline std::any getVarValue(IdentifierDef identifier) {
-    std::string varId = varNameToID[getVarFullName(identifier)];
-    if (variableChanges.count(varId)) {
-      return variableChanges[varId];
-    }
-    return variableValues[varId].value;
+    return getVarValueById(varNameToID.at(getVarFullName(identifier)));
   }
 
   inline Variable getVar(IdentifierDef identifier) {
-    return variableValues[varNameToID[getVarFullName(identifier)]];
+    return getVarById(varNameToID.at(getVarFullName(identifier)));
   }
 
   inline void setVarValue(IdentifierDef identifier, std::any value) {
-    std::string varId = varNameToID[getVarFullName(identifier)];
-    variableChanges[varId] = value;
+    setVarValueById(varNameToID.at(getVarFullName(identifier)), std::move(value));
+  }
+
+  inline std::any getVarValueById(const std::string& id) const {
+    auto change = variableChanges.find(id);
+    return change != variableChanges.end() ? change->second : variableValues.at(id).value;
+  }
+
+  inline const Variable& getVarById(const std::string& id) const {
+    return variableValues.at(id);
+  }
+
+  inline void setVarValueById(const std::string& id, std::any value) {
+    variableValues.at(id);
+    variableChanges[id] = std::move(value);
   }
 
   inline void resetVars(std::vector<Variable> vars) {

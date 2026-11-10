@@ -6,6 +6,7 @@ import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 import { ParseError } from './errors/index.js';
 import { ArcscriptStateDef, VarValue } from './types.js';
+import ArcscriptContext from './ArcscriptContext.js';
 import ArcscriptState from './ArcscriptState.js';
 import { isGlobalScope } from './scope.js';
 import LegacyVariableReferenceRewriter from './LegacyVariableReferenceRewriter.js';
@@ -14,7 +15,7 @@ import type {
   LegacyVariableRewriteResult,
 } from './types.js';
 
-type ArcscriptInterpreterOptions = {
+export type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
   elementVisits?: Record<string, number>;
   currentElement?: string;
@@ -48,9 +49,9 @@ export default class Interpreter {
       this.emit
     );
 
-    const { tree } = this.parse(code);
+    const { tree, parser } = this.parse(code);
 
-    const visitor = new ArcscriptVisitor(state);
+    const visitor = new ArcscriptVisitor(state, parser.declarations);
 
     state.setVarValues(varValues);
 
@@ -69,9 +70,9 @@ export default class Interpreter {
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
-      arcscriptVariables: this.arcscriptVariables,
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
+      declarations: new ArcscriptContext(this.arcscriptVariables),
     });
     parser.buildParseTrees = true;
     parser.removeErrorListeners();
@@ -216,10 +217,13 @@ export default class Interpreter {
       token => tokenTypeNames[token.type] === 'LEGACY_CHARACTER'
     );
     if (legacyToken) {
-      throw new ParseError(`token recognition error at: '${legacyToken.text}'`, {
-        line: legacyToken.line,
-        col: legacyToken.column,
-      });
+      throw new ParseError(
+        `token recognition error at: '${legacyToken.text}'`,
+        {
+          line: legacyToken.line,
+          col: legacyToken.column,
+        }
+      );
     }
 
     return {

@@ -16,10 +16,19 @@ using namespace Arcweave;
 using namespace antlr4;
 
 TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
+  return process(std::move(code), true);
+}
+
+void ArcscriptTranspiler::validate(std::string code) {
+  process(std::move(code), false);
+}
+
+TranspilerOutput ArcscriptTranspiler::process(std::string code, bool execute) {
+  const ArcscriptContext declarations(state.variableValues);
   ANTLRInputStream input(code);
   ArcscriptLexer lexer(&input);
 
-  TranspilerOutput result;
+  TranspilerOutput result{};
 
   ErrorListener lexerErrorListener;
   lexer.removeErrorListeners();
@@ -31,7 +40,7 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
   tokens.fill();
 
   ArcscriptParser parser(&tokens);
-  parser.setArcscriptState(&state);
+  parser.setArcscriptState(&state, declarations);
   ErrorListener parserErrorListener;
   parser.removeErrorListeners();
   parser.addErrorListener(&parserErrorListener);
@@ -40,8 +49,9 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
 
   // Run the parser
   tree = parser.input();
+  if (!execute) return result;
   
-  ArcscriptVisitor visitor(&state);
+  ArcscriptVisitor visitor(&state, declarations);
   
   // Run the visitor
   std::any res(visitor.visitInput(tree));

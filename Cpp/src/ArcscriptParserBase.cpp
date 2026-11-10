@@ -9,7 +9,7 @@ using namespace antlr4;
 
 bool ArcscriptParserBase::assertVariable(antlr4::ParserRuleContext *identifierContext) const {
   std::string variableName = identifierContext->getText();
-  if (_state->varNameToID.count(variableName) > 0) {
+  if (_declarations->resolve(variableName)) {
     return true;
   }
   throw Arcweave::ParseErrorException("Unknown variable \"" + variableName + "\"");

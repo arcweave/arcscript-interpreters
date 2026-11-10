@@ -26,8 +26,13 @@ namespace Arcweave.Interpreter
             }
         }
 
-        private ArcscriptParser.InputContext GetParseTree(string code)
+        private ArcscriptContext CreateContext() => new ArcscriptContext(Project.GetAllVariables());
+
+        public ArcscriptParser.InputContext Parse(string code) => ParseWithContext(code).Tree;
+
+        private (ArcscriptParser.InputContext Tree, ArcscriptContext Declarations) ParseWithContext(string code)
         {
+            var declarations = CreateContext();
             ICharStream stream = CharStreams.fromString(code);
             ArcscriptLexer lexer = new ArcscriptLexer(stream);
             var lexerErrorListener = new ErrorListener<int>();
@@ -36,7 +41,7 @@ namespace Arcweave.Interpreter
             var parserErrorListener = new ErrorListener<IToken>();
             ArcscriptParser parser = new ArcscriptParser(tokens);
             parser.AddErrorListener(parserErrorListener);
-            parser.SetProject(Project);
+            parser.SetProject(Project, declarations);
 
             ArcscriptParser.InputContext tree = parser.input();
             
@@ -49,7 +54,7 @@ namespace Arcweave.Interpreter
                 throw new ParseException("Parsing errors:\n" + string.Join("\n", parserErrorListener.Errors));
             }
             
-            return tree;
+            return (tree, declarations);
         }
 
         public TranspilerOutput RunScript(string code)
@@ -59,17 +64,19 @@ namespace Arcweave.Interpreter
                 return new TranspilerOutput();
             }
 
-            ArcscriptParser.InputContext tree;
+            (ArcscriptParser.InputContext Tree, ArcscriptContext Declarations) parsed;
             try
             {
-                tree = this.GetParseTree(code);
+                parsed = ParseWithContext(code);
             }
             catch (System.Exception e)
             {
                 throw new ParseException(e.Message, e);
             }
             
-            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit);
+            var tree = parsed.Tree;
+            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit,
+                parsed.Declarations);
             object result;
             try
             {

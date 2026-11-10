@@ -68,6 +68,17 @@ namespace Arcweave.Interpreter
             return this.VariableChanges.ContainsKey(v.Id) ? VariableChanges[v.Id] : v.ObjectValue;
         }
 
+        public Variable GetVariableById(string id) => Variables[id];
+
+        public object GetVarValueById(string id) =>
+            VariableChanges.TryGetValue(id, out var value) ? value : GetVariableById(id).ObjectValue;
+
+        public void SetVarValueById(string id, object value)
+        {
+            if (!Variables.ContainsKey(id)) throw new System.InvalidOperationException($"Variable {id} not found");
+            VariableChanges[id] = value;
+        }
+
         public void SetVarValue(IVariable v, object value)
         {
             VariableChanges[v.Id] = value;

@@ -17,7 +17,9 @@ namespace Arcweave.Interpreter
         public string elementId;
         private readonly Functions _functions;
         private System.Action<string> _emit;
-        public ArcscriptVisitor(string elementId, IProject project, System.Action<string>? emit = null) {
+        private readonly ArcscriptContext _declarations;
+        public ArcscriptVisitor(string elementId, IProject project, System.Action<string>? emit = null, ArcscriptContext? declarations = null) {
+            _declarations = declarations ?? new ArcscriptContext(variables: project.GetAllVariables());
             this.elementId = elementId;
             this.project = project;
             this.state = new ArcscriptState(elementId, project, emit);
@@ -163,14 +165,14 @@ namespace Arcweave.Interpreter
 
         public override object VisitStatement_assignment([NotNull] ArcscriptParser.Statement_assignmentContext context)
         {
-            var identifier = (IdentifierDef) this.VisitAssignable(context.assignable());
+            var identifier = (ArcscriptReference) this.VisitAssignable(context.assignable());
 
-            var identifierValue = new Expression(this.state.GetVarValue(identifier.Name, identifier.Scope));
+            var identifierValue = new Expression(ReadReference(identifier));
 
             var re = (Expression)Visit(context.expression())!;
             
             if ( context.ASSIGN() != null ) {
-                this.state.SetVarValue(identifier, re.Value);
+                this.state.SetVarValueById(identifier.VariableId, re.Value);
                 return null!;
             }
 
@@ -186,7 +188,7 @@ namespace Arcweave.Interpreter
                 identifierValue %= re;
             }
 
-            this.state.SetVarValue(identifier, identifierValue.Value);
+            this.state.SetVarValueById(identifier.VariableId, identifierValue.Value);
             return null!;
         }
 
@@ -316,8 +318,7 @@ namespace Arcweave.Interpreter
 
         public override object VisitIdentifierExpression(ArcscriptParser.IdentifierExpressionContext context)
         {
-            var identifier = (IdentifierDef)VisitIdentifier(context.identifier());
-            return new Expression(this.state.GetVarValue(identifier.Name, identifier.Scope));
+            return new Expression(ReadReference((ArcscriptReference)VisitIdentifier(context.identifier())));
         }
 
         public override object VisitLiteralExpression(ArcscriptParser.LiteralExpressionContext context)
@@ -369,26 +370,13 @@ namespace Arcweave.Interpreter
 
             if (context.identifier_list() != null)
             {
-                argument_list_result = (IList<object>)this.VisitIdentifier_list(context.identifier_list());
-                if (Functions.FunctionDefinitions.ContainsKey(fname))
-                {
-                    if (Functions.FunctionDefinitions[fname].ArgumentsType == typeof(Variable))
-                    {
-                        for (int i = 0; i < argument_list_result.Count; i++)
-                        {
-                            IdentifierDef identifierDef = (IdentifierDef)argument_list_result[i];
-                            argument_list_result[i] = this.state.GetVariable(identifierDef.Name, identifierDef.Scope);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < argument_list_result.Count; i++)
-                        {
-                            IdentifierDef identifierDef = (IdentifierDef)argument_list_result[i];
-                            argument_list_result[i] = new Expression(this.state.GetVarValue(identifierDef.Name, identifierDef.Scope));
-                        }
-                    }
-                }
+                var references = (IList<object>)VisitIdentifier_list(context.identifier_list());
+                argument_list_result = references.Select(value => {
+                    var reference = (ArcscriptReference)value;
+                    return Functions.FunctionDefinitions[fname].ArgumentsType == typeof(Variable)
+                        ? (object)ReadVariable(reference)
+                        : new Expression(ReadReference(reference));
+                }).ToList();
             }
             
             object returnValue = this._functions.functions[fname](argument_list_result);
@@ -420,19 +408,17 @@ namespace Arcweave.Interpreter
         
         public override object VisitIdentifier(ArcscriptParser.IdentifierContext context)
         {
-            string name = "";
-            string? scope = null;
-            if (context.IDENTIFIER().Length == 1)
-            {
-                name = context.IDENTIFIER(0).GetText();
-            }
-            else
-            {
-                scope = context.IDENTIFIER(0).GetText();
-                name = context.IDENTIFIER(1).GetText();
-            }
-            return new IdentifierDef(name, scope);
+            return _declarations.Resolve(context.GetText())
+                ?? throw new RuntimeException($"Variable {context.GetText()} not found");
         }
+
+        private Variable ReadVariable(ArcscriptReference reference)
+        {
+            return state.GetVariableById(reference.VariableId);
+        }
+
+        private object ReadReference(ArcscriptReference reference) =>
+            state.GetVarValueById(reference.VariableId);
 
         public override object VisitMention([NotNull] ArcscriptParser.MentionContext context) {
             Dictionary<string, string> attrs = new Dictionary<string, string>();

@@ -145,6 +145,7 @@ namespace Arcweave
    * 
   */
   class ArcscriptTranspiler {
+    TranspilerOutput process(std::string code, bool execute);
   public:
 
 	ArcscriptState state;
@@ -157,6 +158,8 @@ namespace Arcweave
 	 * @return The result of the ran script
 	*/
 	TranspilerOutput runScript(std::string code);
+
+    void validate(std::string code);
 
 	//ARCSCRIPTTRANSPILER_API UTranspilerOutput URunScript(char* code);
   };

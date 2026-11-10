@@ -10,7 +10,7 @@ namespace Arcweave.Interpreter
     public class ArcscriptParserBase : Parser
     {
         private protected IProject Project { get; private set; }
-        private protected List<string> VariableNames = new List<string>();
+        public ArcscriptContext Declarations { get; private set; }
         internal int currentLine;
         internal int openTagEndPos;
 
@@ -24,14 +24,9 @@ namespace Arcweave.Interpreter
         {
         }
 
-        public void SetProject(IProject project) {
+        public void SetProject(IProject project, ArcscriptContext declarations = null) {
             this.Project = project;
-            foreach (var projectVariable in project.GetAllVariables())
-            {
-                VariableNames.Add(projectVariable.Parent == null
-                    ? projectVariable.Name
-                    : projectVariable.Parent.CustomId + "." + projectVariable.Name);
-            }
+            Declarations = declarations ?? new ArcscriptContext(variables: project.GetAllVariables());
         }
 
         public override string[] RuleNames => throw new System.NotImplementedException();
@@ -43,10 +38,8 @@ namespace Arcweave.Interpreter
         public bool assertVariable(ArcscriptParser.IdentifierContext identifierContext) {
             var variableName = identifierContext.GetText();
             
-            var found = VariableNames.First(name => name == variableName);
-            if ( found != null ) {
-                return false;
-            }
+            if (Declarations.Resolve(variableName) == null)
+                throw new ParseException($"The variable {variableName} does not exist");
             return true;
         }
 

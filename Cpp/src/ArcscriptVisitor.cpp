@@ -136,19 +136,19 @@ std::any ArcscriptVisitor::visitElse_if_clause(ArcscriptParser::Else_if_clauseCo
 }
 
 std::any ArcscriptVisitor::visitStatement_assignment(ArcscriptParser::Statement_assignmentContext *ctx) {
-  auto identifier = std::any_cast<IdentifierDef>(visitAssignable(ctx->assignable()));
+  auto identifier = std::any_cast<ArcscriptReference>(visitAssignable(ctx->assignable()));
   auto identifierExpr = Expression();
-  identifierExpr.setValue(state->getVarValue(identifier));
+  identifierExpr.setValue(readReference(identifier));
 
   auto re = std::any_cast<Expression>(visit(ctx->expression()));
 
   if (ctx->ASSIGN() != nullptr) {
-    state->setVarValue(identifier, re.value);
+    state->setVarValueById(identifier.variableId, re.value);
     return {};
   }
 
   Expression varValue;
-  varValue.setValue(state->getVarValue(identifier));
+  varValue.setValue(readReference(identifier));
 
   if (ctx->ASSIGNADD() != nullptr) {
     varValue += re;
@@ -162,7 +162,7 @@ std::any ArcscriptVisitor::visitStatement_assignment(ArcscriptParser::Statement_
     varValue %= re;
   }
 
-  state->setVarValue(identifier, varValue.value);
+  state->setVarValueById(identifier.variableId, varValue.value);
   return {};
 }
 
@@ -264,9 +264,9 @@ std::any ArcscriptVisitor::visitParenthesizedExpression(ArcscriptParser::Parenth
 }
 
 std::any ArcscriptVisitor::visitIdentifierExpression(ArcscriptParser::IdentifierExpressionContext *ctx) {
-  auto idDef = std::any_cast<IdentifierDef>(visitIdentifier(ctx->identifier()));
+  auto idDef = std::any_cast<ArcscriptReference>(visitIdentifier(ctx->identifier()));
   auto result = Expression();
-  result.setValue(state->getVarValue(idDef));
+  result.setValue(readReference(idDef));
   return result;
 }
 
@@ -309,15 +309,15 @@ std::any ArcscriptVisitor::visitFunction_call(ArcscriptParser::Function_callCont
   }
 
   if (ctx->identifier_list() != nullptr) {
-    auto identifierList = std::any_cast<std::vector<IdentifierDef>>(visitIdentifier_list(ctx->identifier_list()));
+    auto identifierList = std::any_cast<std::vector<ArcscriptReference>>(visitIdentifier_list(ctx->identifier_list()));
     if (ArcscriptFunctions::functions[fname].argsType == "variable") {
       for (size_t i = 0; i < identifierList.size(); i++) {
-        argument_list_result.push_back(state->getVar(identifierList[i]));
+        argument_list_result.push_back(readVariable(identifierList[i]));
       }
     } else {
       for (size_t i = 0; i < identifierList.size(); i++) {
         auto e = Expression();
-        e.setValue(state->getVarValue(identifierList[i]));
+        e.setValue(readReference(identifierList[i]));
         argument_list_result.push_back(e);
       }
     }
@@ -348,26 +348,25 @@ std::any ArcscriptVisitor::visitArgument(ArcscriptParser::ArgumentContext *ctx) 
 }
 
 std::any ArcscriptVisitor::visitIdentifier_list(ArcscriptParser::Identifier_listContext *ctx) {
-  std::vector<IdentifierDef> identifiers;
+  std::vector<ArcscriptReference> identifiers;
   for (auto *id : ctx->identifier()) {
-    identifiers.push_back(std::any_cast<IdentifierDef>(visitIdentifier(id)));
+    identifiers.push_back(std::any_cast<ArcscriptReference>(visitIdentifier(id)));
   }
   return identifiers;
 }
 
 std::any ArcscriptVisitor::visitIdentifier(ArcscriptParser::IdentifierContext *ctx) {
-  std::string name;
-  std::string scope;
-  if (ctx->IDENTIFIER().size() == 1) {
-    name = ctx->IDENTIFIER(0)->getText();
-  } else {
-    scope = ctx->IDENTIFIER(0)->getText();
-    name = ctx->IDENTIFIER(1)->getText();
-  }
-  IdentifierDef def;
-  def.name = name;
-  def.scope = scope;
-  return def;
+  auto reference = declarations.resolve(ctx->getText());
+  if (!reference) throw RuntimeErrorException("Variable " + ctx->getText() + " not found");
+  return *reference;
+}
+
+Variable ArcscriptVisitor::readVariable(const ArcscriptReference& reference) const {
+  return state->getVarById(reference.variableId);
+}
+
+std::any ArcscriptVisitor::readReference(const ArcscriptReference& reference) const {
+  return state->getVarValueById(reference.variableId);
 }
 
 std::any ArcscriptVisitor::visitMention(ArcscriptParser::MentionContext *ctx) {
