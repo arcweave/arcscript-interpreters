@@ -1,0 +1,4 @@
+{
+  "cmake.sourceDirectory": "${workspaceFolder}/Cpp",
+  "dotnet.defaultSolution": "CSharp/CSharp.sln"
+}
