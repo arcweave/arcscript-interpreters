@@ -12,6 +12,7 @@
 
 namespace Arcweave {
   class RuntimeErrorException : public std::exception {
+    std::string formattedMessage;
     public:
     std::string message;
     size_t line = 0;
@@ -23,18 +24,15 @@ namespace Arcweave {
       message = msg;
       line = _line;
       charPositionInLine = _charPositionInLine;
+      formattedMessage = "line " + std::to_string(line) + ":" + std::to_string(charPositionInLine) + " " + message;
     };
     char const* what() const noexcept override {
-      if (line > 0) {
-        std::ostringstream oss;
-        oss << "line " << line << ":" << charPositionInLine << " " << message << std::endl;
-        return strdup(oss.str().c_str());
-      }
-      return message.c_str();
+      return line > 0 ? formattedMessage.c_str() : message.c_str();
     }
   };
 
   class ParseErrorException : public std::exception {
+    std::string formattedMessage;
     public:
     std::string message;
     size_t line = 0;
@@ -46,14 +44,10 @@ namespace Arcweave {
       message = msg;
       line = _line;
       charPositionInLine = _charPositionInLine;
+      formattedMessage = "line " + std::to_string(line) + ":" + std::to_string(charPositionInLine) + " " + message;
     };
     char const* what() const noexcept override {
-      if (line > 0) {
-        std::ostringstream oss;
-        oss << "line " << line << ":" << charPositionInLine << " " << message << std::endl;
-        return strdup(oss.str().c_str());
-      }
-      return message.c_str();
+      return line > 0 ? formattedMessage.c_str() : message.c_str();
     }
   };
 }

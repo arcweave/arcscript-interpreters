@@ -101,8 +101,11 @@ void currentNameLookupTests() {
   state.variableValues.at("a_scoped").scope = "OtherBoard";
   require(state.getVar({"renamed", "OtherBoard"}).id == "a_scoped",
     "Host declaration lookup did not observe renamed metadata");
-  state.setVarValue({"renamed", "OtherBoard"}, 7);
+  require(state.getVar({"OtherBoard.renamed", ""}).id == "a_scoped",
+    "Dotted declaration shorthand did not observe renamed metadata");
+  state.setVarValue({"OtherBoard.renamed", ""}, 7);
   require(std::any_cast<int>(state.getVarValue({"renamed", "OtherBoard"})) == 7 &&
+    std::any_cast<int>(state.getVarValue({"OtherBoard.renamed", ""})) == 7 &&
     std::any_cast<int>(state.getVarValueById("a_scoped")) == 7,
     "Name and ID helpers disagree after rename");
   auto result = interpreter.runScript("<pre><code>OtherBoard.renamed += 1</code></pre>");
@@ -114,6 +117,31 @@ void currentNameLookupTests() {
   catch (const std::out_of_range&) { rejected = true; }
   require(rejected && state.variableValues.size() == 2 && state.variableChanges.size() == 1,
     "Unknown names should fail without inserting variables");
+  for (auto identifier : {IdentifierDef{"OtherBoard.missing", ""}, IdentifierDef{".Board.score", ""},
+      IdentifierDef{"OtherBoard.renamed", "Board"}}) {
+    rejected = false;
+    try { state.setVarValue(identifier, 999); }
+    catch (const std::out_of_range&) { rejected = true; }
+    require(rejected && state.variableValues.size() == 2 && state.variableChanges.size() == 1,
+      "Invalid shorthand should fail without changing state");
+  }
+}
+
+template<typename Error>
+void checkExceptionMessage() {
+  Error located("message", 3, 2);
+  const char* text = located.what();
+  require(std::string(text) == "line 3:2 message", "Located error has incorrect formatting");
+  require(located.what() == text, "Repeated what() calls must reuse the owned message");
+  Error copy = located;
+  require(std::string(copy.what()) == text, "Copied exception lost its message");
+  Error plain("message");
+  require(std::string(plain.what()) == "message", "Location-free error changed formatting");
+}
+
+void exceptionMessageTests() {
+  checkExceptionMessage<ParseErrorException>();
+  checkExceptionMessage<RuntimeErrorException>();
 }
 
 void bridgeEnumReferenceTests() {
@@ -257,7 +285,7 @@ int main(int argc, char* argv[]) {
     }
   }
   const auto additionalTests = {declarationContextTests, declarationLifecycleTests,
-    currentNameLookupTests, bridgeEnumReferenceTests};
+    currentNameLookupTests, bridgeEnumReferenceTests, exceptionMessageTests};
   for (auto test : additionalTests) {
     try { test(); }
     catch (const std::exception& error) {

@@ -108,6 +108,8 @@ their primitive constant values.
 
 Scope and name are separate lookup keys. A legacy global declaration named
 `Board.score` cannot shadow the scoped variable `score` on `Board`.
+C# variables whose parent has no custom ID remain scoped and cannot be referenced
+as globals; they still participate in variable resets.
 
 The context snapshots declaration metadata. Changing source declarations does
 not alter bindings in an active operation; subsequent operations rebuild and
@@ -120,6 +122,9 @@ variable values and changes separately from enum declarations. The parser's
 existing semantic hooks use the same resolver for existence, mutability, enum
 assignment, and comparison checks, preserving validation at the offending source
 location.
+Enum and variable-reference diagnostics use the logical block line and a
+zero-based UTF-16 offset from the end of the opening code tag. This offset includes
+whitespace and newlines inside the block and matches JavaScript editor offsets.
 
 ## State and host boundaries
 
@@ -172,8 +177,9 @@ const { changes } = interpreter.runScript(
 `enums` and `scopeNames` are optional. Public definition and option types are
 exported from the package. Existing variable/scope rewriting leaves enum
 references intact; enum rename/conversion rewriting belongs to the lifecycle stage.
-Legacy rewriting validates declarations once before testing candidate syntax, so
-invalid enum metadata is reported as a parse error.
+Legacy rewriting validates declarations once, when it first needs to test candidate
+syntax. Invalid enum metadata is reported as a parse error from that point; rewrites
+that need no ambiguity probe can proceed without valid enum declarations.
 
 ### C#
 
@@ -197,6 +203,9 @@ script is invalid for `Parse`; `RunScript("")` retains its existing no-op behavi
 JSON adapters must convert integer
 member values to `int`; libraries that default JSON integers to `long` must
 range-check before conversion. Existing constructor calls remain valid.
+Hosts driving the C# parser and visitor directly must pass the same
+`ArcscriptContext` with enum definitions to both; their default contexts support
+ordinary variables, and `IProject` does not supply enum definitions.
 
 ### C++
 
@@ -223,6 +232,9 @@ the updated headers/library because the native `Variable`/state classes grow.
 Omit ordinary variables from the bridge's enum-reference map; an entry with an
 empty enum ID is rejected. Name-based state helpers read current variable metadata
 after renames, while `varNameToID` remains a legacy constructor snapshot.
+The helpers also accept `{"Board.score", ""}` as shorthand for `{"score", "Board"}`
+when no global is literally named `Board.score`. Explicit scope/name lookup takes
+priority, and unknown names throw without inserting variables.
 
 ## Export and native mapping contract for integration
 

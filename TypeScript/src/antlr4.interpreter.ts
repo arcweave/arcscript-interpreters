@@ -164,10 +164,13 @@ export default class Interpreter {
     variables: Record<string, string>,
     options: LegacyVariableRewriteOptions = {}
   ): LegacyVariableRewriteResult {
-    const declarations = this.createContext();
+    let declarations: ArcscriptContext | undefined;
     return new LegacyVariableReferenceRewriter(
       this.arcscriptVariables,
-      legacyName => this.parsesAsArcscript(legacyName, declarations)
+      legacyName => {
+        declarations ??= this.createContext();
+        return this.parsesAsArcscript(legacyName, declarations);
+      }
     ).rewrite(code, variables, options);
   }
 

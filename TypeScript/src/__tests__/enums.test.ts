@@ -114,6 +114,51 @@ describe('shared enum contract', () => {
 });
 
 describe('declaration contexts', () => {
+  test.each<{
+    code: string;
+    replacements: Record<string, string>;
+    expected: string;
+  }>([
+    {
+      code: '<p>unchanged</p>',
+      replacements: {},
+      expected: '<p>unchanged</p>',
+    },
+    {
+      code: '<p>unchanged</p>',
+      replacements: { legacy: 'renamed' },
+      expected: '<p>unchanged</p>',
+    },
+    {
+      code: '<pre><code>old value</code></pre>',
+      replacements: { legacy: 'renamed' },
+      expected: '<pre><code>renamed</code></pre>',
+    },
+  ])(
+    'legacy rewriting without an ambiguity probe ignores unrelated declarations: $code',
+    ({ code, replacements, expected }) => {
+      const enums = structuredClone(fixture.enums) as ArcscriptEnumDefs;
+      enums.quest.members = [];
+      const interpreter = new Interpreter({
+        state: {
+          legacy: {
+            id: 'legacy',
+            name: 'old value',
+            type: 'integer',
+            defaultValue: 1,
+          },
+        },
+        enums,
+      });
+      expect(
+        interpreter.rewriteLegacyVariableReferences(code, replacements)
+      ).toEqual({
+        code: expected,
+        blockedVariableIds: [],
+      });
+    }
+  );
+
   test.each(['invalid definition', 'unknown enum', 'scope collision'])(
     'legacy rewriting reports %s instead of misclassifying valid code',
     problem => {

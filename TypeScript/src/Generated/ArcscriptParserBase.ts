@@ -78,7 +78,7 @@ export default class ArcscriptParserBase extends Parser {
   }
 
   setLineStart(token: Token) {
-    this.openTagEndPos = token.start + token.text.length;
+    this.openTagEndPos = token.stop + 1;
   }
 
   assertFunctionArguments(

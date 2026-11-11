@@ -2283,6 +2283,106 @@
         "col": 7
       },
       "errorContains": "variable"
+    },
+    {
+      "name": "Astral character in pre attributes preserves diagnostic offsets",
+      "code": "<pre data-x=\"\ud83d\ude00\"><code>questStatus == \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 0
+      }
+    },
+    {
+      "name": "BMP character in pre attributes preserves diagnostic offsets",
+      "code": "<pre data-x=\"\u00e9\"><code>questStatus == \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 0
+      }
+    },
+    {
+      "name": "Astral character in code attributes preserves diagnostic offsets",
+      "code": "<pre><code data-x=\"\ud83d\ude00\">  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 1,
+        "col": 2
+      }
+    },
+    {
+      "name": "Newline before code block preserves diagnostic offsets",
+      "code": "<p>a</p>\n<pre><code>  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 2,
+        "col": 2
+      }
+    },
+    {
+      "name": "Unicode paragraph and multiline opening tag preserves diagnostic offsets",
+      "code": "<p>\ud83d\ude00</p>\r\n<pre\n data-x=\"\u00e9\ud83d\ude00\"><code>  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 2,
+        "col": 2
+      }
+    },
+    {
+      "name": "Newline inside code block preserves diagnostic offsets",
+      "code": "<pre><code>\n  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 1,
+        "col": 3
+      }
+    },
+    {
+      "name": "Astral character before comparison preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Unicode tag and expression in later block preserves diagnostic offsets",
+      "code": "<pre><code>show(1)</code></pre>\n<pre data-x=\"\u00e9\ud83d\ude00\"><code>show(\"\u00e9\ud83d\ude00\", questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 2,
+        "col": 12
+      }
+    },
+    {
+      "name": "Astral character before unknown member preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", QuestStatus.Unknown)</code></pre>",
+      "error": "parse",
+      "errorContains": "variable",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Astral character before member mutation preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", reset(QuestStatus.Active))</code></pre>",
+      "error": "parse",
+      "errorContains": "is read-only",
+      "errorLocation": {
+        "line": 1,
+        "col": 17
+      }
     }
   ]
 }

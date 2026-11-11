@@ -35,8 +35,14 @@ namespace Arcweave.Interpreter
 
         public override string GrammarFileName => throw new System.NotImplementedException();
 
-        private ParseException Error(string message, ParserRuleContext context) =>
-            new ParseException(message, currentLine, context.Start.StartIndex - openTagEndPos);
+        private ParseException Error(string message, ParserRuleContext context)
+        {
+            // ANTLR indexes code points; editor columns are UTF-16 offsets within the block.
+            var start = context.Start.StartIndex;
+            var column = start <= openTagEndPos ? 0 : context.Start.InputStream.GetText(
+                Antlr4.Runtime.Misc.Interval.Of(openTagEndPos, start - 1)).Length;
+            return new ParseException(message, currentLine, column);
+        }
 
         public bool assertVariable(ArcscriptParser.IdentifierContext identifierContext) {
             var variableName = identifierContext.GetText();
@@ -172,7 +178,7 @@ namespace Arcweave.Interpreter
 
         internal void setLineStart(IToken token)
         {
-            openTagEndPos = token.StartIndex + token.Text.Length;
+            openTagEndPos = token.StopIndex + 1;
         }
     }
 

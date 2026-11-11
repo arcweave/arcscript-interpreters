@@ -8,7 +8,18 @@
 using namespace antlr4;
 
 Arcweave::ParseErrorException ArcscriptParserBase::error(const std::string& message, ParserRuleContext* context) const {
-  return Arcweave::ParseErrorException(message, currentLine, context->getStart()->getStartIndex() - openTagEndPos);
+  auto token = context->getStart();
+  auto start = token->getStartIndex();
+  size_t column = 0;
+  if (start > openTagEndPos) {
+    auto prefix = token->getInputStream()->getText(misc::Interval(openTagEndPos, start - 1));
+    // Count UTF-16 units in ANTLR's UTF-8 text to match editor offsets.
+    for (unsigned char byte : prefix) {
+      if ((byte & 0xc0) != 0x80) ++column;
+      if (byte >= 0xf0) ++column;
+    }
+  }
+  return Arcweave::ParseErrorException(message, currentLine, column);
 }
 
 bool ArcscriptParserBase::assertVariable(antlr4::ParserRuleContext *identifierContext) const {
@@ -174,5 +185,5 @@ bool ArcscriptParserBase::assertFunctionArguments(Token *fname, std::any listCon
 
 void ArcscriptParserBase::setLineStart(antlr4::Token* token)
 {
-  openTagEndPos = token->getStartIndex() + token->getText().length();
+  openTagEndPos = token->getStopIndex() + 1;
 }

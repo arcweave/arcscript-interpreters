@@ -43,6 +43,10 @@ class ArcscriptState {
     for (auto it = variableValues.rbegin(); it != variableValues.rend(); ++it)
       if (it->second.name == identifier.name && it->second.scope == identifier.scope)
         return it->first;
+    // Preserve the public helpers' dotted shorthand, after an exact scope/name lookup.
+    auto dot = identifier.name.find('.');
+    if (identifier.scope.empty() && dot != std::string::npos && dot > 0)
+      return getVarId({identifier.name.substr(dot + 1), identifier.name.substr(0, dot)});
     throw std::out_of_range("Unknown variable " + getVarFullName(identifier));
   }
 public:

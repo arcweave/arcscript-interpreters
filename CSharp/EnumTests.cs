@@ -184,6 +184,38 @@ namespace Arcweave
             Assert.Throws<ParseException>(() => new ArcscriptContext(enums, new[] { variable }));
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void ContainersWithoutCustomIdsDoNotExposeGlobalVariables(bool useBoard)
+        {
+            var scoped = new Variable("scoped", "score", 5);
+            var board = new Board("board", new List<INode>());
+            var component = new Component();
+            if (useBoard) board.AddVariable(scoped);
+            else component.AddVariable(scoped);
+            var globals = new List<Variable>();
+            var project = new Project.Project(new List<Board> { board }, globals, new List<Component> { component });
+            var interpreter = new AwInterpreter(project);
+            var code = "<pre><code>score += 1</code></pre>";
+
+            Assert.That(project.GetVariable("score"), Is.Null);
+            Assert.Throws<ParseException>(() => interpreter.Parse(code));
+            Assert.Throws<ParseException>(() => interpreter.RunScript(code));
+            Assert.That(scoped.Value, Is.EqualTo(5));
+
+            var global = new Variable("global", "score", 100);
+            globals.Add(global);
+            Assert.That(interpreter.RunScript(code).Changes,
+                Is.EquivalentTo(new Dictionary<string, object> { ["global"] = 101 }));
+            foreach (var variables in new[] { new[] { scoped, global }, new[] { global, scoped } })
+                Assert.That(new ArcscriptContext(variables: variables).Resolve("score").VariableId, Is.EqualTo("global"));
+
+            // Unnamed containers remain valid and their variables still participate in resets.
+            scoped.Value = 9;
+            Assert.That(interpreter.RunScript("<pre><code>resetAll(score)</code></pre>").Changes,
+                Is.EquivalentTo(new Dictionary<string, object> { ["scoped"] = 5 }));
+        }
+
         [Test]
         public void RunKeepsValidatedBindingsAndNextOperationReadsFreshDeclarations()
         {

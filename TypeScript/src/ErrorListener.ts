@@ -20,7 +20,9 @@ export default class ErrorListener<T> extends BaseErrorListener<T> {
     e: RecognitionException | undefined
   ): void {
     if (recognizer instanceof ArcscriptParser) {
-      column = column - recognizer.openTagEndPos;
+      if (offendingSymbol instanceof Token) {
+        column = offendingSymbol.start - recognizer.openTagEndPos;
+      }
       line = recognizer.currentLine;
     }
 
