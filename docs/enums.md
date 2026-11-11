@@ -43,6 +43,9 @@ Supply every board/component scope through `scopeNames`, including scopes with n
 variables. All runtimes also discover scopes on their variable definitions; C#
 also discovers board/component custom IDs from its project. The host must check
 these collisions when creating or renaming either side of the namespace.
+Host adapters must provide a nonempty custom ID when exporting scoped variables.
+Do not encode an unnamed container as `scope: null` in TypeScript or an empty
+scope in C++: those representations explicitly declare global variables.
 
 An enum variable retains its backing primitive type and adds an `enumId`:
 
@@ -123,8 +126,10 @@ existing semantic hooks use the same resolver for existence, mutability, enum
 assignment, and comparison checks, preserving validation at the offending source
 location.
 Enum and variable-reference diagnostics use the logical block line and a
-zero-based UTF-16 offset from the end of the opening code tag. This offset includes
-whitespace and newlines inside the block and matches JavaScript editor offsets.
+zero-based UTF-16 offset into the raw HTML source, measured from the end of the
+opening code tag. Entity spellings such as `&gt;` and both characters of CRLF count
+toward this offset. Hosts displaying decoded or normalized text must map the
+source offset to that text before placing an editor marker.
 
 ## State and host boundaries
 
@@ -180,6 +185,9 @@ references intact; enum rename/conversion rewriting belongs to the lifecycle sta
 Legacy rewriting validates declarations once, when it first needs to test candidate
 syntax. Invalid enum metadata is reported as a parse error from that point; rewrites
 that need no ambiguity probe can proceed without valid enum declarations.
+Enum names remain protected namespaces during legacy rewriting, including when
+explicit scope options are supplied. A legacy global named `QuestStatus.Active`
+is reported as ambiguous rather than replacing an enum member reference.
 
 ### C#
 
@@ -235,6 +243,8 @@ after renames, while `varNameToID` remains a legacy constructor snapshot.
 The helpers also accept `{"Board.score", ""}` as shorthand for `{"score", "Board"}`
 when no global is literally named `Board.score`. Explicit scope/name lookup takes
 priority, and unknown names throw without inserting variables.
+Name-based lookups use current declarations and may bind differently after a
+rename. Use stable variable-ID accessors for references retained across renames.
 
 ## Export and native mapping contract for integration
 

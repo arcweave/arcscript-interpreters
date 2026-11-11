@@ -137,6 +137,26 @@ void checkExceptionMessage() {
   require(std::string(copy.what()) == text, "Copied exception lost its message");
   Error plain("message");
   require(std::string(plain.what()) == "message", "Location-free error changed formatting");
+  plain.line = 3;
+  plain.charPositionInLine = 2;
+  require(std::string(plain.what()) == "line 3:2 message", "Adding a location lost the error message");
+  located.message = "edited";
+  require(std::string(located.what()) == "line 3:2 edited", "Edited message was not reflected");
+  located.line = 4;
+  require(std::string(located.what()) == "line 4:2 edited", "Edited line was not reflected");
+  located.charPositionInLine = 9;
+  require(std::string(located.what()) == "line 4:9 edited", "Edited column was not reflected");
+  text = located.what();
+  require(located.what() == text, "Unchanged fields should reuse the refreshed message");
+  require(std::string(copy.what()) == "line 3:2 message", "Editing an exception changed its copy");
+  located.line = 0;
+  require(std::string(located.what()) == "edited", "Removing a location retained its prefix");
+  located.message = "a longer message whose formatting requires an allocation";
+  located.line = 5;
+  Error changedCopy = located;
+  Error moved = std::move(changedCopy);
+  require(std::string(moved.what()) == "line 5:9 " + located.message,
+    "Copying and moving after field edits retained stale formatting");
 }
 
 void exceptionMessageTests() {

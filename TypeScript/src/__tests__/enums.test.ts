@@ -49,7 +49,9 @@ describe('shared enum contract', () => {
           expect(operation).toThrow(testCase.errorContains);
         if (testCase.errorLocation) {
           const { line, col } = testCase.errorLocation;
-          expect(operation).toThrow(`at line ${line}, col ${col}`);
+          expect(operation).toThrow(
+            new RegExp(` at line ${line}, col ${col}$`)
+          );
         }
       }
     } else {
@@ -91,7 +93,7 @@ describe('shared enum contract', () => {
       interpreter.parse(
         '<pre><code>questStatus = "active"</code></pre><pre><code>show(1)</code></pre>'
       )
-    ).toThrow('at line 1, col 0');
+    ).toThrow(/ at line 1, col 0$/);
   });
 
   test('variable and scope rewriting leave enum constants alone', () => {
@@ -114,6 +116,82 @@ describe('shared enum contract', () => {
 });
 
 describe('declaration contexts', () => {
+  test.each([
+    { label: 'default scopes', scopeNames: undefined },
+    { label: 'empty scopes', scopeNames: [] },
+    { label: 'explicit scopes', scopeNames: ['OtherBoard'] },
+  ])(
+    'legacy rewriting preserves enum constants with $label',
+    ({ scopeNames }) => {
+      const state: ArcscriptStateDef = {
+        legacy: {
+          id: 'legacy',
+          name: 'QuestStatus.Active',
+          type: 'integer',
+          defaultValue: 7,
+        },
+      };
+      const interpreter = new Interpreter({
+        state,
+        enums: fixture.enums as ArcscriptEnumDefs,
+      });
+      const code = '<pre><code>show(QuestStatus.Active)</code></pre>';
+      const rewrite = interpreter.rewriteLegacyVariableReferences(
+        code,
+        { legacy: 'renamed' },
+        { scopeNames }
+      );
+      expect(rewrite).toEqual({ code, blockedVariableIds: ['legacy'] });
+      expect(interpreter.runScript(code).output).toBe('<p>active</p>');
+      state.legacy.name = 'renamed';
+      expect(interpreter.runScript(rewrite.code).output).toBe('<p>active</p>');
+    }
+  );
+
+  test('legacy rewriting protects enum, inferred, constructor, and supplied namespaces together', () => {
+    const state: ArcscriptStateDef = {};
+    for (const [id, name] of Object.entries({
+      enumAlias: 'QuestStatus.Active',
+      inferred: 'Board.score',
+      constructorScope: 'EmptyBoard.score',
+      supplied: 'SuppliedBoard.score',
+      unqualifiedLegacy: 'Other.score',
+    }))
+      state[id] = { id, name, type: 'integer', defaultValue: 7 };
+    state.scoped = {
+      id: 'scoped',
+      name: 'score',
+      scope: 'Board',
+      type: 'integer',
+      defaultValue: 1,
+    };
+    const interpreter = new Interpreter({
+      state,
+      enums: fixture.enums as ArcscriptEnumDefs,
+      scopeNames: ['EmptyBoard'],
+    });
+    const rewrite = interpreter.rewriteLegacyVariableReferences(
+      '<pre><code>show(QuestStatus.Active, Board.score, EmptyBoard.score, SuppliedBoard.score, Other.score)</code></pre>',
+      {
+        enumAlias: 'enumRenamed',
+        inferred: 'boardRenamed',
+        constructorScope: 'emptyRenamed',
+        supplied: 'suppliedRenamed',
+        unqualifiedLegacy: 'renamed',
+      },
+      { scopeNames: ['SuppliedBoard'] }
+    );
+    expect(rewrite).toEqual({
+      code: '<pre><code>show(QuestStatus.Active, Board.score, EmptyBoard.score, SuppliedBoard.score, renamed)</code></pre>',
+      blockedVariableIds: [
+        'constructorScope',
+        'enumAlias',
+        'inferred',
+        'supplied',
+      ],
+    });
+  });
+
   test.each<{
     code: string;
     replacements: Record<string, string>;

@@ -5,6 +5,7 @@
 #include "ArcscriptLexer.h"
 #include "ArcscriptParser.h"
 #include <iterator>
+#include <string.h>
 
 #define _CRT_SECURE_NO_WARNINGS
 

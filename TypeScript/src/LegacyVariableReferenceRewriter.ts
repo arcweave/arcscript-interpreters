@@ -138,7 +138,8 @@ const IDENTIFIER_PART_PATTERN = /^[\p{L}\p{N}\p{M}_$]$/u;
 export default class LegacyVariableReferenceRewriter {
   constructor(
     private readonly state: ArcscriptStateDef,
-    private readonly parsesAsArcscript: (code: string) => boolean
+    private readonly parsesAsArcscript: (code: string) => boolean,
+    private readonly additionalNamespaces: ReadonlySet<string> = new Set()
   ) {}
 
   rewrite(
@@ -390,12 +391,13 @@ export default class LegacyVariableReferenceRewriter {
       return !CALLABLE_RESERVED_NAMES.has(candidate.oldName);
     }
     if (candidate.scope === null && candidate.oldName.includes('.')) {
-      const scopeNames = new Set(
-        options.scopeNames ??
-          Object.values(this.state)
-            .map(variable => variable.scope)
-            .filter((value): value is string => !isGlobalScope(value))
-      );
+      const scopeNames = new Set([
+        ...Object.values(this.state)
+          .map(variable => variable.scope)
+          .filter((value): value is string => !isGlobalScope(value)),
+        ...(options.scopeNames ?? []),
+        ...this.additionalNamespaces,
+      ]);
       const dotIndex = tokens.tokenNames.indexOf('DOT');
       const scope = dotIndex > 0 ? tokens.tokens[dotIndex - 1].text : '';
       if (scope.length === 0 || scopeNames.has(scope)) {

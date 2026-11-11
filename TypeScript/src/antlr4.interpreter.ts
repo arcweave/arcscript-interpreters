@@ -170,7 +170,13 @@ export default class Interpreter {
       legacyName => {
         declarations ??= this.createContext();
         return this.parsesAsArcscript(legacyName, declarations);
-      }
+      },
+      new Set([
+        ...this.scopeNames,
+        ...Object.values(this.enumDefinitions).map(
+          definition => definition.name
+        ),
+      ])
     ).rewrite(code, variables, options);
   }
 
