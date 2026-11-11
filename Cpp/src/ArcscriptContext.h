@@ -18,7 +18,7 @@ struct ArcscriptReference {
 
 // A validated snapshot of declarations, shared by parsing and execution.
 class ArcscriptContext {
-  std::map<std::string, ArcscriptReference> references;
+  std::map<std::pair<std::string, std::string>, ArcscriptReference> references;
   std::map<std::string, VariableType> enumTypes;
   static void assertName(const std::string& name) {
     static const std::set<std::string> reserved = [] {
@@ -27,7 +27,8 @@ class ArcscriptContext {
       for (std::string word; input >> word;) result.insert(word);
       return result;
     }();
-    if (!std::regex_match(name, std::regex("[A-Za-z][A-Za-z0-9_]*")) || name.find("__") != std::string::npos || reserved.count(name))
+    static const std::regex identifierPattern("[A-Za-z][A-Za-z0-9_]*");
+    if (!std::regex_match(name, identifierPattern) || name.find("__") != std::string::npos || reserved.count(name))
       throw ParseErrorException("Invalid or reserved enum identifier " + name);
   }
 public:
@@ -60,25 +61,25 @@ public:
           ? strings.insert(std::any_cast<std::string>(member.value)).second
           : integers.insert(std::any_cast<int>(member.value)).second;
         if (!unique) throw ParseErrorException("Enum " + definition.name + " has duplicate backing values");
-        references[definition.name + "." + member.name] = {ReferenceKind::EnumMember, type, "", id, member.id, member.value};
+        references[{definition.name, member.name}] = {ReferenceKind::EnumMember, type, "", id, member.id, member.value};
       }
     }
     for (const auto& [id, variable] : variables) {
-      if (!variable.enumId.empty()) {
-        auto type = enumTypes.find(variable.enumId);
+      if (variable.enumId) {
+        auto type = enumTypes.find(*variable.enumId);
         if (type == enumTypes.end() || type->second != variable.type)
           throw ParseErrorException("Invalid enum reference for variable " + variable.name);
       }
-      auto name = variable.scope.empty() ? variable.name : variable.scope + "." + variable.name;
-      auto existing = resolve(name);
-      if (existing && existing->kind == ReferenceKind::EnumMember) continue;
       // Match the existing native name map's last-match behavior.
-      references[name] = {ReferenceKind::Variable, variable.type, id, variable.enumId, "", {}};
+      references[{variable.scope, variable.name}] = {ReferenceKind::Variable, variable.type, id, variable.enumId.value_or(""), "", {}};
     }
   }
 
   const ArcscriptReference* resolve(const std::string& name) const {
-    auto reference = references.find(name);
+    auto dot = name.find('.');
+    auto key = dot == std::string::npos ? std::make_pair(std::string{}, name)
+      : std::make_pair(name.substr(0, dot), name.substr(dot + 1));
+    auto reference = references.find(key);
     return reference == references.end() ? nullptr : &reference->second;
   }
 

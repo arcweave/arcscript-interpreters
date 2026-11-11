@@ -6,6 +6,8 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <optional>
+#include <stdexcept>
 
 #include "ArcscriptOutputs.h"
 #include "ArcscriptErrorExceptions.h"
@@ -32,13 +34,21 @@ struct Variable {
   std::any value;
   std::string scope;
   std::any defaultValue;
-  std::string enumId;
+  std::optional<std::string> enumId;
 };
 
 class ArcscriptState {
+  const std::string& getVarId(const IdentifierDef& identifier) const {
+    // Metadata is mutable; resolve current names and preserve last-match behavior.
+    for (auto it = variableValues.rbegin(); it != variableValues.rend(); ++it)
+      if (it->second.name == identifier.name && it->second.scope == identifier.scope)
+        return it->first;
+    throw std::out_of_range("Unknown variable " + getVarFullName(identifier));
+  }
 public:
   std::map<std::string, std::any> variableChanges;
   std::map<std::string, Variable> variableValues;
+  // Legacy constructor snapshot; name-based helpers resolve current metadata.
   std::map<std::string, std::string> varNameToID;
   ArcscriptOutputs outputs;
   std::string currentElement;
@@ -78,15 +88,15 @@ public:
   }
 
   inline std::any getVarValue(IdentifierDef identifier) {
-    return getVarValueById(varNameToID.at(getVarFullName(identifier)));
+    return getVarValueById(getVarId(identifier));
   }
 
   inline Variable getVar(IdentifierDef identifier) {
-    return getVarById(varNameToID.at(getVarFullName(identifier)));
+    return getVarById(getVarId(identifier));
   }
 
   inline void setVarValue(IdentifierDef identifier, std::any value) {
-    setVarValueById(varNameToID.at(getVarFullName(identifier)), std::move(value));
+    setVarValueById(getVarId(identifier), std::move(value));
   }
 
   inline std::any getVarValueById(const std::string& id) const {

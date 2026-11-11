@@ -49,28 +49,40 @@ namespace Arcweave.Interpreter
 
         private (ArcscriptParser.InputContext Tree, ArcscriptContext Declarations) ParseWithContext(string code)
         {
-            var declarations = CreateContext();
-            ICharStream stream = CharStreams.fromString(code);
-            ArcscriptLexer lexer = new ArcscriptLexer(stream);
             var lexerErrorListener = new ErrorListener<int>();
-            lexer.AddErrorListener(lexerErrorListener);
-            ITokenStream tokens = new CommonTokenStream(lexer);
             var parserErrorListener = new ErrorListener<IToken>();
-            ArcscriptParser parser = new ArcscriptParser(tokens);
-            parser.AddErrorListener(parserErrorListener);
-            parser.SetProject(Project, declarations);
 
-            ArcscriptParser.InputContext tree = parser.input();
-            
-            if (lexerErrorListener.HasErrors)
+            void ThrowSyntaxErrors(System.Exception? inner = null)
             {
-                throw new ParseException("Lexing errors:\n" + string.Join("\n", lexerErrorListener.Errors));
+                if (lexerErrorListener.HasErrors)
+                    throw new ParseException("Lexing errors:\n" + string.Join("\n", lexerErrorListener.Errors), inner);
+                if (parserErrorListener.HasErrors)
+                    throw new ParseException("Parsing errors:\n" + string.Join("\n", parserErrorListener.Errors), inner);
             }
-            if (parserErrorListener.HasErrors)
+
+            ArcscriptContext declarations;
+            ArcscriptParser.InputContext tree;
+            try
             {
-                throw new ParseException("Parsing errors:\n" + string.Join("\n", parserErrorListener.Errors));
+                declarations = CreateContext();
+                ICharStream stream = CharStreams.fromString(code);
+                ArcscriptLexer lexer = new ArcscriptLexer(stream);
+                lexer.AddErrorListener(lexerErrorListener);
+                ITokenStream tokens = new CommonTokenStream(lexer);
+                ArcscriptParser parser = new ArcscriptParser(tokens);
+                parser.AddErrorListener(parserErrorListener);
+                parser.SetProject(Project, declarations);
+                tree = parser.input();
             }
-            
+            catch (System.Exception e)
+            {
+                // Recovery callbacks must not obscure an earlier syntax error.
+                ThrowSyntaxErrors(e);
+                if (e is ParseException) throw;
+                throw new ParseException(e.Message, e);
+            }
+
+            ThrowSyntaxErrors();
             return (tree, declarations);
         }
 
@@ -81,15 +93,7 @@ namespace Arcweave.Interpreter
                 return new TranspilerOutput();
             }
 
-            (ArcscriptParser.InputContext Tree, ArcscriptContext Declarations) parsed;
-            try
-            {
-                parsed = ParseWithContext(code);
-            }
-            catch (System.Exception e)
-            {
-                throw new ParseException(e.Message, e);
-            }
+            var parsed = ParseWithContext(code);
             
             var tree = parsed.Tree;
             ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit,

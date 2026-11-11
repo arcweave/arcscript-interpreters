@@ -56,8 +56,9 @@ An enum variable retains its backing primitive type and adds an `enumId`:
 }
 ```
 
-Definitions and variable references are validated before execution. Missing enum
-references and incompatible declared backing types are parse errors. Selected
+Definitions and variable references are validated before execution. An omitted or
+`null` enum ID declares an ordinary variable; an explicit empty string, unknown
+enum ID, or incompatible declared backing type is a parse error. Selected
 member IDs belong to authoring storage/export metadata, not runtime values.
 
 ## Script rules
@@ -104,6 +105,9 @@ the supplied declarations. Parsing and execution share that context. Its resolve
 distinguishes mutable variables from enum members and records stable variable,
 enum, and member IDs together with their backing types. Member bindings also hold
 their primitive constant values.
+
+Scope and name are separate lookup keys. A legacy global declaration named
+`Board.score` cannot shadow the scoped variable `score` on `Board`.
 
 The context snapshots declaration metadata. Changing source declarations does
 not alter bindings in an active operation; subsequent operations rebuild and
@@ -168,6 +172,8 @@ const { changes } = interpreter.runScript(
 `enums` and `scopeNames` are optional. Public definition and option types are
 exported from the package. Existing variable/scope rewriting leaves enum
 references intact; enum rename/conversion rewriting belongs to the lifecycle stage.
+Legacy rewriting validates declarations once before testing candidate syntax, so
+invalid enum metadata is reported as a parse error.
 
 ### C#
 
@@ -184,7 +190,11 @@ var result = interpreter.RunScript(
 // result.Changes["status"] is the string "active".
 ```
 
-`Parse` is the public validation-only API. JSON adapters must convert integer
+`Parse` is the public validation-only API and reports parse failures as
+`ParseException`, as does the parsing phase of `RunScript`. Enum usage errors
+include the logical code-block line and column (`Line` and `Column`). An empty
+script is invalid for `Parse`; `RunScript("")` retains its existing no-op behavior.
+JSON adapters must convert integer
 member values to `int`; libraries that default JSON integers to `long` must
 range-check before conversion. Existing constructor calls remain valid.
 
@@ -194,6 +204,8 @@ Use `EnumDefinition` / `EnumMemberDefinition` from `ArcscriptEnums.h`, with `typ
 set to `"string"` or `"integer"` and `std::any` values containing `std::string`
 or `int`. Set `Variable::enumId` and pass the definition map as the optional fifth
 argument to `ArcscriptTranspiler`; `scopeNames` is the optional sixth argument.
+`Variable::enumId` is a `std::optional<std::string>`: leave it disengaged (or set
+`std::nullopt`) for ordinary variables. Setting it to `""` is an invalid reference.
 
 ```cpp
 Arcweave::ArcscriptTranspiler interpreter("", variables, visits, onEvent, enums);
@@ -208,6 +220,9 @@ arguments followed by definitions, a variable-ID-to-enum-ID map, and optional
 scope names. `UVariable`, the existing `runScriptExport` signature, and primitive
 `UTranspilerOutput` layout are unchanged. Native C++ callers must rebuild against
 the updated headers/library because the native `Variable`/state classes grow.
+Omit ordinary variables from the bridge's enum-reference map; an entry with an
+empty enum ID is rejected. Name-based state helpers read current variable metadata
+after renames, while `varNameToID` remains a legacy constructor snapshot.
 
 ## Export and native mapping contract for integration
 

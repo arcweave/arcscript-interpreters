@@ -86,6 +86,63 @@ void declarationLifecycleTests() {
   require(rejected, "Next operation did not validate updated enum references");
 }
 
+void currentNameLookupTests() {
+  std::map<std::string, Variable> variables{
+    {"a_scoped", {"a_scoped", "score", AW_INTEGER, 2, "Board", 2}},
+    {"z_legacy", {"z_legacy", "Board.score", AW_INTEGER, 100, "", 100}}
+  };
+  ArcscriptTranspiler interpreter("", variables, {}, [](const char*) {});
+  auto& state = interpreter.state;
+  require(std::any_cast<int>(state.getVarValue({"score", "Board"})) == 2,
+    "Dotted global name shadowed the scoped getter");
+  require(std::any_cast<int>(state.getVarValue({"Board.score", ""})) == 100,
+    "Host getter lost access to the legacy global declaration");
+  state.variableValues.at("a_scoped").name = "renamed";
+  state.variableValues.at("a_scoped").scope = "OtherBoard";
+  require(state.getVar({"renamed", "OtherBoard"}).id == "a_scoped",
+    "Host declaration lookup did not observe renamed metadata");
+  state.setVarValue({"renamed", "OtherBoard"}, 7);
+  require(std::any_cast<int>(state.getVarValue({"renamed", "OtherBoard"})) == 7 &&
+    std::any_cast<int>(state.getVarValueById("a_scoped")) == 7,
+    "Name and ID helpers disagree after rename");
+  auto result = interpreter.runScript("<pre><code>OtherBoard.renamed += 1</code></pre>");
+  require(std::any_cast<int>(result.changes.at("a_scoped")) == 8 &&
+    std::any_cast<int>(state.getVarValue({"renamed", "OtherBoard"})) == 8,
+    "Interpreter and host helpers disagree after rename");
+  bool rejected = false;
+  try { state.getVarValue({"score", "Board"}); }
+  catch (const std::out_of_range&) { rejected = true; }
+  require(rejected && state.variableValues.size() == 2 && state.variableChanges.size() == 1,
+    "Unknown names should fail without inserting variables");
+}
+
+void bridgeEnumReferenceTests() {
+  UVariable variable{};
+  variable.id = "score";
+  variable.name = "score";
+  variable.type = AW_INTEGER;
+  variable.int_val = variable.default_int_val = 1;
+  variable.has_default_value = true;
+  const char* code = "<pre><code>score = 999</code></pre>";
+  for (bool withDefinitions : {false, true}) {
+    std::map<std::string, EnumDefinition> enums;
+    if (withDefinitions) enums["rank"] = {"rank", "Rank", "integer", {{"one", "One", 1}}};
+    auto result = runScriptWithEnumsExport(code, "", &variable, 1, nullptr, 0,
+      [](const char*) {}, enums, {});
+    bool accepted = result->changesLen == 1 && result->changes[0].int_result == 999;
+    deallocateOutput(result);
+    require(accepted, "Absent bridge enum reference changed primitive assignment");
+    bool rejected = false;
+    try {
+      auto invalid = runScriptWithEnumsExport(code, "", &variable, 1, nullptr, 0,
+        [](const char*) {}, enums, {{"score", ""}});
+      deallocateOutput(invalid);
+    }
+    catch (const ParseErrorException&) { rejected = true; }
+    require(rejected, "Explicit empty bridge enum reference was accepted");
+  }
+}
+
 int main(int argc, char* argv[]) {
   if (argc != 2) return 1;
   std::ifstream input(argv[1]);
@@ -115,7 +172,8 @@ int main(int argc, char* argv[]) {
         variable.value = test.contains("values") && test["values"].contains(it.key())
           ? primitive(test["values"][it.key()]) : variable.defaultValue;
         variable.scope = definition.value("scope", "");
-        variable.enumId = definition.value("enumId", "");
+        if (definition.contains("enumId") && !definition["enumId"].is_null())
+          variable.enumId = definition["enumId"].get<std::string>();
         variables[it.key()] = variable;
       }
       int events = 0;
@@ -127,7 +185,15 @@ int main(int argc, char* argv[]) {
           [&](const char*) { ++events; }, enums, test.value("scopeNames", std::vector<std::string>{}));
         interpreter->validate(code);
       }
-      catch (const ParseErrorException&) { rejected = true; }
+      catch (const ParseErrorException& error) {
+        rejected = true;
+        if (test.contains("errorContains"))
+          require(error.message.find(test["errorContains"].get<std::string>()) != std::string::npos,
+            "Unexpected validation error: " + error.message);
+        if (test.contains("errorLocation"))
+          require(error.line == test["errorLocation"]["line"] && error.charPositionInLine == test["errorLocation"]["col"],
+            "Validation error did not identify the offending code block and column");
+      }
       require(rejected == test.contains("error"), "Unexpected validation result");
       require((!interpreter || interpreter->state.variableChanges.empty()) && events == 0, "Validation executed script");
       if (rejected) {
@@ -167,7 +233,7 @@ int main(int argc, char* argv[]) {
           bridge.default_int_val = std::any_cast<int>(variable.defaultValue);
         }
         bridgeVariables.push_back(bridge);
-        if (!variable.enumId.empty()) references[id] = variable.enumId;
+        if (variable.enumId) references[id] = *variable.enumId;
       }
       auto bridge = runScriptWithEnumsExport(code.c_str(), "", bridgeVariables.data(), bridgeVariables.size(), nullptr, 0,
         [&](const char*) { ++events; }, enums, references);
@@ -190,13 +256,15 @@ int main(int argc, char* argv[]) {
       std::cerr << test["name"] << ": " << error.what() << '\n';
     }
   }
-  for (auto test : {declarationContextTests, declarationLifecycleTests}) {
+  const auto additionalTests = {declarationContextTests, declarationLifecycleTests,
+    currentNameLookupTests, bridgeEnumReferenceTests};
+  for (auto test : additionalTests) {
     try { test(); }
     catch (const std::exception& error) {
       ++failures;
-      std::cerr << "Declaration context: " << error.what() << '\n';
+      std::cerr << "Native regression: " << error.what() << '\n';
     }
   }
-  std::cout << fixture["cases"].size() << " enum cases and 2 context tests, " << failures << " failures\n";
+  std::cout << fixture["cases"].size() << " enum cases and " << additionalTests.size() << " native regressions, " << failures << " failures\n";
   return failures ? 1 : 0;
 }

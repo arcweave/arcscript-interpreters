@@ -23,7 +23,7 @@ export type VarDef = {
   defaultValue: VarValue;
   value?: VarValue;
   scope?: string | null;
-  enumId?: string;
+  enumId?: string | null;
 };
 
 export type MentionResult = {

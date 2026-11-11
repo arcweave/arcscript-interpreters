@@ -72,17 +72,25 @@ export default class Interpreter {
   }
 
   parse(code: string) {
+    return this.parseWithContext(code, this.createContext());
+  }
+
+  private createContext() {
+    return new ArcscriptContext(
+      this.enumDefinitions,
+      this.arcscriptVariables,
+      this.scopeNames
+    );
+  }
+
+  private parseWithContext(code: string, declarations: ArcscriptContext) {
     const { chars, lexer, errorListener } = this.createLexer(code);
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
-      declarations: new ArcscriptContext(
-        this.enumDefinitions,
-        this.arcscriptVariables,
-        this.scopeNames
-      ),
+      declarations,
     });
     parser.buildParseTrees = true;
     parser.removeErrorListeners();
@@ -156,9 +164,10 @@ export default class Interpreter {
     variables: Record<string, string>,
     options: LegacyVariableRewriteOptions = {}
   ): LegacyVariableRewriteResult {
+    const declarations = this.createContext();
     return new LegacyVariableReferenceRewriter(
       this.arcscriptVariables,
-      legacyName => this.parsesAsArcscript(legacyName)
+      legacyName => this.parsesAsArcscript(legacyName, declarations)
     ).rewrite(code, variables, options);
   }
 
@@ -242,7 +251,7 @@ export default class Interpreter {
     };
   }
 
-  private parsesAsArcscript(code: string) {
+  private parsesAsArcscript(code: string, declarations: ArcscriptContext) {
     const scripts = [
       `<pre><code>${code}</code></pre>`,
       `<pre><code>${code}</code></pre><p></p><pre><code>endif</code></pre>`,
@@ -251,7 +260,7 @@ export default class Interpreter {
 
     for (const script of scripts) {
       try {
-        this.parse(script);
+        this.parseWithContext(script, declarations);
 
         return true;
       } catch (error) {

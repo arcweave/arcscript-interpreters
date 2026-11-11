@@ -35,18 +35,21 @@ namespace Arcweave.Interpreter
 
         public override string GrammarFileName => throw new System.NotImplementedException();
 
+        private ParseException Error(string message, ParserRuleContext context) =>
+            new ParseException(message, currentLine, context.Start.StartIndex - openTagEndPos);
+
         public bool assertVariable(ArcscriptParser.IdentifierContext identifierContext) {
             var variableName = identifierContext.GetText();
             
             if (Declarations.Resolve(variableName) == null)
-                throw new ParseException($"The variable {variableName} does not exist");
+                throw Error($"The variable {variableName} does not exist", identifierContext);
             return true;
         }
 
         public void assertAssignable(ArcscriptParser.IdentifierContext identifierContext)
         {
             if (Declarations.Resolve(identifierContext.GetText())?.Kind == ReferenceKind.EnumMember)
-                throw new ParseException($"Enum member {identifierContext.GetText()} is read-only");
+                throw Error($"Enum member {identifierContext.GetText()} is read-only", identifierContext);
             assertVariable(identifierContext);
         }
 
@@ -78,11 +81,11 @@ namespace Arcweave.Interpreter
 
         public void validateEnums(ParserRuleContext context)
         {
-            if (!Declarations.HasEnums) return;
+            if (!Declarations.HasEnums || NumberOfSyntaxErrors > 0) return;
             if (context is ArcscriptParser.Statement_assignmentContext assignment &&
                 Declarations.Resolve(assignment.assignable().GetText())?.EnumId is string enumId &&
                 (assignment.ASSIGN() == null || ExpressionEnum(assignment.expression()) != enumId))
-                throw new ParseException("Enum assignment requires a member or variable of the same enum");
+                throw Error("Enum assignment requires a member or variable of the same enum", context);
             if (context is ArcscriptParser.ComparisonExpressionContext comparison &&
                 comparison.AND() == null && comparison.ANDKEYWORD() == null &&
                 comparison.OR() == null && comparison.ORKEYWORD() == null)
@@ -90,14 +93,14 @@ namespace Arcweave.Interpreter
                 var left = ExpressionEnum(comparison.expression(0));
                 var right = ExpressionEnum(comparison.expression(1));
                 if (left != null && right != null && left != right)
-                    throw new ParseException("Cannot compare different enum types");
+                    throw Error("Cannot compare different enum types", context);
                 if ((left != null && right == null && IsConstantExpression(comparison.expression(1))) ||
                     (right != null && left == null && IsConstantExpression(comparison.expression(0))))
-                    throw new ParseException("Enum comparisons with constants require a named member");
+                    throw Error("Enum comparisons with constants require a named member", context);
                 var id = left ?? right;
                 if (id != null && (comparison.LT() != null || comparison.GT() != null ||
                     comparison.LE() != null || comparison.GE() != null) && Declarations.EnumType(id) != typeof(int))
-                    throw new ParseException("Only integer enums support ordering");
+                    throw Error("Only integer enums support ordering", context);
             }
         }
 

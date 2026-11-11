@@ -33,7 +33,7 @@ namespace Arcweave.Interpreter
     public sealed class ArcscriptContext
     {
         private static readonly HashSet<string> ReservedNames = new HashSet<string>("abs max min random roll round sqr sqrt visits show resetVisits reset resetAll if else elseif endif and or is not true false abstract as assert async auto await base bool break byte case catch char checked class const constexpr const_cast continue decimal default delegate delete do double dynamic elif enum event explicit export extends extern false final finally fixed float for foreach friend from func get global goto if implicit import in inline int interface internal is lock long match mutable namespace native new noexcept not not_eq null nullptr object operator or or_eq out override params pass private protected public readonly ref register reinterpret_cast return sbyte sealed set short signal signed sizeof stackalloc static static_assert static_cast string struct super switch template this thread_local throw throws trait try typedef typeid typename typeof uint ulong unchecked union unsafe unsigned using ushort var virtual void volatile wchar_t when where while with yield alignas alignof and_eq asm bitand bitor char8_t char16_t char32_t compl concept co_await co_return co_yield consteval constinit decltype dynamic_cast requires xor xor_eq class_name breakpoint preload self PI TAU INF NAN tool onready setget remote master puppet remotesync mastersync puppetsync".Split(' '));
-        private readonly Dictionary<string, ArcscriptReference> _references = new Dictionary<string, ArcscriptReference>();
+        private readonly Dictionary<(string Scope, string Name), ArcscriptReference> _references = new Dictionary<(string, string), ArcscriptReference>();
         private readonly Dictionary<string, Type> _enumTypes = new Dictionary<string, Type>();
         public bool HasEnums => _enumTypes.Count > 0;
 
@@ -69,7 +69,7 @@ namespace Arcweave.Interpreter
                     if ((definition.Type == "string" && !(member.Value is string)) ||
                         (definition.Type == "integer" && !(member.Value is int)))
                         throw new ParseException($"Invalid backing value for {definition.Name}.{member.Name}");
-                    _references.Add(definition.Name + "." + member.Name,
+                    _references.Add((definition.Name, member.Name),
                         new ArcscriptReference(ReferenceKind.EnumMember, type,
                             enumId: entry.Key, memberId: member.Id, value: member.Value));
                 }
@@ -78,7 +78,7 @@ namespace Arcweave.Interpreter
             {
                 if (variable.EnumId != null && (!_enumTypes.TryGetValue(variable.EnumId, out var type) || type != variable.Type))
                     throw new ParseException($"Invalid enum reference for variable {variable.Name}");
-                var name = variable.Parent == null ? variable.Name : variable.Parent.CustomId + "." + variable.Name;
+                var name = (variable.Parent?.CustomId, variable.Name);
                 // Preserve the existing first-match behavior for ordinary variable names.
                 if (!_references.ContainsKey(name))
                     _references.Add(name, new ArcscriptReference(ReferenceKind.Variable, variable.Type,
@@ -94,7 +94,9 @@ namespace Arcweave.Interpreter
 
         public ArcscriptReference Resolve(string name)
         {
-            return _references.TryGetValue(name, out var reference) ? reference : null;
+            var dot = name.IndexOf('.');
+            var key = dot < 0 ? (null, name) : (name.Substring(0, dot), name.Substring(dot + 1));
+            return _references.TryGetValue(key, out var reference) ? reference : null;
         }
 
         public Type EnumType(string id) => _enumTypes[id];

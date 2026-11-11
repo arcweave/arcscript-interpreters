@@ -16,6 +16,8 @@ type EnumCase = {
   values?: Record<string, VarValue>;
   result?: boolean;
   error?: string;
+  errorContains?: string;
+  errorLocation?: { line: number; col: number };
   parseOnly?: boolean;
   enums?: ArcscriptEnumDefs;
   initialVars?: ArcscriptStateDef;
@@ -38,8 +40,18 @@ describe('shared enum contract', () => {
     });
     const original = structuredClone(state);
     if (testCase.error) {
-      expect(() => interpreter.parse(testCase.code)).toThrow(ParseError);
-      expect(() => interpreter.runScript(testCase.code)).toThrow(ParseError);
+      for (const operation of [
+        () => interpreter.parse(testCase.code),
+        () => interpreter.runScript(testCase.code),
+      ]) {
+        expect(operation).toThrow(ParseError);
+        if (testCase.errorContains)
+          expect(operation).toThrow(testCase.errorContains);
+        if (testCase.errorLocation) {
+          const { line, col } = testCase.errorLocation;
+          expect(operation).toThrow(`at line ${line}, col ${col}`);
+        }
+      }
     } else {
       interpreter.parse(testCase.code);
       if (!testCase.parseOnly) {
@@ -102,6 +114,35 @@ describe('shared enum contract', () => {
 });
 
 describe('declaration contexts', () => {
+  test.each(['invalid definition', 'unknown enum', 'scope collision'])(
+    'legacy rewriting reports %s instead of misclassifying valid code',
+    problem => {
+      const state: ArcscriptStateDef = {
+        score: { id: 'score', name: 'score', type: 'integer', defaultValue: 1 },
+        padded: {
+          id: 'padded',
+          name: 'score ',
+          type: 'integer',
+          defaultValue: 2,
+        },
+      };
+      const enums = structuredClone(fixture.enums) as ArcscriptEnumDefs;
+      const scopeNames: string[] = [];
+      const interpreter = new Interpreter({ state, enums, scopeNames });
+      const rewrite = () =>
+        interpreter.rewriteLegacyVariableReferences(
+          '<pre><code>score + 1</code></pre>',
+          { padded: 'renamed' }
+        );
+      expect(rewrite().blockedVariableIds).toEqual(['padded']);
+
+      if (problem === 'invalid definition') enums.quest.members = [];
+      else if (problem === 'unknown enum') state.score.enumId = 'missing';
+      else scopeNames.push('QuestStatus');
+      expect(rewrite).toThrow(ParseError);
+    }
+  );
+
   test('resolved references retain identity and type when source declarations change', () => {
     const enums = structuredClone(fixture.enums) as ArcscriptEnumDefs;
     const variables = structuredClone(fixture.initialVars) as ArcscriptStateDef;

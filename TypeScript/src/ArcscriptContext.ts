@@ -88,7 +88,7 @@ export default class ArcscriptContext {
         memberNames.add(member.name);
         values.add(member.value);
         this.references.set(
-          `${definition.name}.${member.name}`,
+          this.referenceKey(member.name, definition.name),
           Object.freeze({
             kind: 'enumMember',
             enumId: id,
@@ -101,16 +101,14 @@ export default class ArcscriptContext {
     }
     for (const variable of Object.values(variables)) {
       if (
-        variable.enumId !== undefined &&
+        variable.enumId != null &&
         this.enumTypes.get(variable.enumId) !== variable.type
       ) {
         throw new ParseError(
           `Invalid enum reference for variable ${variable.name}`
         );
       }
-      const name = isGlobalScope(variable.scope)
-        ? variable.name
-        : `${variable.scope}.${variable.name}`;
+      const name = this.referenceKey(variable.name, variable.scope);
       // Preserve the existing first-match behavior for ordinary variable names.
       if (!this.references.has(name))
         this.references.set(
@@ -119,7 +117,7 @@ export default class ArcscriptContext {
             kind: 'variable',
             variableId: variable.id,
             type: variable.type,
-            enumId: variable.enumId,
+            enumId: variable.enumId ?? undefined,
           })
         );
     }
@@ -136,7 +134,16 @@ export default class ArcscriptContext {
   }
 
   resolve(name: string): ArcscriptReference | undefined {
-    return this.references.get(name);
+    const dot = name.indexOf('.');
+    const key =
+      dot < 0
+        ? this.referenceKey(name)
+        : this.referenceKey(name.slice(dot + 1), name.slice(0, dot));
+    return this.references.get(key);
+  }
+
+  private referenceKey(name: string, scope?: string | null): string {
+    return JSON.stringify([isGlobalScope(scope) ? null : scope, name]);
   }
 
   get hasEnums(): boolean {

@@ -7,7 +7,8 @@ class ArcscriptParserBase : public antlr4::Parser {
 private:
   Arcweave::ArcscriptState* _state;
   const Arcweave::ArcscriptContext* _declarations;
-  size_t openTagEndPos;
+  size_t openTagEndPos = 0;
+  Arcweave::ParseErrorException error(const std::string& message, antlr4::ParserRuleContext* context) const;
 public:
   int currentLine = 0;
   ArcscriptParserBase(antlr4::TokenStream *input) : Parser(input) { }

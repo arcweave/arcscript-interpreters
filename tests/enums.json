@@ -2060,6 +2060,229 @@
       "name": "empty pure function arguments report parse errors",
       "code": "<pre><code>difficulty == max()</code></pre>",
       "error": "parse"
+    },
+    {
+      "name": "missing enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1
+        }
+      },
+      "enums": {},
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "null enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": null
+        }
+      },
+      "enums": {},
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "empty enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": ""
+        }
+      },
+      "enums": {},
+      "error": "Invalid enum reference"
+    },
+    {
+      "name": "missing enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1
+        }
+      },
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "null enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": null
+        }
+      },
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "empty enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": ""
+        }
+      },
+      "error": "Invalid enum reference"
+    },
+    {
+      "name": "Dotted global names do not shadow scoped ordinary variables",
+      "initialVars": {
+        "z_legacy": {
+          "id": "z_legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        },
+        "a_scoped": {
+          "id": "a_scoped",
+          "name": "score",
+          "scope": "Board",
+          "type": "integer",
+          "defaultValue": 2
+        }
+      },
+      "code": "<pre><code>Board.score += 1</code></pre><pre><code>show(Board.score)</code></pre>",
+      "changes": {
+        "a_scoped": 3
+      },
+      "output": "<p>3</p>"
+    },
+    {
+      "name": "Dotted global names do not shadow scoped enum variables",
+      "initialVars": {
+        "z_legacy": {
+          "id": "z_legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        },
+        "a_scoped": {
+          "id": "a_scoped",
+          "name": "score",
+          "scope": "Board",
+          "type": "integer",
+          "defaultValue": 2,
+          "enumId": "difficulty"
+        }
+      },
+      "code": "<pre><code>Board.score = Difficulty.Hard</code></pre><pre><code>show(Board.score)</code></pre>",
+      "changes": {
+        "a_scoped": 3
+      },
+      "output": "<p>3</p>"
+    },
+    {
+      "name": "A dotted global name does not create a scoped declaration",
+      "initialVars": {
+        "legacy": {
+          "id": "legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        }
+      },
+      "code": "<pre><code>show(Board.score)</code></pre>",
+      "error": "Unknown variable"
+    },
+    {
+      "name": "assignment error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  questStatus = \"active\"</code></pre>",
+      "error": "Enum assignment requires",
+      "errorLocation": {
+        "line": 3,
+        "col": 2
+      },
+      "errorContains": "Enum assignment requires"
+    },
+    {
+      "name": "member mutation error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  QuestStatus.Active = \"active\"</code></pre>",
+      "error": "is read-only",
+      "errorLocation": {
+        "line": 3,
+        "col": 2
+      },
+      "errorContains": "is read-only"
+    },
+    {
+      "name": "member reset error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  reset(QuestStatus.Active)</code></pre>",
+      "error": "is read-only",
+      "errorLocation": {
+        "line": 3,
+        "col": 8
+      },
+      "errorContains": "is read-only"
+    },
+    {
+      "name": "cross-enum comparison error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus == doorStatus)</code></pre>",
+      "error": "Cannot compare different enum types",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "Cannot compare different enum types"
+    },
+    {
+      "name": "constant comparison error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus == \"active\")</code></pre>",
+      "error": "require a named member",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "require a named member"
+    },
+    {
+      "name": "string enum ordering error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus < QuestStatus.Active)</code></pre>",
+      "error": "Only integer enums support ordering",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "Only integer enums support ordering"
+    },
+    {
+      "name": "unknown member error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(QuestStatus.Missing)</code></pre>",
+      "error": "variable",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "variable"
     }
   ]
 }

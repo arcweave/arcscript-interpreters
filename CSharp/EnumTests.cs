@@ -69,8 +69,19 @@ namespace Arcweave
             var code = (string)test["code"];
             if (test["error"] != null)
             {
-                Assert.Throws<ParseException>(() => interpreter.Parse(code));
-                Assert.Throws<ParseException>(() => interpreter.RunScript(code));
+                foreach (TestDelegate operation in new TestDelegate[] {
+                    () => interpreter.Parse(code), () => interpreter.RunScript(code)
+                })
+                {
+                    var error = Assert.Throws<ParseException>(operation);
+                    if (test["errorContains"] != null)
+                        Assert.That(error.Message, Does.Contain((string)test["errorContains"]));
+                    if (test["errorLocation"] != null)
+                    {
+                        Assert.That(error.Line, Is.EqualTo((int)test["errorLocation"]["line"]));
+                        Assert.That(error.Column, Is.EqualTo((int)test["errorLocation"]["col"]));
+                    }
+                }
                 Assert.That(project.GetAllVariables().ToDictionary(variable => variable.Id, variable => variable.Value), Is.EquivalentTo(original));
             }
             else
@@ -98,6 +109,52 @@ namespace Arcweave
                 }
             }
         };
+
+        [TestCase("questStatus == ")]
+        [TestCase("questStatus = ")]
+        [TestCase("questStatus = @ \"active\"")]
+        public void SyntaxErrorsTakePrecedenceOverEnumValidation(string expression)
+        {
+            var variable = new Variable("status", "questStatus", "inactive") { EnumId = "quest" };
+            var project = new Project.Project(new List<Board>(), new List<Variable> { variable }, new List<Component>());
+            var interpreter = new AwInterpreter(project, enums: SnapshotEnums());
+            var code = "<pre><code>" + expression + "</code></pre>";
+            foreach (TestDelegate operation in new TestDelegate[] {
+                () => interpreter.Parse(code), () => interpreter.RunScript(code)
+            })
+            {
+                var error = Assert.Throws<ParseException>(operation);
+                Assert.That(error.Message, Does.Contain("errors:").And.Not.Contain("Enum"));
+            }
+            Assert.That(variable.Value, Is.EqualTo("inactive"));
+        }
+
+        [TestCase("<span data-type=\"element\" data-id=\"missing\">label</span>", typeof(KeyNotFoundException))]
+        [TestCase("<span class=\"mention\" class=\"mention\">label</span>", typeof(ArgumentException))]
+        public void ParseAndRunNormalizeMalformedMentionErrors(string mention, Type innerType)
+        {
+            var project = new Project.Project(new List<Board>(), new List<Variable>(), new List<Component>());
+            var interpreter = new AwInterpreter(project);
+            var code = "<pre><code>visits(" + mention + ")</code></pre>";
+            foreach (TestDelegate operation in new TestDelegate[] {
+                () => interpreter.Parse(code), () => interpreter.RunScript(code)
+            })
+            {
+                var error = Assert.Throws<ParseException>(operation);
+                Assert.That(error.InnerException, Is.TypeOf(innerType));
+            }
+        }
+
+        [Test]
+        public void EmptyParseIsInvalidWhileEmptyRunRemainsANoOp()
+        {
+            var project = new Project.Project(new List<Board>(), new List<Variable>(), new List<Component>());
+            var interpreter = new AwInterpreter(project);
+            Assert.Throws<ParseException>(() => interpreter.Parse(""));
+            var result = interpreter.RunScript("");
+            Assert.That(result.Output, Is.Empty);
+            Assert.That(result.Changes, Is.Empty);
+        }
 
         [Test]
         public void ReferencesSnapshotDeclarationIdentityAndType()
