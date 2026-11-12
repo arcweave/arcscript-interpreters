@@ -376,6 +376,44 @@ public class Tests
     }
 
     [Test]
+    public void ResetAllWithoutArgumentsRestoresAllVariableDefaults()
+    {
+        var global = new Variable("global-health", "health", 100) { Value = 90 };
+        var board = new Board("board-id", new List<INode>(), "board");
+        board.AddVariable(new Variable("board-health", "health", 50) { Value = 40 });
+        var component = new Component("component");
+        component.AddVariable(new Variable("component-health", "health", 25) { Value = 15 });
+        var project = new Project.Project(
+            new List<Board> { board },
+            new List<Variable> { global },
+            new List<Component> { component }
+        );
+
+        var output = new AwInterpreter(project).RunScript(
+            "<pre><code>resetAll()</code></pre>"
+        );
+
+        Assert.That(output.Changes, Is.EqualTo(new Dictionary<string, object>
+        {
+            ["global-health"] = 100,
+            ["board-health"] = 50,
+            ["component-health"] = 25,
+        }));
+    }
+
+    [Test]
+    public void ResetAllWithoutArgumentsHandlesAnEmptyProject()
+    {
+        var project = new Project.Project(new List<Board>(), new List<Variable>());
+
+        var output = new AwInterpreter(project).RunScript(
+            "<pre><code>resetAll()</code></pre>"
+        );
+
+        Assert.That(output.Changes, Is.Empty);
+    }
+
+    [Test]
     public void VariableRejectsNullValue()
     {
         Assert.Throws<ArgumentNullException>(() => new Variable("id", "name", null));
