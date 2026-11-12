@@ -173,19 +173,16 @@ void checkExceptionMessage() {
 template<typename Error>
 void checkConcurrentExceptionMessage() {
   for (int iteration = 0; iteration < 32; ++iteration) {
-    std::exception_ptr exception;
-    try { throw Error(std::string(10000, 'x'), 3, 2); }
-    catch (...) { exception = std::current_exception(); }
+    Error error(std::string(10000, 'x'), 3, 2);
+    // Share the object directly: rethrow_exception may copy it on some runtimes.
+    const std::exception& diagnostic = error;
     for (bool edited : {false, true}) {
       const std::string message(10000, edited ? 'y' : 'x');
       const std::string expected = (edited ? "line 9:4 " : "line 3:2 ") + message;
       if (edited) {
-        try { std::rethrow_exception(exception); }
-        catch (Error& error) {
-          error.message = message;
-          error.line = 9;
-          error.charPositionInLine = 4;
-        }
+        error.message = message;
+        error.line = 9;
+        error.charPositionInLine = 4;
       }
       std::atomic<int> ready{0};
       std::atomic<bool> go{false};
@@ -194,17 +191,14 @@ void checkConcurrentExceptionMessage() {
       std::vector<std::thread> threads;
       for (std::size_t index = 0; index < pointers.size(); ++index) {
         threads.emplace_back([&, index] {
-          try { std::rethrow_exception(exception); }
-          catch (const std::exception& error) {
-            ++ready;
-            while (!go.load()) std::this_thread::yield();
-            pointers[index] = error.what();
-            correct[index] = std::string(pointers[index]) == expected;
-            for (int read = 0; read < 10; ++read)
-              correct[index] = correct[index] && error.what() == pointers[index] && std::string(error.what()) == expected;
-            Error copy = static_cast<const Error&>(error);
-            correct[index] = correct[index] && std::string(copy.what()) == expected;
-          }
+          ++ready;
+          while (!go.load()) std::this_thread::yield();
+          pointers[index] = diagnostic.what();
+          correct[index] = std::string(pointers[index]) == expected;
+          for (int read = 0; read < 10; ++read)
+            correct[index] = correct[index] && diagnostic.what() == pointers[index] && std::string(diagnostic.what()) == expected;
+          Error copy = error;
+          correct[index] = correct[index] && std::string(copy.what()) == expected;
         });
       }
       while (ready.load() != static_cast<int>(pointers.size())) std::this_thread::yield();
