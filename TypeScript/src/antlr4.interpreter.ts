@@ -171,12 +171,8 @@ export default class Interpreter {
         declarations ??= this.createContext();
         return this.parsesAsArcscript(legacyName, declarations);
       },
-      new Set([
-        ...this.scopeNames,
-        ...Object.values(this.enumDefinitions).map(
-          definition => definition.name
-        ),
-      ])
+      this.scopeNames,
+      Object.values(this.enumDefinitions).map(definition => definition.name)
     ).rewrite(code, variables, options);
   }
 

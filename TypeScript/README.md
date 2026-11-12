@@ -260,7 +260,10 @@ console.log(result.blockedVariableIds);
 ```
 
 `scopeNames` should contain every board/component scope name, including
-duplicates. Variables are reported in `blockedVariableIds` and left unchanged
+duplicates. Constructor and per-call scope lists both contribute to rewrite
+safety checks. A duplicate within either list marks that scope as ambiguous;
+the same scope appearing once in each list does not.
+Variables are reported in `blockedVariableIds` and left unchanged
 when their references could instead be Arcscript syntax, when their name is
 duplicated within a scope, when a scoped qualifier is invalid or ambiguous, or
 when the requested replacement is not a non-reserved Arcscript identifier.

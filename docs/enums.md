@@ -237,6 +237,13 @@ arguments followed by definitions, a variable-ID-to-enum-ID map, and optional
 scope names. `UVariable`, the existing `runScriptExport` signature, and primitive
 `UTranspilerOutput` layout are unchanged. Native C++ callers must rebuild against
 the updated headers/library because the native `Variable`/state classes grow.
+The public exception header no longer supplies `<iostream>`, `<sstream>`,
+`<string.h>`, or a Win64 `strdup` macro transitively. Native integrations using
+those facilities must include their dependencies and supply any platform mapping
+directly.
+Concurrent `what()` calls on one exception are supported. Public exception-field
+edits and assignments must be synchronized with readers. Copy returned text if
+it must survive later changes to the exception or its destruction.
 Omit ordinary variables from the bridge's enum-reference map; an entry with an
 empty enum ID is rejected. Name-based state helpers read current variable metadata
 after renames, while `varNameToID` remains a legacy constructor snapshot.

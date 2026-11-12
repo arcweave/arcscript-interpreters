@@ -75,7 +75,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_definitions(ArcscriptTranspiler PRIVATE WIN_EXPORT)
 endif()
 
-target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared)
+find_package(Threads REQUIRED)
+target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared PUBLIC Threads::Threads)
 
 if (WIN32 OR WIN64)
     set(LIBRARY_NAME "${PROJECT_NAME}.lib")
@@ -145,10 +146,6 @@ if (WITH_TEST)
             COMMAND ${CMAKE_COMMAND} -E copy
                     "$<TARGET_FILE:ArcscriptTranspiler>" ${ANTLR4_RUNTIME_LIBRARIES}
                     "$<TARGET_FILE_DIR:ArcscriptEnumTest>")
-    if (CMAKE_HOST_UNIX)
-        find_package(Threads REQUIRED)
-        target_link_libraries(ArcscriptTest PRIVATE Threads::Threads)
-    endif()
 
     set_target_properties(ArcscriptTest PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"

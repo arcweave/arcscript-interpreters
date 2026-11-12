@@ -2,6 +2,9 @@
 #include <iostream>
 #include <memory>
 #include <limits>
+#include <array>
+#include <atomic>
+#include <thread>
 #include <nlohmann/json.hpp>
 #include "ArcscriptTranspiler.h"
 #include "ArcscriptContext.h"
@@ -157,11 +160,68 @@ void checkExceptionMessage() {
   Error moved = std::move(changedCopy);
   require(std::string(moved.what()) == "line 5:9 " + located.message,
     "Copying and moving after field edits retained stale formatting");
+  Error assigned("old", 1, 1);
+  assigned.what();
+  assigned = moved;
+  require(std::string(assigned.what()) == moved.what(), "Copy assignment retained the destination's old message");
+  Error moveAssigned("old", 1, 1);
+  moveAssigned.what();
+  moveAssigned = std::move(assigned);
+  require(std::string(moveAssigned.what()) == moved.what(), "Move assignment retained the destination's old message");
+}
+
+template<typename Error>
+void checkConcurrentExceptionMessage() {
+  for (int iteration = 0; iteration < 32; ++iteration) {
+    std::exception_ptr exception;
+    try { throw Error(std::string(10000, 'x'), 3, 2); }
+    catch (...) { exception = std::current_exception(); }
+    for (bool edited : {false, true}) {
+      const std::string message(10000, edited ? 'y' : 'x');
+      const std::string expected = (edited ? "line 9:4 " : "line 3:2 ") + message;
+      if (edited) {
+        try { std::rethrow_exception(exception); }
+        catch (Error& error) {
+          error.message = message;
+          error.line = 9;
+          error.charPositionInLine = 4;
+        }
+      }
+      std::atomic<int> ready{0};
+      std::atomic<bool> go{false};
+      std::array<const char*, 8> pointers{};
+      std::array<bool, 8> correct{};
+      std::vector<std::thread> threads;
+      for (std::size_t index = 0; index < pointers.size(); ++index) {
+        threads.emplace_back([&, index] {
+          try { std::rethrow_exception(exception); }
+          catch (const std::exception& error) {
+            ++ready;
+            while (!go.load()) std::this_thread::yield();
+            pointers[index] = error.what();
+            correct[index] = std::string(pointers[index]) == expected;
+            for (int read = 0; read < 10; ++read)
+              correct[index] = correct[index] && error.what() == pointers[index] && std::string(error.what()) == expected;
+            Error copy = static_cast<const Error&>(error);
+            correct[index] = correct[index] && std::string(copy.what()) == expected;
+          }
+        });
+      }
+      while (ready.load() != static_cast<int>(pointers.size())) std::this_thread::yield();
+      go = true;
+      for (auto& thread : threads) thread.join();
+      for (std::size_t index = 0; index < pointers.size(); ++index)
+        require(correct[index] && pointers[index] == pointers[0],
+          "Concurrent exception reads must share one stable, current message");
+    }
+  }
 }
 
 void exceptionMessageTests() {
   checkExceptionMessage<ParseErrorException>();
   checkExceptionMessage<RuntimeErrorException>();
+  checkConcurrentExceptionMessage<ParseErrorException>();
+  checkConcurrentExceptionMessage<RuntimeErrorException>();
 }
 
 void bridgeEnumReferenceTests() {

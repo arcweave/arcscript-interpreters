@@ -117,6 +117,91 @@ describe('shared enum contract', () => {
 
 describe('declaration contexts', () => {
   test.each([
+    {
+      label: 'constructor duplicates',
+      constructorScopes: ['Board', 'Board'],
+      blocked: true,
+    },
+    {
+      label: 'constructor duplicates with empty options',
+      constructorScopes: ['Board', 'Board'],
+      suppliedScopes: [],
+      blocked: true,
+    },
+    {
+      label: 'constructor duplicates with unique options',
+      constructorScopes: ['Board', 'Board'],
+      suppliedScopes: ['Board'],
+      blocked: true,
+    },
+    {
+      label: 'per-call duplicates',
+      constructorScopes: [],
+      suppliedScopes: ['Board', 'Board'],
+      blocked: true,
+    },
+    {
+      label: 'per-call duplicates with unique constructor scopes',
+      constructorScopes: ['Board'],
+      suppliedScopes: ['Board', 'Board'],
+      blocked: true,
+    },
+    {
+      label: 'same scope in both lists',
+      constructorScopes: ['Board'],
+      suppliedScopes: ['Board'],
+      blocked: false,
+    },
+    {
+      label: 'several variables in an inferred scope',
+      constructorScopes: [],
+      blocked: false,
+    },
+    {
+      label: 'duplicates in another scope',
+      constructorScopes: ['Other', 'Other'],
+      suppliedScopes: ['Board'],
+      blocked: false,
+    },
+  ])(
+    'legacy rewriting handles $label',
+    ({ constructorScopes, suppliedScopes, blocked }) => {
+      const interpreter = new Interpreter({
+        scopeNames: constructorScopes,
+        state: {
+          legacy: {
+            id: 'legacy',
+            name: 'health points',
+            scope: 'Board',
+            type: 'integer',
+            defaultValue: 7,
+          },
+          other: {
+            id: 'other',
+            name: 'score',
+            scope: 'Board',
+            type: 'integer',
+            defaultValue: 1,
+          },
+        },
+      });
+      const code = '<pre><code>show(Board.health points)</code></pre>';
+      expect(
+        interpreter.rewriteLegacyVariableReferences(
+          code,
+          { legacy: 'healthPoints' },
+          { scopeNames: suppliedScopes }
+        )
+      ).toEqual({
+        code: blocked
+          ? code
+          : '<pre><code>show(Board.healthPoints)</code></pre>',
+        blockedVariableIds: blocked ? ['legacy'] : [],
+      });
+    }
+  );
+
+  test.each([
     { label: 'default scopes', scopeNames: undefined },
     { label: 'empty scopes', scopeNames: [] },
     { label: 'explicit scopes', scopeNames: ['OtherBoard'] },

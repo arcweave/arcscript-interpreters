@@ -3,18 +3,26 @@
 #include <cstddef>
 #include <string>
 #include <exception>
+#include <mutex>
 
 namespace Arcweave {
   namespace detail {
     class ExceptionMessageCache {
+      mutable std::mutex mutex;
       mutable std::string formattedMessage;
       mutable std::string cachedMessage;
       mutable std::size_t cachedLine = 0;
       mutable std::size_t cachedColumn = 0;
     public:
+      ExceptionMessageCache() = default;
+      // The cache is derived from public exception fields. Copies start fresh;
+      // assignment keeps the destination cache, which get() checks for changes.
+      ExceptionMessageCache(const ExceptionMessageCache&) noexcept {}
+      ExceptionMessageCache& operator=(const ExceptionMessageCache&) noexcept { return *this; }
       const char* get(const std::string& message, std::size_t line, std::size_t column) const noexcept {
         if (line == 0) return message.c_str();
         try {
+          std::lock_guard<std::mutex> lock(mutex);
           if (formattedMessage.empty() || cachedMessage != message || cachedLine != line || cachedColumn != column) {
             auto formatted = "line " + std::to_string(line) + ":" + std::to_string(column) + " " + message;
             auto currentMessage = message;

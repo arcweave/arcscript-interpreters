@@ -294,6 +294,48 @@
       }
     },
     {
+      "name": "resetAll without arguments restores supplied ordinary and enum values",
+      "values": {
+        "status": "complete",
+        "difficulty": 3,
+        "scoped": "active",
+        "component": "inactive",
+        "text": "changed",
+        "number": 9
+      },
+      "code": "<pre><code>resetAll()</code></pre><pre><code>show(questStatus, \":\", difficulty, \":\", Board.questStatus, \":\", Component.questStatus, \":\", text, \":\", number, \":\", QuestStatus.Active, Difficulty.Hard)</code></pre>",
+      "changes": {
+        "status": "inactive",
+        "other": "active",
+        "door": "active",
+        "difficulty": 2,
+        "rank": 2,
+        "scoped": "inactive",
+        "component": "active",
+        "text": "active",
+        "number": 2,
+        "QuestStatus": 5
+      },
+      "output": "<p>inactive:2:inactive:active:active:2:active3</p>"
+    },
+    {
+      "name": "resetAll without arguments restores values assigned in the script",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre><pre><code>difficulty = Difficulty.Hard</code></pre><pre><code>Board.questStatus = QuestStatus.Active</code></pre><pre><code>Component.questStatus = QuestStatus.Inactive</code></pre><pre><code>text = \"changed\"</code></pre><pre><code>number = 9</code></pre><pre><code>resetAll()</code></pre><pre><code>show(questStatus, \":\", difficulty, \":\", Board.questStatus, \":\", Component.questStatus, \":\", text, \":\", number, \":\", QuestStatus.Active, Difficulty.Hard)</code></pre>",
+      "changes": {
+        "status": "inactive",
+        "other": "active",
+        "door": "active",
+        "difficulty": 2,
+        "rank": 2,
+        "scoped": "inactive",
+        "component": "active",
+        "text": "active",
+        "number": 2,
+        "QuestStatus": 5
+      },
+      "output": "<p>inactive:2:inactive:active:active:2:active3</p>"
+    },
+    {
       "name": "primitive current values",
       "code": "<pre><code>show(questStatus, Board.questStatus)</code></pre>",
       "values": {
@@ -2382,6 +2424,36 @@
       "errorLocation": {
         "line": 1,
         "col": 17
+      }
+    },
+    {
+      "name": "Entity spelling before an enum error counts toward the raw source offset",
+      "code": "<pre><code>show(1 &gt; 0,  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 16
+      }
+    },
+    {
+      "name": "CRLF before an enum error counts both characters toward the source offset",
+      "code": "<pre><code>show(1,\r\n  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Entity and CRLF before an enum error retain the raw source offset",
+      "code": "<pre><code>show(1 &gt; 0,\r\n  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 18
       }
     }
   ]
