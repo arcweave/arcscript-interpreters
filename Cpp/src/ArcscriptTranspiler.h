@@ -1,5 +1,6 @@
 #pragma once
 #include "ArcscriptHelpers.h"
+#include "ArcscriptEnums.h"
 #include "ArcscriptErrorExceptions.h"
 
 #if defined _WIN64
@@ -145,11 +146,18 @@ namespace Arcweave
    * 
   */
   class ArcscriptTranspiler {
+    TranspilerOutput process(std::string code, bool execute);
+    std::map<std::string, EnumDefinition> enumDefinitions;
+    std::vector<std::string> scopeNames;
   public:
 
 	ArcscriptState state;
 
-	ArcscriptTranspiler(std::string elId, std::map<std::string, Variable> initVars, std::map<std::string, int> _visits, std::function<void(const char*)> onEvent) : state(elId, initVars, _visits, onEvent) { };
+	ArcscriptTranspiler(std::string elId, std::map<std::string, Variable> initVars, std::map<std::string, int> _visits, std::function<void(const char*)> onEvent,
+      std::map<std::string, EnumDefinition> enums = {}, std::vector<std::string> scopes = {})
+      : enumDefinitions(std::move(enums)), scopeNames(std::move(scopes)), state(elId, initVars, _visits, onEvent) { };
+
+    void validate(std::string code);
 
 	/**
 	 * Runs the arcscript code and returns it's results.
@@ -162,4 +170,8 @@ namespace Arcweave
   };
 };
 EXPORTED Arcweave::UTranspilerOutput* runScriptExport(const char* code, const char* elId, Arcweave::UVariable* variables, size_t varLength, Arcweave::UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent);
+EXPORTED Arcweave::UTranspilerOutput* runScriptWithEnumsExport(const char* code, const char* elId, Arcweave::UVariable* variables, size_t varLength, Arcweave::UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent,
+    const std::map<std::string, Arcweave::EnumDefinition>& enums,
+    const std::map<std::string, std::string>& variableEnums,
+    const std::vector<std::string>& scopeNames = {});
 EXPORTED void deallocateOutput(Arcweave::UTranspilerOutput* output);

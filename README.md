@@ -108,6 +108,11 @@ On Windows, create `Cpp/build`, run CMake from that directory, and select the Re
 
 ## Cross-Language Behavior
 
+All three interpreters support project-wide string and integer enums, read-only
+`Enum.Member` constants, and validation of declared enum assignments and
+comparisons. See the [enum contract and APIs](docs/enums.md) for definition shapes,
+host responsibilities, and the export/native mapping contract.
+
 The interpreters share the Arcscript grammar and maintain parallel fixture categories for:
 
 - valid scripts and assignments

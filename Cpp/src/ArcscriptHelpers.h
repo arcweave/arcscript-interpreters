@@ -6,6 +6,8 @@
 #include <vector>
 #include <set>
 #include <functional>
+#include <optional>
+#include <stdexcept>
 
 #include "ArcscriptOutputs.h"
 #include "ArcscriptErrorExceptions.h"
@@ -32,12 +34,25 @@ struct Variable {
   std::any value;
   std::string scope;
   std::any defaultValue;
+  std::optional<std::string> enumId;
 };
 
 class ArcscriptState {
+  const std::string& getVarId(const IdentifierDef& identifier) const {
+    // Metadata is mutable; resolve current names and preserve last-match behavior.
+    for (auto it = variableValues.rbegin(); it != variableValues.rend(); ++it)
+      if (it->second.name == identifier.name && it->second.scope == identifier.scope)
+        return it->first;
+    // Preserve the public helpers' dotted shorthand, after an exact scope/name lookup.
+    auto dot = identifier.name.find('.');
+    if (identifier.scope.empty() && dot != std::string::npos && dot > 0)
+      return getVarId({identifier.name.substr(dot + 1), identifier.name.substr(0, dot)});
+    throw std::out_of_range("Unknown variable " + getVarFullName(identifier));
+  }
 public:
   std::map<std::string, std::any> variableChanges;
   std::map<std::string, Variable> variableValues;
+  // Legacy constructor snapshot; name-based helpers resolve current metadata.
   std::map<std::string, std::string> varNameToID;
   ArcscriptOutputs outputs;
   std::string currentElement;
@@ -77,20 +92,29 @@ public:
   }
 
   inline std::any getVarValue(IdentifierDef identifier) {
-    std::string varId = varNameToID[getVarFullName(identifier)];
-    if (variableChanges.count(varId)) {
-      return variableChanges[varId];
-    }
-    return variableValues[varId].value;
+    return getVarValueById(getVarId(identifier));
   }
 
   inline Variable getVar(IdentifierDef identifier) {
-    return variableValues[varNameToID[getVarFullName(identifier)]];
+    return getVarById(getVarId(identifier));
   }
 
   inline void setVarValue(IdentifierDef identifier, std::any value) {
-    std::string varId = varNameToID[getVarFullName(identifier)];
-    variableChanges[varId] = value;
+    setVarValueById(getVarId(identifier), std::move(value));
+  }
+
+  inline std::any getVarValueById(const std::string& id) const {
+    auto change = variableChanges.find(id);
+    return change != variableChanges.end() ? change->second : variableValues.at(id).value;
+  }
+
+  inline const Variable& getVarById(const std::string& id) const {
+    return variableValues.at(id);
+  }
+
+  inline void setVarValueById(const std::string& id, std::any value) {
+    variableValues.at(id);
+    variableChanges[id] = std::move(value);
   }
 
   inline void resetVars(std::vector<Variable> vars) {

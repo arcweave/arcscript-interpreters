@@ -5,6 +5,7 @@
 #include "ArcscriptLexer.h"
 #include "ArcscriptParser.h"
 #include <iterator>
+#include <string.h>
 
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -16,10 +17,19 @@ using namespace Arcweave;
 using namespace antlr4;
 
 TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
+  return process(std::move(code), true);
+}
+
+void ArcscriptTranspiler::validate(std::string code) {
+  process(std::move(code), false);
+}
+
+TranspilerOutput ArcscriptTranspiler::process(std::string code, bool execute) {
+  const ArcscriptContext declarations(enumDefinitions, state.variableValues, scopeNames);
   ANTLRInputStream input(code);
   ArcscriptLexer lexer(&input);
 
-  TranspilerOutput result;
+  TranspilerOutput result{};
 
   ErrorListener lexerErrorListener;
   lexer.removeErrorListeners();
@@ -31,7 +41,7 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
   tokens.fill();
 
   ArcscriptParser parser(&tokens);
-  parser.setArcscriptState(&state);
+  parser.setArcscriptState(&state, declarations);
   ErrorListener parserErrorListener;
   parser.removeErrorListeners();
   parser.addErrorListener(&parserErrorListener);
@@ -40,8 +50,9 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
 
   // Run the parser
   tree = parser.input();
+  if (!execute) return result;
   
-  ArcscriptVisitor visitor(&state);
+  ArcscriptVisitor visitor(&state, declarations);
   
   // Run the visitor
   std::any res(visitor.visitInput(tree));
@@ -61,6 +72,14 @@ TranspilerOutput ArcscriptTranspiler::runScript(std::string code) {
 }
 
 UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent)
+{
+    return runScriptWithEnumsExport(code, elId, variables, varLength, visits, visitsLength, onEvent, {}, {});
+}
+
+UTranspilerOutput* runScriptWithEnumsExport(const char* code, const char* elId, UVariable* variables, size_t varLength, UVisit* visits, size_t visitsLength, std::function<void(const char*)> onEvent,
+    const std::map<std::string, EnumDefinition>& enums,
+    const std::map<std::string, std::string>& variableEnums,
+    const std::vector<std::string>& scopeNames)
 {
     Arcweave::TranspilerOutput transpilerOutput;
 
@@ -90,6 +109,8 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         var.id = std::string(variables[i].id);
         var.name = std::string(variables[i].name);
         var.type = variables[i].type;
+        auto enumReference = variableEnums.find(var.id);
+        if (enumReference != variableEnums.end()) var.enumId = enumReference->second;
 
         if (variables[i].scope != nullptr) {
             var.scope = std::string(variables[i].scope);
@@ -119,7 +140,7 @@ UTranspilerOutput* runScriptExport(const char* code, const char* elId, UVariable
         initVisits[std::string(visits[i].elId)] = visits[i].visits;
     }
 
-    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits, onEvent);
+    Arcweave::ArcscriptTranspiler transpiler(sElId, initVars, initVisits, onEvent, enums, scopeNames);
     transpilerOutput = transpiler.runScript(sCode);
 
     UTranspilerOutput* uTranspilerOutput = new UTranspilerOutput();

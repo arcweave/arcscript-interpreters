@@ -44,6 +44,11 @@ type SourceReplacement = {
   text: string;
 };
 
+type NamespaceInfo = {
+  names: ReadonlySet<string>;
+  duplicateScopes: ReadonlySet<string>;
+};
+
 const CALLABLE_RESERVED_NAMES = new Set([
   'sqr',
   'sqrt',
@@ -138,7 +143,9 @@ const IDENTIFIER_PART_PATTERN = /^[\p{L}\p{N}\p{M}_$]$/u;
 export default class LegacyVariableReferenceRewriter {
   constructor(
     private readonly state: ArcscriptStateDef,
-    private readonly parsesAsArcscript: (code: string) => boolean
+    private readonly parsesAsArcscript: (code: string) => boolean,
+    private readonly scopeNames: readonly string[] = [],
+    private readonly enumNames: readonly string[] = []
   ) {}
 
   rewrite(
@@ -156,7 +163,11 @@ export default class LegacyVariableReferenceRewriter {
           ? null
           : (variable.scope as string),
       }));
-    const blocked = this.inherentlyBlockedCandidates(candidates, options);
+    const namespaces = this.namespaces(options);
+    const blocked = this.inherentlyBlockedCandidates(
+      candidates,
+      namespaces.duplicateScopes
+    );
     const decoded = this.decodeSource(code);
     const possibleMatches = candidates
       .filter(candidate => !blocked.has(candidate.id))
@@ -198,7 +209,7 @@ export default class LegacyVariableReferenceRewriter {
     for (const candidate of candidates) {
       if (
         (matchesByCandidate.get(candidate.id)?.length ?? 0) > 0 &&
-        this.isAmbiguous(candidate, options)
+        this.isAmbiguous(candidate, namespaces.names)
       ) {
         blocked.add(candidate.id);
       }
@@ -218,22 +229,30 @@ export default class LegacyVariableReferenceRewriter {
     };
   }
 
+  private namespaces(options: LegacyVariableRewriteOptions): NamespaceInfo {
+    const names = new Set(this.enumNames);
+    for (const variable of Object.values(this.state)) {
+      if (!isGlobalScope(variable.scope)) names.add(variable.scope as string);
+    }
+    const duplicateScopes = new Set<string>();
+    // Each list describes containers independently. A scope appearing once in
+    // both lists (or on several variables) does not imply duplicate containers.
+    for (const scopes of [this.scopeNames, options.scopeNames ?? []]) {
+      const seen = new Set<string>();
+      for (const scope of scopes) {
+        names.add(scope);
+        if (seen.has(scope)) duplicateScopes.add(scope);
+        seen.add(scope);
+      }
+    }
+    return { names, duplicateScopes };
+  }
+
   private inherentlyBlockedCandidates(
     candidates: Candidate[],
-    options: LegacyVariableRewriteOptions
+    duplicateScopes: ReadonlySet<string>
   ) {
     const blocked = new Set<string>();
-    const scopeNames = options.scopeNames ?? [
-      ...new Set(
-        Object.values(this.state)
-          .map(variable => variable.scope)
-          .filter((scope): scope is string => !isGlobalScope(scope))
-      ),
-    ];
-    const scopeCounts = new Map<string, number>();
-    for (const scope of scopeNames) {
-      scopeCounts.set(scope, (scopeCounts.get(scope) ?? 0) + 1);
-    }
 
     for (const candidate of candidates) {
       if (
@@ -245,7 +264,7 @@ export default class LegacyVariableReferenceRewriter {
         (candidate.scope !== null &&
           (!this.isValidIdentifier(candidate.scope) ||
             RESERVED_NAMES.has(candidate.scope) ||
-            (scopeCounts.get(candidate.scope) ?? 0) > 1))
+            duplicateScopes.has(candidate.scope)))
       ) {
         blocked.add(candidate.id);
       }
@@ -365,10 +384,7 @@ export default class LegacyVariableReferenceRewriter {
     return outside;
   }
 
-  private isAmbiguous(
-    candidate: Candidate,
-    options: LegacyVariableRewriteOptions
-  ) {
+  private isAmbiguous(candidate: Candidate, namespaces: ReadonlySet<string>) {
     const name = candidate.oldName.trim();
     const tokens = this.tokensForCode(name);
     if (
@@ -390,15 +406,9 @@ export default class LegacyVariableReferenceRewriter {
       return !CALLABLE_RESERVED_NAMES.has(candidate.oldName);
     }
     if (candidate.scope === null && candidate.oldName.includes('.')) {
-      const scopeNames = new Set(
-        options.scopeNames ??
-          Object.values(this.state)
-            .map(variable => variable.scope)
-            .filter((value): value is string => !isGlobalScope(value))
-      );
       const dotIndex = tokens.tokenNames.indexOf('DOT');
       const scope = dotIndex > 0 ? tokens.tokens[dotIndex - 1].text : '';
-      if (scope.length === 0 || scopeNames.has(scope)) {
+      if (scope.length === 0 || namespaces.has(scope)) {
         return true;
       }
     }

@@ -66,9 +66,9 @@ statement_assignment:
 		| ASSIGNDIV
 		| ASSIGNMOD
 		| ASSIGN
-	) expression;
+	) expression {this.validateEnums($ctx);};
 
-assignable: identifier {this.assertVariable($identifier.ctx);};
+assignable: identifier {this.assertAssignable($identifier.ctx);};
 
 identifier_list:
 	identifier {this.assertVariable($identifier.ctx);} (
@@ -91,8 +91,8 @@ expression:
 	| SUB expression														# UnaryExpression
 	| expression (MUL | DIV | MOD) expression								# MultiplicativeExpression
 	| expression (ADD | SUB) expression										# AdditiveExpression
-	| expression (LT | GT | LE | GE) expression								# ComparisonExpression
-	| expression (EQ | NE | (ISKEYWORD NOTKEYWORD) | ISKEYWORD) expression	# ComparisonExpression
+	| expression (LT | GT | LE | GE) expression {this.validateEnums($ctx);}	# ComparisonExpression
+	| expression (EQ | NE | (ISKEYWORD NOTKEYWORD) | ISKEYWORD) expression {this.validateEnums($ctx);}	# ComparisonExpression
 	| expression (AND | ANDKEYWORD) expression								# ComparisonExpression
 	| expression (OR | ORKEYWORD) expression								# ComparisonExpression
 	| identifier {this.assertVariable($identifier.ctx);}					# IdentifierExpression

@@ -42,13 +42,17 @@ import {
 } from './Generated/ArcscriptParser.js';
 import ArcscriptVariable from './ArcscriptVariable.js';
 import ArcscriptParserBase from './Generated/ArcscriptParserBase.js';
+import ArcscriptContext, { ArcscriptReference } from './ArcscriptContext.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   private readonly state: ArcscriptState;
   private readonly functions: ArcscriptFunctions;
 
-  constructor(state: ArcscriptState) {
+  constructor(
+    state: ArcscriptState,
+    private readonly declarations: ArcscriptContext
+  ) {
     super();
 
     this.state = state;
@@ -250,7 +254,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitAssignable = (ctx: AssignableContext): ArcscriptVariable => {
-    return this.visitIdentifier(ctx.identifier());
+    return this.readVariable(this.visitIdentifier(ctx.identifier()));
   };
 
   visitComparisonExpression = (ctx: ComparisonExpressionContext): boolean => {
@@ -361,9 +365,7 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
   };
 
   visitIdentifierExpression = (ctx: IdentifierExpressionContext) => {
-    const identifier = this.visitIdentifier(ctx.identifier());
-
-    return identifier.getValue();
+    return this.readReference(this.visitIdentifier(ctx.identifier()));
   };
 
   visitLiteralExpression = (ctx: LiteralExpressionContext) => {
@@ -374,21 +376,24 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
     return this.visitFunction_call(ctx.function_call());
   };
 
-  visitIdentifier = (ctx: IdentifierContext): ArcscriptVariable => {
-    let name: string;
-    let scope: string | null = null;
-    if (ctx.IDENTIFIER_list().length === 1) {
-      name = ctx.IDENTIFIER(0).getText();
-    } else {
-      scope = ctx.IDENTIFIER(0).getText();
-      name = ctx.IDENTIFIER(1).getText();
-    }
-    const variableObject = this.state.getVar(name, scope);
-    if (!variableObject) {
-      throw new RuntimeError(`Variable ${name} not found`);
-    }
-    return variableObject;
+  visitIdentifier = (ctx: IdentifierContext): ArcscriptReference => {
+    const reference = this.declarations.resolve(ctx.getText());
+    if (!reference)
+      throw new RuntimeError(`Variable ${ctx.getText()} not found`);
+    return reference;
   };
+
+  private readVariable(reference: ArcscriptReference): ArcscriptVariable {
+    if (reference.kind !== 'variable')
+      throw new RuntimeError('Enum members are read-only');
+    return this.state.getVarById(reference.variableId);
+  }
+
+  private readReference(reference: ArcscriptReference): VarValue {
+    return reference.kind === 'enumMember'
+      ? reference.value
+      : this.readVariable(reference).getValue();
+  }
 
   visitLiteral = (ctx: LiteralContext) => {
     if (ctx.BOOLEAN()) {
@@ -419,21 +424,26 @@ export default class ArcscriptVisitor extends ArcscriptParserVisitor<any> {
       argument_list = this.visitArgument_list(ctx.argument_list());
     }
     if (ctx.identifier_list()) {
-      const variables = this.visitIdentifier_list(ctx.identifier_list());
       if (
         ArcscriptParserBase.arcscriptFunctionsInfo[function_name].argType ===
         'variable'
       ) {
-        argument_list = variables;
+        argument_list = this.visitIdentifier_list(ctx.identifier_list()).map(
+          reference => this.readVariable(reference)
+        );
       } else {
-        argument_list = variables.map(variable => variable.getValue());
+        argument_list = this.visitIdentifier_list(ctx.identifier_list()).map(
+          reference => this.readReference(reference)
+        );
       }
     }
 
     return this.functions[function_name](...argument_list);
   };
 
-  visitIdentifier_list = (ctx: Identifier_listContext): ArcscriptVariable[] => {
+  visitIdentifier_list = (
+    ctx: Identifier_listContext
+  ): ArcscriptReference[] => {
     return ctx.identifier_list().map(identifier => {
       return this.visitIdentifier(identifier);
     });

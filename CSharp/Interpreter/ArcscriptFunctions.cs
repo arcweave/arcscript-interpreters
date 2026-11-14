@@ -20,18 +20,19 @@ namespace Arcweave.Interpreter
             public int? MaxArgs { get; set; }
             public Type ArgumentsType { get; set; }
             public Type ReturnType { get; set; }
+            public bool IsPure { get; set; }
         }
 
         public static Dictionary<string, FunctionDefinition> FunctionDefinitions =
         new() {
-            { "abs", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(int)} },
-            { "max", new FunctionDefinition { MinArgs=2, ReturnType =  typeof(double)} },
-            { "min", new FunctionDefinition { MinArgs=2, ReturnType = typeof(double)} },
+            { "abs", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(int), IsPure = true} },
+            { "max", new FunctionDefinition { MinArgs=2, ReturnType =  typeof(double), IsPure = true} },
+            { "min", new FunctionDefinition { MinArgs=2, ReturnType = typeof(double), IsPure = true} },
             { "random", new FunctionDefinition { MinArgs=0, MaxArgs=0, ReturnType = typeof(double)} },
             { "roll", new FunctionDefinition { MinArgs=1, MaxArgs=2, ReturnType = typeof(int)} },
-            { "round", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(int)} },
-            { "sqr", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(double)} },
-            { "sqrt", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(double)} },
+            { "round", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(int), IsPure = true} },
+            { "sqr", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(double), IsPure = true} },
+            { "sqrt", new FunctionDefinition { MinArgs=1, MaxArgs=1, ReturnType = typeof(double), IsPure = true} },
             { "visits", new FunctionDefinition { MinArgs=0, MaxArgs=1, ReturnType = typeof(int)} },
             { "show", new FunctionDefinition { MinArgs=1, ReturnType = typeof(string)} },
             { "reset", new FunctionDefinition { MinArgs=1, ArgumentsType = typeof(Variable), ReturnType = typeof(void)} },

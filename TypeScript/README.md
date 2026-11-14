@@ -78,6 +78,7 @@ const interpreter = new Interpreter({
 | `defaultValue` | Yes | Initial value and the value restored by `reset()`. |
 | `value` | No | Current value that overrides `defaultValue` during initialization. |
 | `scope` | No | Scope qualifier. Omitted, `undefined`, or `null` means unscoped/global. |
+| `enumId` | No | Declared enum ID. Keep `type` and values primitive; see the [enum contract](../docs/enums.md). |
 
 Any string is treated as a named scope. In particular, `scope: "global"` defines a literal scope named `global`; it does not define an unscoped variable.
 
@@ -194,6 +195,8 @@ Creates an interpreter. Calling `new Interpreter()` is valid and creates an inte
 | Option | Description |
 | --- | --- |
 | `state` | Variable definitions keyed by ID. Required when an options object is supplied. |
+| `enums` | Enum definitions keyed by stable ID; members resolve to string/integer constants. |
+| `scopeNames` | All board/component custom IDs, including scopes with no variables, for enum namespace validation. |
 | `elementVisits` | Visit counts used by the `visits()` function. |
 | `currentElement` | Current element ID used by element-aware functions. |
 | `eventHandler` | Callback for interpreter events, such as `resetVisits`. |
@@ -257,7 +260,10 @@ console.log(result.blockedVariableIds);
 ```
 
 `scopeNames` should contain every board/component scope name, including
-duplicates. Variables are reported in `blockedVariableIds` and left unchanged
+duplicates. Constructor and per-call scope lists both contribute to rewrite
+safety checks. A duplicate within either list marks that scope as ambiguous;
+the same scope appearing once in each list does not.
+Variables are reported in `blockedVariableIds` and left unchanged
 when their references could instead be Arcscript syntax, when their name is
 duplicated within a scope, when a scoped qualifier is invalid or ambiguous, or
 when the requested replacement is not a non-reserved Arcscript identifier.

@@ -62,6 +62,7 @@ target_sources(ArcscriptTranspiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Arcscr
 set(ARCSCRIPT_INCLUDE_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptTranspiler.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptHelpers.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptEnums.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptErrorExceptions.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/ArcscriptOutputs.h
 )
@@ -74,7 +75,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_definitions(ArcscriptTranspiler PRIVATE WIN_EXPORT)
 endif()
 
-target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared)
+find_package(Threads REQUIRED)
+target_link_libraries(ArcscriptTranspiler PRIVATE antlr4_shared PUBLIC Threads::Threads)
 
 if (WIN32 OR WIN64)
     set(LIBRARY_NAME "${PROJECT_NAME}.lib")
@@ -136,10 +138,14 @@ if (WITH_TEST)
 
     target_link_libraries(ArcscriptTest PRIVATE nlohmann_json::nlohmann_json)
     target_link_libraries(ArcscriptTest PRIVATE ArcscriptTranspiler)
-    if (CMAKE_HOST_UNIX)
-        find_package(Threads REQUIRED)
-        target_link_libraries(ArcscriptTest PRIVATE Threads::Threads)
-    endif()
+    add_executable(ArcscriptEnumTest ${CMAKE_CURRENT_SOURCE_DIR}/demo/EnumTests.cpp)
+    target_link_libraries(ArcscriptEnumTest PRIVATE nlohmann_json::nlohmann_json ArcscriptTranspiler)
+    add_test(NAME Arcscript.Enums COMMAND ArcscriptEnumTest ${CMAKE_CURRENT_SOURCE_DIR}/../tests/enums.json)
+    set_tests_properties(Arcscript.Enums PROPERTIES LABELS "arcscript;fixtures" TIMEOUT 30)
+    add_custom_command(TARGET ArcscriptEnumTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+                    "$<TARGET_FILE:ArcscriptTranspiler>" ${ANTLR4_RUNTIME_LIBRARIES}
+                    "$<TARGET_FILE_DIR:ArcscriptEnumTest>")
 
     set_target_properties(ArcscriptTest PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/demo/${PLATFORM}"

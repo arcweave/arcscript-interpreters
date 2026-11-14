@@ -2,10 +2,14 @@
 
 #include "ArcscriptParserBaseVisitor.h"
 #include "ArcscriptFunctions.h"
+#include "ArcscriptContext.h"
 
 using namespace Arcweave;
 
 class ArcscriptVisitor : public ArcscriptParserBaseVisitor {
+  const ArcscriptContext& declarations;
+  std::any readReference(const ArcscriptReference& reference) const;
+  Variable readVariable(const ArcscriptReference& reference) const;
 public:
   struct ConditionalSection {
     bool clause;
@@ -15,7 +19,7 @@ public:
   ArcscriptState *state;
   ArcscriptFunctions *functions;
 
-  explicit ArcscriptVisitor(ArcscriptState* _state) : state(_state) {
+  ArcscriptVisitor(ArcscriptState* _state, const ArcscriptContext& context) : declarations(context), state(_state) {
     functions = new ArcscriptFunctions(state);
   }
   ~ArcscriptVisitor() override {

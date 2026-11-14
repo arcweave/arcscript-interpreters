@@ -10,7 +10,7 @@ namespace Arcweave.Interpreter
     public class ArcscriptParserBase : Parser
     {
         private protected IProject Project { get; private set; }
-        private protected List<string> VariableNames = new List<string>();
+        public ArcscriptContext Declarations { get; private set; }
         internal int currentLine;
         internal int openTagEndPos;
 
@@ -24,14 +24,9 @@ namespace Arcweave.Interpreter
         {
         }
 
-        public void SetProject(IProject project) {
+        public void SetProject(IProject project, ArcscriptContext declarations = null) {
             this.Project = project;
-            foreach (var projectVariable in project.GetAllVariables())
-            {
-                VariableNames.Add(projectVariable.Parent == null
-                    ? projectVariable.Name
-                    : projectVariable.Parent.CustomId + "." + projectVariable.Name);
-            }
+            Declarations = declarations ?? new ArcscriptContext(variables: project.GetAllVariables());
         }
 
         public override string[] RuleNames => throw new System.NotImplementedException();
@@ -40,14 +35,79 @@ namespace Arcweave.Interpreter
 
         public override string GrammarFileName => throw new System.NotImplementedException();
 
+        private ParseException Error(string message, ParserRuleContext context)
+        {
+            // ANTLR indexes code points; editor columns are UTF-16 offsets within the block.
+            var start = context.Start.StartIndex;
+            var column = start <= openTagEndPos ? 0 : context.Start.InputStream.GetText(
+                Antlr4.Runtime.Misc.Interval.Of(openTagEndPos, start - 1)).Length;
+            return new ParseException(message, currentLine, column);
+        }
+
         public bool assertVariable(ArcscriptParser.IdentifierContext identifierContext) {
             var variableName = identifierContext.GetText();
             
-            var found = VariableNames.First(name => name == variableName);
-            if ( found != null ) {
-                return false;
-            }
+            if (Declarations.Resolve(variableName) == null)
+                throw Error($"The variable {variableName} does not exist", identifierContext);
             return true;
+        }
+
+        public void assertAssignable(ArcscriptParser.IdentifierContext identifierContext)
+        {
+            if (Declarations.Resolve(identifierContext.GetText())?.Kind == ReferenceKind.EnumMember)
+                throw Error($"Enum member {identifierContext.GetText()} is read-only", identifierContext);
+            assertVariable(identifierContext);
+        }
+
+        private string ExpressionEnum(ArcscriptParser.ExpressionContext context)
+        {
+            if (context is ArcscriptParser.ParenthesizedExpressionContext parenthesized)
+                return ExpressionEnum(parenthesized.expression());
+            if (context is ArcscriptParser.IdentifierExpressionContext identifier)
+                return Declarations.Resolve(identifier.identifier().GetText())?.EnumId;
+            return null;
+        }
+
+        private bool IsConstantExpression(ArcscriptParser.ExpressionContext context)
+        {
+            if (context is ArcscriptParser.IdentifierExpressionContext identifier)
+                return Declarations.Resolve(identifier.identifier().GetText())?.Kind == ReferenceKind.EnumMember;
+            if (context is ArcscriptParser.LiteralExpressionContext) return true;
+            if (context is ArcscriptParser.FunctionCallExpressionContext function)
+            {
+                var call = function.function_call();
+                if (!Functions.FunctionDefinitions[call.FNAME().GetText()].IsPure) return false;
+                if (call.identifier_list() != null)
+                    return call.identifier_list().identifier().All(member => Declarations.Resolve(member.GetText())?.Kind == ReferenceKind.EnumMember);
+                return call.argument_list()?.argument().All(argument =>
+                    argument.expression() != null && IsConstantExpression(argument.expression())) ?? true;
+            }
+            return context.GetRuleContexts<ArcscriptParser.ExpressionContext>().All(IsConstantExpression);
+        }
+
+        public void validateEnums(ParserRuleContext context)
+        {
+            if (!Declarations.HasEnums || NumberOfSyntaxErrors > 0) return;
+            if (context is ArcscriptParser.Statement_assignmentContext assignment &&
+                Declarations.Resolve(assignment.assignable().GetText())?.EnumId is string enumId &&
+                (assignment.ASSIGN() == null || ExpressionEnum(assignment.expression()) != enumId))
+                throw Error("Enum assignment requires a member or variable of the same enum", context);
+            if (context is ArcscriptParser.ComparisonExpressionContext comparison &&
+                comparison.AND() == null && comparison.ANDKEYWORD() == null &&
+                comparison.OR() == null && comparison.ORKEYWORD() == null)
+            {
+                var left = ExpressionEnum(comparison.expression(0));
+                var right = ExpressionEnum(comparison.expression(1));
+                if (left != null && right != null && left != right)
+                    throw Error("Cannot compare different enum types", context);
+                if ((left != null && right == null && IsConstantExpression(comparison.expression(1))) ||
+                    (right != null && left == null && IsConstantExpression(comparison.expression(0))))
+                    throw Error("Enum comparisons with constants require a named member", context);
+                var id = left ?? right;
+                if (id != null && (comparison.LT() != null || comparison.GT() != null ||
+                    comparison.LE() != null || comparison.GE() != null) && Declarations.EnumType(id) != typeof(int))
+                    throw Error("Only integer enums support ordering", context);
+            }
         }
 
         public bool assertMention(IList<ArcscriptParser.Mention_attributesContext> attrCtxList) {
@@ -107,6 +167,8 @@ namespace Arcweave.Interpreter
             
             var min = Functions.FunctionDefinitions[fname.Text].MinArgs;
             var max = Functions.FunctionDefinitions[fname.Text].MaxArgs;
+            if (Functions.FunctionDefinitions[fname.Text].ArgumentsType == typeof(Variable) && identifierListContext != null)
+                foreach (var identifier in identifierListContext.identifier()) assertAssignable(identifier);
             if ( ( min != null && identifierListLength < min ) || ( max != null && identifierListLength > max ) ) {
                 throw new RecognitionException("Incorrect number of arguments for function " + fname.Text, this, this.InputStream, this.Context);
             }
@@ -116,7 +178,7 @@ namespace Arcweave.Interpreter
 
         internal void setLineStart(IToken token)
         {
-            openTagEndPos = token.StartIndex + token.Text.Length;
+            openTagEndPos = token.StopIndex + 1;
         }
     }
 

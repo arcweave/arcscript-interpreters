@@ -1,17 +1,24 @@
 #pragma once
 
 #include "antlr4-runtime.h"
-#include "ArcscriptHelpers.h"
+#include "ArcscriptContext.h"
 
 class ArcscriptParserBase : public antlr4::Parser {
 private:
   Arcweave::ArcscriptState* _state;
-  size_t openTagEndPos;
+  const Arcweave::ArcscriptContext* _declarations;
+  size_t openTagEndPos = 0;
+  Arcweave::ParseErrorException error(const std::string& message, antlr4::ParserRuleContext* context) const;
 public:
   int currentLine = 0;
   ArcscriptParserBase(antlr4::TokenStream *input) : Parser(input) { }
-  inline void setArcscriptState(Arcweave::ArcscriptState *state) { _state = state; };
+  inline void setArcscriptState(Arcweave::ArcscriptState *state, const Arcweave::ArcscriptContext& declarations) {
+    _state = state;
+    _declarations = &declarations;
+  };
   bool assertVariable(antlr4::ParserRuleContext *variable) const;
+  void assertAssignable(antlr4::ParserRuleContext *identifier) const;
+  void validateEnums(antlr4::ParserRuleContext *context) const;
   bool assertMention(std::any attrCtxList);
   bool assertFunctionArguments(antlr4::Token *fname, std::any listContext);
   void setLineStart(antlr4::Token *token);

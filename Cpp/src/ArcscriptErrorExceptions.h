@@ -1,59 +1,81 @@
 #pragma once
 
-#include <iostream>
+#include <cstddef>
 #include <string>
-#include <string.h>
-#include <sstream>
 #include <exception>
-
-#ifdef _WIN64
-#define strdup _strdup
-#endif
+#include <mutex>
 
 namespace Arcweave {
+  namespace detail {
+    class ExceptionMessageCache {
+      mutable std::mutex mutex;
+      mutable std::string formattedMessage;
+      mutable std::string cachedMessage;
+      mutable std::size_t cachedLine = 0;
+      mutable std::size_t cachedColumn = 0;
+    public:
+      ExceptionMessageCache() = default;
+      // The cache is derived from public exception fields. Copies start fresh;
+      // assignment keeps the destination cache, which get() checks for changes.
+      ExceptionMessageCache(const ExceptionMessageCache&) noexcept {}
+      ExceptionMessageCache& operator=(const ExceptionMessageCache&) noexcept { return *this; }
+      const char* get(const std::string& message, std::size_t line, std::size_t column) const noexcept {
+        if (line == 0) return message.c_str();
+        try {
+          std::lock_guard<std::mutex> lock(mutex);
+          if (formattedMessage.empty() || cachedMessage != message || cachedLine != line || cachedColumn != column) {
+            auto formatted = "line " + std::to_string(line) + ":" + std::to_string(column) + " " + message;
+            auto currentMessage = message;
+            // Publish the cache only after every allocation succeeds.
+            formattedMessage.swap(formatted);
+            cachedMessage.swap(currentMessage);
+            cachedLine = line;
+            cachedColumn = column;
+          }
+          return formattedMessage.c_str();
+        } catch (...) {
+          // what() must still return useful text if formatting cannot allocate.
+          return message.c_str();
+        }
+      }
+    };
+  }
+
   class RuntimeErrorException : public std::exception {
+    detail::ExceptionMessageCache messageCache;
     public:
     std::string message;
-    size_t line = 0;
-    size_t charPositionInLine = 0;
+    std::size_t line = 0;
+    std::size_t charPositionInLine = 0;
     RuntimeErrorException(std::string msg) {
       message = msg;
     };
-    RuntimeErrorException(std::string msg, size_t _line, size_t _charPositionInLine) {
+    RuntimeErrorException(std::string msg, std::size_t _line, std::size_t _charPositionInLine) {
       message = msg;
       line = _line;
       charPositionInLine = _charPositionInLine;
     };
     char const* what() const noexcept override {
-      if (line > 0) {
-        std::ostringstream oss;
-        oss << "line " << line << ":" << charPositionInLine << " " << message << std::endl;
-        return strdup(oss.str().c_str());
-      }
-      return message.c_str();
+      return messageCache.get(message, line, charPositionInLine);
     }
   };
 
   class ParseErrorException : public std::exception {
+    detail::ExceptionMessageCache messageCache;
     public:
     std::string message;
-    size_t line = 0;
-    size_t charPositionInLine = 0;
+    std::size_t line = 0;
+    std::size_t charPositionInLine = 0;
     ParseErrorException(std::string msg) {
       message = msg;
     };
-    ParseErrorException(std::string msg, size_t _line, size_t _charPositionInLine) {
+    ParseErrorException(std::string msg, std::size_t _line, std::size_t _charPositionInLine) {
       message = msg;
       line = _line;
       charPositionInLine = _charPositionInLine;
     };
     char const* what() const noexcept override {
-      if (line > 0) {
-        std::ostringstream oss;
-        oss << "line " << line << ":" << charPositionInLine << " " << message << std::endl;
-        return strdup(oss.str().c_str());
-      }
-      return message.c_str();
+      return messageCache.get(message, line, charPositionInLine);
     }
   };
 }

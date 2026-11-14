@@ -1,6 +1,7 @@
 #nullable enable
 using Antlr4.Runtime;
 using System.Collections.Generic;
+using System.Linq;
 using Arcweave.Interpreter.INodes;
 
 namespace Arcweave.Interpreter
@@ -11,10 +12,15 @@ namespace Arcweave.Interpreter
         private string ElementId { get; set; }
 
         private System.Action<string> _emit;
+        private readonly IReadOnlyDictionary<string, EnumDefinition>? _enums;
+        private readonly IEnumerable<string>? _scopeNames;
 
-        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null)
+        public AwInterpreter(IProject project, string elementId = "", System.Action<string>? onEvent = null,
+            IReadOnlyDictionary<string, EnumDefinition>? enums = null, IEnumerable<string>? scopeNames = null)
         {
             this.Project = project;
+            _enums = enums;
+            _scopeNames = scopeNames;
             this.ElementId = elementId;
             if (onEvent != null)
             {
@@ -26,30 +32,58 @@ namespace Arcweave.Interpreter
             }
         }
 
-        private ArcscriptParser.InputContext GetParseTree(string code)
+        private ArcscriptContext CreateContext()
         {
-            ICharStream stream = CharStreams.fromString(code);
-            ArcscriptLexer lexer = new ArcscriptLexer(stream);
-            var lexerErrorListener = new ErrorListener<int>();
-            lexer.AddErrorListener(lexerErrorListener);
-            ITokenStream tokens = new CommonTokenStream(lexer);
-            var parserErrorListener = new ErrorListener<IToken>();
-            ArcscriptParser parser = new ArcscriptParser(tokens);
-            parser.AddErrorListener(parserErrorListener);
-            parser.SetProject(Project);
+#if GODOT
+            var scopes = Project.Boards.Values.Select(board => board.CustomId)
+                .Concat(Project.Components.Values.Select(component => component.CustomId));
+#else
+            var scopes = Project.Boards.Select(board => board.CustomId)
+                .Concat(Project.Components.Select(component => component.CustomId));
+#endif
+            return new ArcscriptContext(_enums, Project.GetAllVariables(),
+                scopes.Concat(_scopeNames ?? Enumerable.Empty<string>()));
+        }
 
-            ArcscriptParser.InputContext tree = parser.input();
-            
-            if (lexerErrorListener.HasErrors)
+        public ArcscriptParser.InputContext Parse(string code) => ParseWithContext(code).Tree;
+
+        private (ArcscriptParser.InputContext Tree, ArcscriptContext Declarations) ParseWithContext(string code)
+        {
+            var lexerErrorListener = new ErrorListener<int>();
+            var parserErrorListener = new ErrorListener<IToken>();
+
+            void ThrowSyntaxErrors(System.Exception? inner = null)
             {
-                throw new ParseException("Lexing errors:\n" + string.Join("\n", lexerErrorListener.Errors));
+                if (lexerErrorListener.HasErrors)
+                    throw new ParseException("Lexing errors:\n" + string.Join("\n", lexerErrorListener.Errors), inner);
+                if (parserErrorListener.HasErrors)
+                    throw new ParseException("Parsing errors:\n" + string.Join("\n", parserErrorListener.Errors), inner);
             }
-            if (parserErrorListener.HasErrors)
+
+            ArcscriptContext declarations;
+            ArcscriptParser.InputContext tree;
+            try
             {
-                throw new ParseException("Parsing errors:\n" + string.Join("\n", parserErrorListener.Errors));
+                declarations = CreateContext();
+                ICharStream stream = CharStreams.fromString(code);
+                ArcscriptLexer lexer = new ArcscriptLexer(stream);
+                lexer.AddErrorListener(lexerErrorListener);
+                ITokenStream tokens = new CommonTokenStream(lexer);
+                ArcscriptParser parser = new ArcscriptParser(tokens);
+                parser.AddErrorListener(parserErrorListener);
+                parser.SetProject(Project, declarations);
+                tree = parser.input();
             }
-            
-            return tree;
+            catch (System.Exception e)
+            {
+                // Recovery callbacks must not obscure an earlier syntax error.
+                ThrowSyntaxErrors(e);
+                if (e is ParseException) throw;
+                throw new ParseException(e.Message, e);
+            }
+
+            ThrowSyntaxErrors();
+            return (tree, declarations);
         }
 
         public TranspilerOutput RunScript(string code)
@@ -59,17 +93,11 @@ namespace Arcweave.Interpreter
                 return new TranspilerOutput();
             }
 
-            ArcscriptParser.InputContext tree;
-            try
-            {
-                tree = this.GetParseTree(code);
-            }
-            catch (System.Exception e)
-            {
-                throw new ParseException(e.Message, e);
-            }
+            var parsed = ParseWithContext(code);
             
-            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit);
+            var tree = parsed.Tree;
+            ArcscriptVisitor visitor = new ArcscriptVisitor(this.ElementId, this.Project, _emit,
+                parsed.Declarations);
             object result;
             try
             {

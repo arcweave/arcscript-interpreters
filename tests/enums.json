@@ -1,0 +1,2460 @@
+{
+  "enums": {
+    "quest": {
+      "id": "quest",
+      "name": "QuestStatus",
+      "type": "string",
+      "members": [
+        {
+          "id": "inactive",
+          "name": "Inactive",
+          "value": "inactive"
+        },
+        {
+          "id": "active",
+          "name": "Active",
+          "value": "active"
+        },
+        {
+          "id": "complete",
+          "name": "Complete",
+          "value": "complete"
+        }
+      ]
+    },
+    "door": {
+      "id": "door",
+      "name": "DoorStatus",
+      "type": "string",
+      "members": [
+        {
+          "id": "closed",
+          "name": "Closed",
+          "value": "closed"
+        },
+        {
+          "id": "open",
+          "name": "Active",
+          "value": "active"
+        }
+      ]
+    },
+    "difficulty": {
+      "id": "difficulty",
+      "name": "Difficulty",
+      "type": "integer",
+      "members": [
+        {
+          "id": "easy",
+          "name": "Easy",
+          "value": 1
+        },
+        {
+          "id": "normal",
+          "name": "Normal",
+          "value": 2
+        },
+        {
+          "id": "hard",
+          "name": "Hard",
+          "value": 3
+        },
+        {
+          "id": "zero",
+          "name": "Zero",
+          "value": 0
+        },
+        {
+          "id": "low",
+          "name": "Lowest",
+          "value": -2147483648
+        },
+        {
+          "id": "high",
+          "name": "Highest",
+          "value": 2147483647
+        }
+      ]
+    },
+    "rank": {
+      "id": "rank",
+      "name": "Rank",
+      "type": "integer",
+      "members": [
+        {
+          "id": "normal",
+          "name": "Normal",
+          "value": 2
+        }
+      ]
+    },
+    "weather": {
+      "id": "weather",
+      "name": "Weather",
+      "type": "string",
+      "members": [
+        {
+          "id": "rain",
+          "name": "HeavyRain",
+          "value": "heavy rain"
+        },
+        {
+          "id": "empty",
+          "name": "Empty",
+          "value": ""
+        }
+      ]
+    }
+  },
+  "initialVars": {
+    "status": {
+      "id": "status",
+      "name": "questStatus",
+      "type": "string",
+      "defaultValue": "inactive",
+      "enumId": "quest"
+    },
+    "other": {
+      "id": "other",
+      "name": "otherStatus",
+      "type": "string",
+      "defaultValue": "active",
+      "enumId": "quest"
+    },
+    "door": {
+      "id": "door",
+      "name": "doorStatus",
+      "type": "string",
+      "defaultValue": "active",
+      "enumId": "door"
+    },
+    "difficulty": {
+      "id": "difficulty",
+      "name": "difficulty",
+      "type": "integer",
+      "defaultValue": 2,
+      "enumId": "difficulty"
+    },
+    "rank": {
+      "id": "rank",
+      "name": "rank",
+      "type": "integer",
+      "defaultValue": 2,
+      "enumId": "rank"
+    },
+    "scoped": {
+      "id": "scoped",
+      "name": "questStatus",
+      "type": "string",
+      "defaultValue": "inactive",
+      "enumId": "quest",
+      "scope": "Board",
+      "cType": "boards"
+    },
+    "component": {
+      "id": "component",
+      "name": "questStatus",
+      "type": "string",
+      "defaultValue": "active",
+      "enumId": "quest",
+      "scope": "Component",
+      "cType": "components"
+    },
+    "text": {
+      "id": "text",
+      "name": "text",
+      "type": "string",
+      "defaultValue": "active"
+    },
+    "number": {
+      "id": "number",
+      "name": "number",
+      "type": "integer",
+      "defaultValue": 2
+    },
+    "QuestStatus": {
+      "id": "QuestStatus",
+      "name": "QuestStatus",
+      "type": "integer",
+      "defaultValue": 5
+    }
+  },
+  "cases": [
+    {
+      "name": "string assignment and display",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre><pre><code>show(questStatus)</code></pre>",
+      "changes": {
+        "status": "active"
+      },
+      "output": "<p>active</p>"
+    },
+    {
+      "name": "same enum assignment",
+      "code": "<pre><code>questStatus = otherStatus</code></pre>",
+      "changes": {
+        "status": "active"
+      }
+    },
+    {
+      "name": "parenthesized assignment",
+      "code": "<pre><code>questStatus = ((QuestStatus.Complete))</code></pre>",
+      "changes": {
+        "status": "complete"
+      }
+    },
+    {
+      "name": "scoped assignment",
+      "code": "<pre><code>Board.questStatus = Component.questStatus</code></pre><pre><code>questStatus = Board.questStatus</code></pre>",
+      "changes": {
+        "scoped": "active",
+        "status": "active"
+      }
+    },
+    {
+      "name": "integer assignment",
+      "code": "<pre><code>difficulty = Difficulty.Hard</code></pre><pre><code>show(difficulty)</code></pre>",
+      "changes": {
+        "difficulty": 3
+      },
+      "output": "<p>3</p>"
+    },
+    {
+      "name": "constant-only function arguments",
+      "code": "<pre><code>show(QuestStatus.Active, Difficulty.Hard)</code></pre>",
+      "output": "<p>active3</p>",
+      "changes": {}
+    },
+    {
+      "name": "expression function arguments",
+      "code": "<pre><code>show((Weather.HeavyRain), \":\", Difficulty.Normal + 1)</code></pre>",
+      "output": "<p>heavy rain:3</p>"
+    },
+    {
+      "name": "zero constant in identifier arguments",
+      "code": "<pre><code>show(Difficulty.Zero)</code></pre>",
+      "output": "<p>0</p>"
+    },
+    {
+      "name": "empty constant in identifier arguments",
+      "code": "<pre><code>show(Weather.Empty)</code></pre>",
+      "output": "<p></p>"
+    },
+    {
+      "name": "numeric functions",
+      "code": "<pre><code>number = max(Difficulty.Easy, Difficulty.Hard)</code></pre>",
+      "changes": {
+        "number": 3
+      }
+    },
+    {
+      "name": "ordinary assignments remain primitive",
+      "code": "<pre><code>text = QuestStatus.Active</code></pre><pre><code>number += Difficulty.Hard</code></pre>",
+      "changes": {
+        "text": "active",
+        "number": 5
+      }
+    },
+    {
+      "name": "runtime identity is erased",
+      "code": "<pre><code>text = QuestStatus.Active</code></pre><pre><code>if text == DoorStatus.Active</code></pre><pre><code>show(\"equal\")</code></pre><pre><code>endif</code></pre>",
+      "changes": {
+        "text": "active"
+      },
+      "output": "<p>equal</p>"
+    },
+    {
+      "name": "global name can match enum",
+      "code": "<pre><code>number = QuestStatus + Difficulty.Normal</code></pre>",
+      "changes": {
+        "number": 7
+      }
+    },
+    {
+      "name": "reset enum variables",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre><pre><code>difficulty = Difficulty.Hard</code></pre><pre><code>reset(questStatus, difficulty)</code></pre>",
+      "changes": {
+        "status": "inactive",
+        "difficulty": 2
+      }
+    },
+    {
+      "name": "resetAll exclusion",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre><pre><code>resetAll(questStatus)</code></pre>",
+      "changes": {
+        "other": "active",
+        "door": "active",
+        "difficulty": 2,
+        "rank": 2,
+        "scoped": "inactive",
+        "component": "active",
+        "text": "active",
+        "number": 2,
+        "QuestStatus": 5,
+        "status": "active"
+      }
+    },
+    {
+      "name": "resetAll without arguments restores supplied ordinary and enum values",
+      "values": {
+        "status": "complete",
+        "difficulty": 3,
+        "scoped": "active",
+        "component": "inactive",
+        "text": "changed",
+        "number": 9
+      },
+      "code": "<pre><code>resetAll()</code></pre><pre><code>show(questStatus, \":\", difficulty, \":\", Board.questStatus, \":\", Component.questStatus, \":\", text, \":\", number, \":\", QuestStatus.Active, Difficulty.Hard)</code></pre>",
+      "changes": {
+        "status": "inactive",
+        "other": "active",
+        "door": "active",
+        "difficulty": 2,
+        "rank": 2,
+        "scoped": "inactive",
+        "component": "active",
+        "text": "active",
+        "number": 2,
+        "QuestStatus": 5
+      },
+      "output": "<p>inactive:2:inactive:active:active:2:active3</p>"
+    },
+    {
+      "name": "resetAll without arguments restores values assigned in the script",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre><pre><code>difficulty = Difficulty.Hard</code></pre><pre><code>Board.questStatus = QuestStatus.Active</code></pre><pre><code>Component.questStatus = QuestStatus.Inactive</code></pre><pre><code>text = \"changed\"</code></pre><pre><code>number = 9</code></pre><pre><code>resetAll()</code></pre><pre><code>show(questStatus, \":\", difficulty, \":\", Board.questStatus, \":\", Component.questStatus, \":\", text, \":\", number, \":\", QuestStatus.Active, Difficulty.Hard)</code></pre>",
+      "changes": {
+        "status": "inactive",
+        "other": "active",
+        "door": "active",
+        "difficulty": 2,
+        "rank": 2,
+        "scoped": "inactive",
+        "component": "active",
+        "text": "active",
+        "number": 2,
+        "QuestStatus": 5
+      },
+      "output": "<p>inactive:2:inactive:active:active:2:active3</p>"
+    },
+    {
+      "name": "primitive current values",
+      "code": "<pre><code>show(questStatus, Board.questStatus)</code></pre>",
+      "values": {
+        "status": "complete",
+        "scoped": "active"
+      },
+      "output": "<p>completeactive</p>"
+    },
+    {
+      "name": "reset uses default not current",
+      "code": "<pre><code>reset(questStatus)</code></pre>",
+      "values": {
+        "status": "complete"
+      },
+      "changes": {
+        "status": "inactive"
+      }
+    },
+    {
+      "name": "member equality",
+      "code": "<pre><code>questStatus == QuestStatus.Inactive</code></pre>",
+      "result": true
+    },
+    {
+      "name": "member inequality",
+      "code": "<pre><code>questStatus != QuestStatus.Active</code></pre>",
+      "result": true
+    },
+    {
+      "name": "is keyword",
+      "code": "<pre><code>questStatus is QuestStatus.Inactive</code></pre>",
+      "result": true
+    },
+    {
+      "name": "is not keyword",
+      "code": "<pre><code>questStatus is not QuestStatus.Active</code></pre>",
+      "result": true
+    },
+    {
+      "name": "same enum variables",
+      "code": "<pre><code>questStatus == otherStatus</code></pre>",
+      "result": false
+    },
+    {
+      "name": "numeric ordering",
+      "code": "<pre><code>difficulty >= Difficulty.Normal</code></pre>",
+      "result": true
+    },
+    {
+      "name": "numeric less than",
+      "code": "<pre><code>Difficulty.Easy < difficulty</code></pre>",
+      "result": true
+    },
+    {
+      "name": "numeric less or equal",
+      "code": "<pre><code>difficulty <= Difficulty.Normal</code></pre>",
+      "result": true
+    },
+    {
+      "name": "numeric greater than",
+      "code": "<pre><code>Difficulty.Hard > difficulty</code></pre>",
+      "result": true
+    },
+    {
+      "name": "parenthesized comparison",
+      "code": "<pre><code>((difficulty)) == ((Difficulty.Normal))</code></pre>",
+      "result": true
+    },
+    {
+      "name": "primitive variable comparison",
+      "code": "<pre><code>text == QuestStatus.Active</code></pre>",
+      "result": true
+    },
+    {
+      "name": "computed values retain primitives",
+      "code": "<pre><code>Difficulty.Easy + 1 == 2</code></pre>",
+      "result": true
+    },
+    {
+      "name": "logical operators are primitive",
+      "code": "<pre><code>Difficulty.Zero or QuestStatus.Active</code></pre>",
+      "result": true
+    },
+    {
+      "name": "lowest integer",
+      "code": "<pre><code>Difficulty.Lowest < Difficulty.Highest</code></pre>",
+      "result": true
+    },
+    {
+      "name": "raw string assignment",
+      "code": "<pre><code>questStatus = \"active\"</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "raw integer assignment",
+      "code": "<pre><code>difficulty = 2</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "ordinary variable assignment",
+      "code": "<pre><code>questStatus = text</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "computed assignment",
+      "code": "<pre><code>difficulty = Difficulty.Easy + 1</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "function assignment",
+      "code": "<pre><code>difficulty = max(Difficulty.Easy, Difficulty.Normal)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "unary assignment",
+      "code": "<pre><code>difficulty = +Difficulty.Normal</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross enum assignment",
+      "code": "<pre><code>questStatus = DoorStatus.Active</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross enum variable assignment",
+      "code": "<pre><code>questStatus = doorStatus</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "unknown enum",
+      "code": "<pre><code>questStatus = Unknown.Active</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "unknown member",
+      "code": "<pre><code>questStatus = QuestStatus.Unknown</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "bare enum",
+      "code": "<pre><code>show(DoorStatus)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross enum comparison",
+      "code": "<pre><code>questStatus == DoorStatus.Active</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross enum member comparison",
+      "code": "<pre><code>QuestStatus.Active == DoorStatus.Active</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross enum variable comparison",
+      "code": "<pre><code>otherStatus != doorStatus</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "cross integer comparison",
+      "code": "<pre><code>difficulty >= Rank.Normal</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "raw string comparison",
+      "code": "<pre><code>questStatus == \"inactive\"</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "raw integer comparison",
+      "code": "<pre><code>difficulty == 2</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "reversed raw comparison",
+      "code": "<pre><code>2 <= difficulty</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "computed constant comparison",
+      "code": "<pre><code>difficulty == 1 + 1</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "parenthesized raw comparison",
+      "code": "<pre><code>((questStatus)) is (\"inactive\")</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "string ordering",
+      "code": "<pre><code>questStatus < QuestStatus.Complete</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "string member ordering",
+      "code": "<pre><code>QuestStatus.Active >= QuestStatus.Complete</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "member reset",
+      "code": "<pre><code>reset(QuestStatus.Active)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "member resetAll exclusion",
+      "code": "<pre><code>resetAll(Difficulty.Hard)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "mixed reset arguments",
+      "code": "<pre><code>reset(questStatus, QuestStatus.Active)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "parenthesized reset",
+      "code": "<pre><code>reset((QuestStatus.Active))</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "unreachable bad assignment",
+      "code": "<pre><code>if false</code></pre><pre><code>questStatus = \"active\"</code></pre><pre><code>endif</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "unreachable comparison",
+      "code": "<pre><code>true or questStatus == DoorStatus.Active</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "no partial execution",
+      "code": "<pre><code>number = 99</code></pre><pre><code>questStatus = \"active\"</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member =",
+      "code": "<pre><code>Difficulty.Normal = Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member +=",
+      "code": "<pre><code>Difficulty.Normal += Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "enum compound +=",
+      "code": "<pre><code>difficulty += Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member -=",
+      "code": "<pre><code>Difficulty.Normal -= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "enum compound -=",
+      "code": "<pre><code>difficulty -= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member *=",
+      "code": "<pre><code>Difficulty.Normal *= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "enum compound *=",
+      "code": "<pre><code>difficulty *= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member /=",
+      "code": "<pre><code>Difficulty.Normal /= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "enum compound /=",
+      "code": "<pre><code>difficulty /= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "read-only member %=",
+      "code": "<pre><code>Difficulty.Normal %= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "enum compound %=",
+      "code": "<pre><code>difficulty %= Difficulty.Hard</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "parse never executes functions",
+      "code": "<pre><code>show(1 / 0)</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "parse never emits events",
+      "code": "<pre><code>resetVisits()</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "context rejects mismatched enum ID",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "different",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects empty enum",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": []
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects float backing type",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "float",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name class",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "class",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name for",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "for",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name match",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "match",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name show",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "show",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name and",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "and",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name await",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "await",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name bad-name",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "bad-name",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name with space",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "with space",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name $Enum",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "$Enum",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name _Reserved",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "_Reserved",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name 123Enum",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "123Enum",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects enum name \u00c9num",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "\u00c9num",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects member name true",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "true",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects member name return",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "return",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects member name func",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "func",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects member name $Member",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "$Member",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects member name bad.member",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "bad.member",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects duplicate member names",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Inactive",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects duplicate member IDs",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "inactive",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects duplicate backing values",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "inactive"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects missing member ID",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects mixed types",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": 1
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects integer backing 1.5",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "integer",
+          "members": [
+            {
+              "id": "one",
+              "name": "One",
+              "value": 1.5
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects integer backing 2147483648",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "integer",
+          "members": [
+            {
+              "id": "one",
+              "name": "One",
+              "value": 2147483648
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects integer backing -2147483649",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "integer",
+          "members": [
+            {
+              "id": "one",
+              "name": "One",
+              "value": -2147483649
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects integer backing True",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "integer",
+          "members": [
+            {
+              "id": "one",
+              "name": "One",
+              "value": true
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects integer backing 1",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "integer",
+          "members": [
+            {
+              "id": "one",
+              "name": "One",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects duplicate enum names",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        },
+        "other": {
+          "id": "other",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects empty scope collision",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "scopeNames": [
+        "QuestStatus"
+      ],
+      "error": "parse"
+    },
+    {
+      "name": "context rejects used scope collision",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {
+        "x": {
+          "id": "x",
+          "name": "x",
+          "type": "string",
+          "defaultValue": "inactive",
+          "scope": "QuestStatus",
+          "cType": "boards"
+        }
+      },
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects unknown variable enum",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {
+        "x": {
+          "id": "x",
+          "name": "x",
+          "type": "string",
+          "defaultValue": "inactive",
+          "enumId": "unknown"
+        }
+      },
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context rejects variable backing mismatch",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {
+        "x": {
+          "id": "x",
+          "name": "x",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": "quest"
+        }
+      },
+      "parseOnly": true,
+      "error": "parse"
+    },
+    {
+      "name": "context permits unrelated scopes",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "parseOnly": true,
+      "scopeNames": [
+        "OtherBoard"
+      ]
+    },
+    {
+      "name": "member order does not change values",
+      "code": "<pre><code>questStatus = QuestStatus.Active</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "QuestStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            }
+          ]
+        },
+        "door": {
+          "id": "door",
+          "name": "DoorStatus",
+          "type": "string",
+          "members": [
+            {
+              "id": "closed",
+              "name": "Closed",
+              "value": "closed"
+            },
+            {
+              "id": "open",
+              "name": "Active",
+              "value": "active"
+            }
+          ]
+        },
+        "difficulty": {
+          "id": "difficulty",
+          "name": "Difficulty",
+          "type": "integer",
+          "members": [
+            {
+              "id": "easy",
+              "name": "Easy",
+              "value": 1
+            },
+            {
+              "id": "normal",
+              "name": "Normal",
+              "value": 2
+            },
+            {
+              "id": "hard",
+              "name": "Hard",
+              "value": 3
+            },
+            {
+              "id": "zero",
+              "name": "Zero",
+              "value": 0
+            },
+            {
+              "id": "low",
+              "name": "Lowest",
+              "value": -2147483648
+            },
+            {
+              "id": "high",
+              "name": "Highest",
+              "value": 2147483647
+            }
+          ]
+        },
+        "rank": {
+          "id": "rank",
+          "name": "Rank",
+          "type": "integer",
+          "members": [
+            {
+              "id": "normal",
+              "name": "Normal",
+              "value": 2
+            }
+          ]
+        },
+        "weather": {
+          "id": "weather",
+          "name": "Weather",
+          "type": "string",
+          "members": [
+            {
+              "id": "rain",
+              "name": "HeavyRain",
+              "value": "heavy rain"
+            },
+            {
+              "id": "empty",
+              "name": "Empty",
+              "value": ""
+            }
+          ]
+        }
+      },
+      "changes": {
+        "status": "active"
+      }
+    },
+    {
+      "name": "context rejects C++ auto keyword",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "quest": {
+          "id": "quest",
+          "name": "auto",
+          "type": "string",
+          "members": [
+            {
+              "id": "inactive",
+              "name": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "id": "active",
+              "name": "Active",
+              "value": "active"
+            },
+            {
+              "id": "complete",
+              "name": "Complete",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison abs(2)",
+      "code": "<pre><code>difficulty == abs(2)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison max(1, 2)",
+      "code": "<pre><code>difficulty == max(1, 2)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison min(2, 3)",
+      "code": "<pre><code>difficulty == min(2, 3)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison round(2)",
+      "code": "<pre><code>difficulty == round(2)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison sqr(2)",
+      "code": "<pre><code>difficulty == sqr(2)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison sqrt(4)",
+      "code": "<pre><code>difficulty == sqrt(4)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison max(abs(1), min(2, 3))",
+      "code": "<pre><code>difficulty == max(abs(1), min(2, 3))</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison max(Difficulty.Easy, Difficulty.Normal)",
+      "code": "<pre><code>difficulty == max(Difficulty.Easy, Difficulty.Normal)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison abs(Difficulty.Normal)",
+      "code": "<pre><code>difficulty == abs(Difficulty.Normal)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison abs(1 / 0)",
+      "code": "<pre><code>difficulty == abs(1 / 0)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function comparison sqrt(-1)",
+      "code": "<pre><code>difficulty == sqrt(-1)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function on left",
+      "code": "<pre><code>max(1, 2) <= difficulty</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function nested in arithmetic",
+      "code": "<pre><code>difficulty == 1 + abs(1)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "constant pure function in unreachable comparison",
+      "code": "<pre><code>true or difficulty == max(1, 2)</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "pure function of variable abs(number)",
+      "code": "<pre><code>difficulty == abs(number)</code></pre>",
+      "result": true
+    },
+    {
+      "name": "pure function of variable max(number, Difficulty.Normal)",
+      "code": "<pre><code>difficulty == max(number, Difficulty.Normal)</code></pre>",
+      "result": true
+    },
+    {
+      "name": "pure function of variable abs(abs(number))",
+      "code": "<pre><code>difficulty == abs(abs(number))</code></pre>",
+      "result": true
+    },
+    {
+      "name": "pure function with computed variable argument",
+      "code": "<pre><code>difficulty == max(Difficulty.Normal, number + 1)</code></pre>",
+      "result": false
+    },
+    {
+      "name": "dynamic function comparison random()",
+      "code": "<pre><code>difficulty == random()</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "dynamic function comparison roll(2)",
+      "code": "<pre><code>difficulty == roll(2)</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "dynamic function comparison visits()",
+      "code": "<pre><code>difficulty == visits()</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "dynamic function comparison abs(random())",
+      "code": "<pre><code>difficulty == abs(random())</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "dynamic function comparison round(roll(2))",
+      "code": "<pre><code>difficulty == round(roll(2))</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "dynamic function comparison max(1, visits())",
+      "code": "<pre><code>difficulty == max(1, visits())</code></pre>",
+      "parseOnly": true
+    },
+    {
+      "name": "ordinary variable may compare with constant pure function",
+      "code": "<pre><code>number == abs(2)</code></pre>",
+      "result": true
+    },
+    {
+      "name": "native reserved name Status.value__",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "e": {
+          "id": "e",
+          "name": "Status",
+          "type": "integer",
+          "members": [
+            {
+              "id": "m",
+              "name": "value__",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "error": "parse"
+    },
+    {
+      "name": "native reserved name Status.Bad__Name",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "e": {
+          "id": "e",
+          "name": "Status",
+          "type": "integer",
+          "members": [
+            {
+              "id": "m",
+              "name": "Bad__Name",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "error": "parse"
+    },
+    {
+      "name": "native reserved name Bad__Name.Active",
+      "code": "<pre><code>show(1)</code></pre>",
+      "enums": {
+        "e": {
+          "id": "e",
+          "name": "Bad__Name",
+          "type": "integer",
+          "members": [
+            {
+              "id": "m",
+              "name": "Active",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "error": "parse"
+    },
+    {
+      "name": "portable single underscores remain valid",
+      "code": "<pre><code>show(Quest_Status.In_Progress_)</code></pre>",
+      "enums": {
+        "e": {
+          "id": "e",
+          "name": "Quest_Status",
+          "type": "integer",
+          "members": [
+            {
+              "id": "m",
+              "name": "In_Progress_",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "initialVars": {},
+      "output": "<p>1</p>"
+    },
+    {
+      "name": "ordinary variable double underscores remain valid",
+      "code": "<pre><code>show(legacy__value)</code></pre>",
+      "initialVars": {
+        "legacy": {
+          "id": "legacy",
+          "name": "legacy__value",
+          "type": "integer",
+          "defaultValue": 42
+        }
+      },
+      "output": "<p>42</p>"
+    },
+    {
+      "name": "empty pure function arguments report parse errors",
+      "code": "<pre><code>difficulty == max()</code></pre>",
+      "error": "parse"
+    },
+    {
+      "name": "missing enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1
+        }
+      },
+      "enums": {},
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "null enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": null
+        }
+      },
+      "enums": {},
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "empty enum ID with no definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": ""
+        }
+      },
+      "enums": {},
+      "error": "Invalid enum reference"
+    },
+    {
+      "name": "missing enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1
+        }
+      },
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "null enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": null
+        }
+      },
+      "changes": {
+        "score": 999
+      }
+    },
+    {
+      "name": "empty enum ID with definitions",
+      "code": "<pre><code>score = 999</code></pre>",
+      "initialVars": {
+        "score": {
+          "id": "score",
+          "name": "score",
+          "type": "integer",
+          "defaultValue": 1,
+          "enumId": ""
+        }
+      },
+      "error": "Invalid enum reference"
+    },
+    {
+      "name": "Dotted global names do not shadow scoped ordinary variables",
+      "initialVars": {
+        "z_legacy": {
+          "id": "z_legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        },
+        "a_scoped": {
+          "id": "a_scoped",
+          "name": "score",
+          "scope": "Board",
+          "type": "integer",
+          "defaultValue": 2
+        }
+      },
+      "code": "<pre><code>Board.score += 1</code></pre><pre><code>show(Board.score)</code></pre>",
+      "changes": {
+        "a_scoped": 3
+      },
+      "output": "<p>3</p>"
+    },
+    {
+      "name": "Dotted global names do not shadow scoped enum variables",
+      "initialVars": {
+        "z_legacy": {
+          "id": "z_legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        },
+        "a_scoped": {
+          "id": "a_scoped",
+          "name": "score",
+          "scope": "Board",
+          "type": "integer",
+          "defaultValue": 2,
+          "enumId": "difficulty"
+        }
+      },
+      "code": "<pre><code>Board.score = Difficulty.Hard</code></pre><pre><code>show(Board.score)</code></pre>",
+      "changes": {
+        "a_scoped": 3
+      },
+      "output": "<p>3</p>"
+    },
+    {
+      "name": "A dotted global name does not create a scoped declaration",
+      "initialVars": {
+        "legacy": {
+          "id": "legacy",
+          "name": "Board.score",
+          "type": "integer",
+          "defaultValue": 100
+        }
+      },
+      "code": "<pre><code>show(Board.score)</code></pre>",
+      "error": "Unknown variable"
+    },
+    {
+      "name": "assignment error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  questStatus = \"active\"</code></pre>",
+      "error": "Enum assignment requires",
+      "errorLocation": {
+        "line": 3,
+        "col": 2
+      },
+      "errorContains": "Enum assignment requires"
+    },
+    {
+      "name": "member mutation error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  QuestStatus.Active = \"active\"</code></pre>",
+      "error": "is read-only",
+      "errorLocation": {
+        "line": 3,
+        "col": 2
+      },
+      "errorContains": "is read-only"
+    },
+    {
+      "name": "member reset error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  reset(QuestStatus.Active)</code></pre>",
+      "error": "is read-only",
+      "errorLocation": {
+        "line": 3,
+        "col": 8
+      },
+      "errorContains": "is read-only"
+    },
+    {
+      "name": "cross-enum comparison error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus == doorStatus)</code></pre>",
+      "error": "Cannot compare different enum types",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "Cannot compare different enum types"
+    },
+    {
+      "name": "constant comparison error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus == \"active\")</code></pre>",
+      "error": "require a named member",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "require a named member"
+    },
+    {
+      "name": "string enum ordering error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(questStatus < QuestStatus.Active)</code></pre>",
+      "error": "Only integer enums support ordering",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "Only integer enums support ordering"
+    },
+    {
+      "name": "unknown member error identifies the third code block and column",
+      "code": "<pre><code>show(1)</code></pre><pre><code>show(2)</code></pre><pre><code>  show(QuestStatus.Missing)</code></pre>",
+      "error": "variable",
+      "errorLocation": {
+        "line": 3,
+        "col": 7
+      },
+      "errorContains": "variable"
+    },
+    {
+      "name": "Astral character in pre attributes preserves diagnostic offsets",
+      "code": "<pre data-x=\"\ud83d\ude00\"><code>questStatus == \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 0
+      }
+    },
+    {
+      "name": "BMP character in pre attributes preserves diagnostic offsets",
+      "code": "<pre data-x=\"\u00e9\"><code>questStatus == \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 0
+      }
+    },
+    {
+      "name": "Astral character in code attributes preserves diagnostic offsets",
+      "code": "<pre><code data-x=\"\ud83d\ude00\">  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 1,
+        "col": 2
+      }
+    },
+    {
+      "name": "Newline before code block preserves diagnostic offsets",
+      "code": "<p>a</p>\n<pre><code>  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 2,
+        "col": 2
+      }
+    },
+    {
+      "name": "Unicode paragraph and multiline opening tag preserves diagnostic offsets",
+      "code": "<p>\ud83d\ude00</p>\r\n<pre\n data-x=\"\u00e9\ud83d\ude00\"><code>  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 2,
+        "col": 2
+      }
+    },
+    {
+      "name": "Newline inside code block preserves diagnostic offsets",
+      "code": "<pre><code>\n  questStatus = \"active\"</code></pre>",
+      "error": "parse",
+      "errorContains": "Enum assignment requires",
+      "errorLocation": {
+        "line": 1,
+        "col": 3
+      }
+    },
+    {
+      "name": "Astral character before comparison preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Unicode tag and expression in later block preserves diagnostic offsets",
+      "code": "<pre><code>show(1)</code></pre>\n<pre data-x=\"\u00e9\ud83d\ude00\"><code>show(\"\u00e9\ud83d\ude00\", questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 2,
+        "col": 12
+      }
+    },
+    {
+      "name": "Astral character before unknown member preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", QuestStatus.Unknown)</code></pre>",
+      "error": "parse",
+      "errorContains": "variable",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Astral character before member mutation preserves diagnostic offsets",
+      "code": "<pre><code>show(\"\ud83d\ude00\", reset(QuestStatus.Active))</code></pre>",
+      "error": "parse",
+      "errorContains": "is read-only",
+      "errorLocation": {
+        "line": 1,
+        "col": 17
+      }
+    },
+    {
+      "name": "Entity spelling before an enum error counts toward the raw source offset",
+      "code": "<pre><code>show(1 &gt; 0,  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 16
+      }
+    },
+    {
+      "name": "CRLF before an enum error counts both characters toward the source offset",
+      "code": "<pre><code>show(1,\r\n  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 11
+      }
+    },
+    {
+      "name": "Entity and CRLF before an enum error retain the raw source offset",
+      "code": "<pre><code>show(1 &gt; 0,\r\n  questStatus == \"active\")</code></pre>",
+      "error": "parse",
+      "errorContains": "require a named member",
+      "errorLocation": {
+        "line": 1,
+        "col": 18
+      }
+    }
+  ]
+}

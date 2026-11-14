@@ -122,6 +122,12 @@ export default class ArcscriptState {
     return variable;
   }
 
+  getVarById(id: string): ArcscriptVariable {
+    const variable = this.variables[id];
+    if (!variable) throw new Error(`Variable ${id} not found`);
+    return variable;
+  }
+
   resetVariablesExcept(excludedIds: ReadonlySet<string>): void {
     Object.values(this.variables).forEach(variable => {
       if (!excludedIds.has(variable.id)) {

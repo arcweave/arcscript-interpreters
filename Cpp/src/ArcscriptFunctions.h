@@ -14,6 +14,7 @@ public:
     int minArgs;
     int maxArgs;
     std::string argsType;
+    bool isPure = false;
   };
 
   static std::map<std::string, FunctionInfo> functions;

@@ -5,7 +5,8 @@ import ArcscriptParser from './Generated/ArcscriptParser.js';
 import ArcscriptVisitor from './ArcscriptVisitor.js';
 import ErrorListener from './ErrorListener.js';
 import { ParseError } from './errors/index.js';
-import { ArcscriptStateDef, VarValue } from './types.js';
+import { ArcscriptEnumDefs, ArcscriptStateDef, VarValue } from './types.js';
+import ArcscriptContext from './ArcscriptContext.js';
 import ArcscriptState from './ArcscriptState.js';
 import { isGlobalScope } from './scope.js';
 import LegacyVariableReferenceRewriter from './LegacyVariableReferenceRewriter.js';
@@ -14,8 +15,10 @@ import type {
   LegacyVariableRewriteResult,
 } from './types.js';
 
-type ArcscriptInterpreterOptions = {
+export type ArcscriptInterpreterOptions = {
   state: ArcscriptStateDef;
+  enums?: ArcscriptEnumDefs;
+  scopeNames?: readonly string[];
   elementVisits?: Record<string, number>;
   currentElement?: string;
   eventHandler?: (event: string, data?: unknown) => void;
@@ -32,9 +35,13 @@ export default class Interpreter {
   private readonly elementVisits: Record<string, number>;
   private readonly currentElement: string;
   private readonly emit: (event: string, data?: unknown) => void;
+  private readonly enumDefinitions: ArcscriptEnumDefs;
+  private readonly scopeNames: readonly string[];
 
   constructor(options: ArcscriptInterpreterOptions = { state: {} }) {
     this.arcscriptVariables = options.state;
+    this.enumDefinitions = options.enums ?? {};
+    this.scopeNames = options.scopeNames ?? [];
     this.elementVisits = options.elementVisits ?? {};
     this.currentElement = options.currentElement ?? '';
     this.emit = options.eventHandler ?? (() => {});
@@ -48,9 +55,9 @@ export default class Interpreter {
       this.emit
     );
 
-    const { tree } = this.parse(code);
+    const { tree, parser } = this.parse(code);
 
-    const visitor = new ArcscriptVisitor(state);
+    const visitor = new ArcscriptVisitor(state, parser.declarations);
 
     state.setVarValues(varValues);
 
@@ -65,13 +72,25 @@ export default class Interpreter {
   }
 
   parse(code: string) {
+    return this.parseWithContext(code, this.createContext());
+  }
+
+  private createContext() {
+    return new ArcscriptContext(
+      this.enumDefinitions,
+      this.arcscriptVariables,
+      this.scopeNames
+    );
+  }
+
+  private parseWithContext(code: string, declarations: ArcscriptContext) {
     const { chars, lexer, errorListener } = this.createLexer(code);
     const tokens = new antlr4.CommonTokenStream(lexer);
     const parser = new ArcscriptParser(tokens);
     parser.setOptions({
-      arcscriptVariables: this.arcscriptVariables,
       elementVisits: this.elementVisits,
       currentElement: this.currentElement,
+      declarations,
     });
     parser.buildParseTrees = true;
     parser.removeErrorListeners();
@@ -145,9 +164,15 @@ export default class Interpreter {
     variables: Record<string, string>,
     options: LegacyVariableRewriteOptions = {}
   ): LegacyVariableRewriteResult {
+    let declarations: ArcscriptContext | undefined;
     return new LegacyVariableReferenceRewriter(
       this.arcscriptVariables,
-      legacyName => this.parsesAsArcscript(legacyName)
+      legacyName => {
+        declarations ??= this.createContext();
+        return this.parsesAsArcscript(legacyName, declarations);
+      },
+      this.scopeNames,
+      Object.values(this.enumDefinitions).map(definition => definition.name)
     ).rewrite(code, variables, options);
   }
 
@@ -216,10 +241,13 @@ export default class Interpreter {
       token => tokenTypeNames[token.type] === 'LEGACY_CHARACTER'
     );
     if (legacyToken) {
-      throw new ParseError(`token recognition error at: '${legacyToken.text}'`, {
-        line: legacyToken.line,
-        col: legacyToken.column,
-      });
+      throw new ParseError(
+        `token recognition error at: '${legacyToken.text}'`,
+        {
+          line: legacyToken.line,
+          col: legacyToken.column,
+        }
+      );
     }
 
     return {
@@ -228,7 +256,7 @@ export default class Interpreter {
     };
   }
 
-  private parsesAsArcscript(code: string) {
+  private parsesAsArcscript(code: string, declarations: ArcscriptContext) {
     const scripts = [
       `<pre><code>${code}</code></pre>`,
       `<pre><code>${code}</code></pre><p></p><pre><code>endif</code></pre>`,
@@ -237,7 +265,7 @@ export default class Interpreter {
 
     for (const script of scripts) {
       try {
-        this.parse(script);
+        this.parseWithContext(script, declarations);
 
         return true;
       } catch (error) {

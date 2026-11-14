@@ -1,17 +1,29 @@
-import { Parser, TerminalNode, Token, TokenStream } from 'antlr4';
+import {
+  Parser,
+  ParserRuleContext,
+  TerminalNode,
+  Token,
+  TokenStream,
+} from 'antlr4';
 import ArcscriptParser, {
   Argument_listContext,
   Identifier_listContext,
   IdentifierContext,
   Mention_attributesContext,
+  Statement_assignmentContext,
+  ComparisonExpressionContext,
+  ExpressionContext,
+  ParenthesizedExpressionContext,
+  IdentifierExpressionContext,
+  LiteralExpressionContext,
+  FunctionCallExpressionContext,
 } from './ArcscriptParser.js';
-import { ArcscriptStateDef } from '../types.js';
-import { isGlobalScope } from '../scope.js';
+import ArcscriptContext from '../ArcscriptContext.js';
 
 type ArcscriptParserOptions = {
-  arcscriptVariables: ArcscriptStateDef;
   elementVisits: Record<string, number>;
   currentElement: string;
+  declarations: ArcscriptContext;
 };
 
 type ArcscriptFunctionInfo = {
@@ -19,18 +31,19 @@ type ArcscriptFunctionInfo = {
   maxArgs: number | null;
   returnType?: 'number' | 'void';
   argType?: 'number' | 'variable' | 'mention';
+  pure?: boolean;
 };
 
 export default class ArcscriptParserBase extends Parser {
   static arcscriptFunctionsInfo: Record<string, ArcscriptFunctionInfo> = {
-    abs: { minArgs: 1, maxArgs: 1, returnType: 'number' },
-    max: { minArgs: 2, maxArgs: null, returnType: 'number' },
-    min: { minArgs: 2, maxArgs: null, returnType: 'number' },
+    abs: { minArgs: 1, maxArgs: 1, returnType: 'number', pure: true },
+    max: { minArgs: 2, maxArgs: null, returnType: 'number', pure: true },
+    min: { minArgs: 2, maxArgs: null, returnType: 'number', pure: true },
     random: { minArgs: 0, maxArgs: 0, returnType: 'number' },
     roll: { minArgs: 1, maxArgs: 2, returnType: 'number' },
-    round: { minArgs: 1, maxArgs: 1, returnType: 'number' },
-    sqr: { minArgs: 1, maxArgs: 1, returnType: 'number' },
-    sqrt: { minArgs: 1, maxArgs: 1, returnType: 'number' },
+    round: { minArgs: 1, maxArgs: 1, returnType: 'number', pure: true },
+    sqr: { minArgs: 1, maxArgs: 1, returnType: 'number', pure: true },
+    sqrt: { minArgs: 1, maxArgs: 1, returnType: 'number', pure: true },
     visits: { minArgs: 0, maxArgs: 1, returnType: 'number' },
     show: { minArgs: 1, maxArgs: null, returnType: 'void' },
     reset: {
@@ -48,7 +61,7 @@ export default class ArcscriptParserBase extends Parser {
     resetVisits: { minArgs: 0, maxArgs: 0, returnType: 'void' },
   };
 
-  arcscriptVariableNames: string[] = [];
+  declarations!: ArcscriptContext;
   elementVisits: Record<string, number> = {};
   currentElement: string = '';
   currentLine: number = 0;
@@ -59,21 +72,13 @@ export default class ArcscriptParserBase extends Parser {
   }
 
   setOptions(options: ArcscriptParserOptions) {
-    const variableNames = Object.values(options.arcscriptVariables).map(
-      variable => {
-        if (!isGlobalScope(variable.scope)) {
-          return `${variable.scope}.${variable.name}`;
-        }
-        return variable.name;
-      }
-    );
-    this.arcscriptVariableNames = variableNames;
+    this.declarations = options.declarations;
     this.elementVisits = options.elementVisits;
     this.currentElement = options.currentElement;
   }
 
   setLineStart(token: Token) {
-    this.openTagEndPos = token.start + token.text.length;
+    this.openTagEndPos = token.stop + 1;
   }
 
   assertFunctionArguments(
@@ -113,18 +118,138 @@ export default class ArcscriptParserBase extends Parser {
             undefined
           );
         }
+        if (argListCtx instanceof Identifier_listContext) {
+          argListCtx
+            .identifier_list()
+            .forEach(identifier => this.assertAssignable(identifier));
+        }
       }
     }
   }
 
   assertVariable(identifierCtx: IdentifierContext) {
     const variableName = identifierCtx.getText();
-    if (!this.arcscriptVariableNames.includes(variableName)) {
+    if (!this.declarations.resolve(variableName)) {
       this.notifyErrorListeners(
         `The variable ${variableName} does not exist`,
         identifierCtx.start,
         undefined
       );
+    }
+  }
+
+  assertAssignable(identifierCtx: IdentifierContext) {
+    if (
+      this.declarations.resolve(identifierCtx.getText())?.kind === 'enumMember'
+    ) {
+      this.notifyErrorListeners(
+        `Enum member ${identifierCtx.getText()} is read-only`,
+        identifierCtx.start,
+        undefined
+      );
+    }
+    this.assertVariable(identifierCtx);
+  }
+
+  private expressionEnum(ctx: ExpressionContext): string | undefined {
+    if (ctx instanceof ParenthesizedExpressionContext)
+      return this.expressionEnum(ctx.expression());
+    if (ctx instanceof IdentifierExpressionContext)
+      return this.declarations.resolve(ctx.identifier().getText())?.enumId;
+    return undefined;
+  }
+
+  private isConstantExpression(ctx: ExpressionContext): boolean {
+    if (ctx instanceof IdentifierExpressionContext)
+      return (
+        this.declarations.resolve(ctx.identifier().getText())?.kind ===
+        'enumMember'
+      );
+    if (ctx instanceof LiteralExpressionContext) return true;
+    if (ctx instanceof FunctionCallExpressionContext) {
+      const call = ctx.function_call();
+      if (
+        !ArcscriptParserBase.arcscriptFunctionsInfo[call.FNAME().getText()].pure
+      )
+        return false;
+      if (call.identifier_list()) {
+        return call
+          .identifier_list()
+          .identifier_list()
+          .every(
+            identifier =>
+              this.declarations.resolve(identifier.getText())?.kind ===
+              'enumMember'
+          );
+      }
+      return (
+        call
+          .argument_list()
+          ?.argument_list()
+          .every(argument => {
+            const expression = argument.expression();
+            return !!expression && this.isConstantExpression(expression);
+          }) ?? true
+      );
+    }
+    return ctx
+      .getTypedRuleContexts(ExpressionContext)
+      .every(child => this.isConstantExpression(child));
+  }
+
+  // Called as assignments/comparisons are parsed, including unreachable branches.
+  validateEnums(ctx: ParserRuleContext) {
+    if (!this.declarations.hasEnums) return;
+    if (ctx instanceof Statement_assignmentContext) {
+      const enumId = this.declarations.resolve(
+        ctx.assignable().getText()
+      )?.enumId;
+      if (
+        enumId &&
+        (!ctx.ASSIGN() || this.expressionEnum(ctx.expression()) !== enumId)
+      ) {
+        this.notifyErrorListeners(
+          'Enum assignment requires a member or variable of the same enum',
+          ctx.start,
+          undefined
+        );
+      }
+    }
+    if (
+      ctx instanceof ComparisonExpressionContext &&
+      !(ctx.AND() || ctx.ANDKEYWORD() || ctx.OR() || ctx.ORKEYWORD())
+    ) {
+      const left = this.expressionEnum(ctx.expression(0));
+      const right = this.expressionEnum(ctx.expression(1));
+      if (left && right && left !== right) {
+        this.notifyErrorListeners(
+          'Cannot compare different enum types',
+          ctx.start,
+          undefined
+        );
+      }
+      if (
+        (left && !right && this.isConstantExpression(ctx.expression(1))) ||
+        (right && !left && this.isConstantExpression(ctx.expression(0)))
+      ) {
+        this.notifyErrorListeners(
+          'Enum comparisons with constants require a named member',
+          ctx.start,
+          undefined
+        );
+      }
+      const enumId = left ?? right;
+      if (
+        enumId &&
+        (ctx.LT() || ctx.GT() || ctx.LE() || ctx.GE()) &&
+        this.declarations.enumType(enumId) !== 'integer'
+      ) {
+        this.notifyErrorListeners(
+          'Only integer enums support ordering',
+          ctx.start,
+          undefined
+        );
+      }
     }
   }
 

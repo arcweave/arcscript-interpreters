@@ -1,6 +1,21 @@
 export type VarValue = string | number | boolean;
 export type VarType = 'string' | 'integer' | 'float' | 'boolean';
 
+export type EnumMemberDef = {
+  id: string;
+  name: string;
+  value: string | number;
+};
+
+export type EnumDef = {
+  id: string;
+  name: string;
+  type: 'string' | 'integer';
+  members: EnumMemberDef[];
+};
+
+export type ArcscriptEnumDefs = Record<string, EnumDef>;
+
 export type VarDef = {
   id: string;
   name: string;
@@ -8,6 +23,7 @@ export type VarDef = {
   defaultValue: VarValue;
   value?: VarValue;
   scope?: string | null;
+  enumId?: string | null;
 };
 
 export type MentionResult = {
